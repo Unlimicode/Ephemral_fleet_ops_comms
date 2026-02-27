@@ -1,7 +1,10 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import { connect as connectDb } from './config/db.js';
+import { connect as connectRedis } from './config/redis.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -28,6 +31,10 @@ io.on('connection', (socket) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────
-httpServer.listen(PORT, () =>
-  console.log(`Server listening on http://localhost:${PORT}`)
-);
+(async () => {
+  await connectDb();
+  await connectRedis();
+  httpServer.listen(PORT, () =>
+    console.log(`[server] listening on http://localhost:${PORT}`)
+  );
+})();
