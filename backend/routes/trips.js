@@ -9,7 +9,7 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { setSession, deleteSession } from '../config/redisHelpers.js';
+import { setSession, deleteSession, getSession } from '../config/redisHelpers.js';
 
 const router = Router();
 
@@ -243,6 +243,67 @@ router.patch('/:tripId/complete', requireAuth, async (req, res) => {
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {
         console.error('[trips] complete error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── GET / — List all trips (fleet manager dispatch view) ───────────────
+// Protected: only authenticated fleet managers may query all trips.
+router.get('/', requireAuth, async (_req, res) => {
+    try {
+        const result = await query(
+            'SELECT * FROM trips ORDER BY pickup_time DESC'
+        );
+        return res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('[trips] list error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── GET /:tripId/session-status — Privacy Dashboard data source ─────────
+// Protected: requires a valid JWT.
+//
+// This endpoint makes the invisible Redis TTL state visible in real time.
+// It is the data source for the Privacy Dashboard and the live demonstration
+// tool for research validation scenarios — an observer can watch session keys
+// appear on trip acceptance and disappear on completion, demonstrating the
+// automatic ephemeral channel lifecycle with no manual intervention.
+router.get('/:tripId/session-status', requireAuth, async (req, res) => {
+    const { tripId } = req.params;
+    try {
+        const [driverSession, clientSession, complaintWindow] = await Promise.all([
+            getSession(`session:trip:${tripId}:driver`),
+            getSession(`session:trip:${tripId}:client`),
+            getSession(`complaint:window:${tripId}`),
+        ]);
+        return res.status(200).json({
+            trip_id: tripId,
+            driver_session_active: driverSession !== null,
+            client_session_active: clientSession !== null,
+            complaint_window_active: complaintWindow !== null,
+        });
+    } catch (err) {
+        console.error('[trips] session-status error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── GET /:tripId — Retrieve a single trip ───────────────────────────
+// Protected: requires a valid JWT.
+router.get('/:tripId', requireAuth, async (req, res) => {
+    const { tripId } = req.params;
+    try {
+        const result = await query(
+            'SELECT * FROM trips WHERE id = $1',
+            [tripId]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+        return res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('[trips] get error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
