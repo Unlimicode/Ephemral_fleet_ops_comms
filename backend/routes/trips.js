@@ -9,7 +9,7 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { setSession } from '../config/redisHelpers.js';
+import { setSession, deleteSession } from '../config/redisHelpers.js';
 
 const router = Router();
 
@@ -173,6 +173,76 @@ router.patch('/:tripId/accept', requireAuth, async (req, res) => {
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {
         console.error('[trips] accept error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── PATCH /:tripId/complete — Mark a trip complete and destroy session ───────
+// Protected: requires a valid JWT.
+//
+// Session destruction on completion is the technical guarantee that drivers
+// cannot retain access to client communication channels after a trip ends.
+// Both Redis keys are explicitly deleted the moment the trip is marked done —
+// there is no grace period for the channel itself. The complaint window key
+// is then created with a 24-hour TTL, giving the client exactly 24 hours to
+// file a complaint before all trip-level records are permanently wiped.
+router.patch('/:tripId/complete', requireAuth, async (req, res) => {
+    const { tripId } = req.params;
+    const actorId = req.user.id;
+    const actorRole = req.user.role;
+
+    try {
+        // Step 1: Verify trip exists and is in_progress
+        const tripResult = await query(
+            'SELECT id, status FROM trips WHERE id = $1',
+            [tripId]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+        if (tripResult.rows[0].status !== 'in_progress') {
+            return res.status(409).json({ error: `Trip is already in status '${tripResult.rows[0].status}'` });
+        }
+
+        // Step 2: Advance status to completed
+        const updateResult = await query(
+            `UPDATE trips SET status = 'completed' WHERE id = $1 RETURNING *`,
+            [tripId]
+        );
+
+        // Step 3: Destroy both ephemeral session keys immediately
+        await deleteSession(`session:trip:${tripId}:driver`);
+        await deleteSession(`session:trip:${tripId}:client`);
+
+        // Step 4: Open a 24-hour complaint window
+        await setSession(
+            `complaint:window:${tripId}`,
+            { trip_id: tripId, opened_at: new Date().toISOString(), status: 'open' },
+            86400
+        );
+
+        // Step 5: Write audit log entry
+        await query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+       VALUES ($1, $2, $3, $4, $5)`,
+            [
+                'TRIP_SESSION_DESTROYED',
+                actorId,
+                actorRole,
+                tripId,
+                JSON.stringify({
+                    trip_id: tripId,
+                    session_keys_deleted: 2,
+                    complaint_window_opened: true,
+                    complaint_window_ttl_seconds: 86400,
+                }),
+            ]
+        );
+
+        return res.status(200).json(updateResult.rows[0]);
+    } catch (err) {
+        console.error('[trips] complete error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
