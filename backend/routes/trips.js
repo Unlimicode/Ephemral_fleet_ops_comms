@@ -47,4 +47,61 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
+// ── PATCH /:tripId/assign — Assign a driver and vehicle to a pending trip ────
+// Protected: only authenticated fleet managers may perform assignments.
+//
+// PRIVACY: The driver is identified by ID only. At the driver interface layer,
+// the driver receives only client_first_name from the trip record —
+// client_corporate_email is never exposed to the driver layer. This endpoint
+// enforces that boundary by operating solely on IDs during assignment.
+router.patch('/:tripId/assign', requireAuth, async (req, res) => {
+    const { tripId } = req.params;
+    const { driver_id, vehicle_id } = req.body;
+
+    if (!driver_id || !vehicle_id) {
+        return res.status(400).json({ error: 'driver_id and vehicle_id are required' });
+    }
+
+    try {
+        // Step 1: Verify the trip exists and is pending
+        const tripResult = await query(
+            'SELECT id, status FROM trips WHERE id = $1',
+            [tripId]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+        if (tripResult.rows[0].status !== 'pending') {
+            return res.status(409).json({ error: `Trip is already in status '${tripResult.rows[0].status}'` });
+        }
+
+        // Step 2: Verify the driver exists and is active
+        const driverResult = await query(
+            'SELECT id, active_status FROM drivers WHERE id = $1',
+            [driver_id]
+        );
+
+        if (driverResult.rows.length === 0 || !driverResult.rows[0].active_status) {
+            return res.status(404).json({ error: 'Driver not found or inactive' });
+        }
+
+        // Step 3: Assign driver and vehicle, advance status to accepted
+        const updateResult = await query(
+            `UPDATE trips
+       SET assigned_driver_id = $1,
+           vehicle_id         = $2,
+           status             = 'accepted'
+       WHERE id = $3
+       RETURNING *`,
+            [driver_id, vehicle_id, tripId]
+        );
+
+        return res.status(200).json(updateResult.rows[0]);
+    } catch (err) {
+        console.error('[trips] assign error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;
