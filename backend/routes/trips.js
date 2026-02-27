@@ -9,6 +9,7 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { setSession } from '../config/redisHelpers.js';
 
 const router = Router();
 
@@ -100,6 +101,78 @@ router.patch('/:tripId/assign', requireAuth, async (req, res) => {
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {
         console.error('[trips] assign error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── PATCH /:tripId/accept — Driver accepts an assigned trip ─────────────────
+// Protected: requires a valid JWT.
+//
+// MEDIATED EPHEMERAL IDENTITY — Redis session mapping:
+// This endpoint is the technical implementation of the MEI framework.
+// Two Redis keys are created, one for the driver side and one for the client
+// side of the communication channel. The driver key holds only the driver_id
+// and trip_id — never the client's email. The client key holds the email on
+// the server side only; it is never transmitted to the driver. The mandatory
+// 24-hour TTL ensures automatic, guaranteed destruction of the channel — no
+// manual cleanup required, no persistent identity linkage.
+router.patch('/:tripId/accept', requireAuth, async (req, res) => {
+    const { tripId } = req.params;
+    const actorId = req.user.id;
+
+    try {
+        // Step 1: Verify trip exists and is in 'accepted' status (assigned, awaiting driver)
+        const tripResult = await query(
+            'SELECT id, status, assigned_driver_id, client_corporate_email FROM trips WHERE id = $1',
+            [tripId]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+
+        const trip = tripResult.rows[0];
+
+        if (trip.status !== 'accepted') {
+            return res.status(409).json({ error: `Trip is already in status '${trip.status}'` });
+        }
+
+        // Step 2: Advance trip status to in_progress
+        const updateResult = await query(
+            `UPDATE trips SET status = 'in_progress' WHERE id = $1 RETURNING *`,
+            [tripId]
+        );
+
+        // Step 3: Create ephemeral Redis session mappings (TTL: 24 hours)
+        // Driver side — no client email, only IDs
+        await setSession(
+            `session:trip:${tripId}:driver`,
+            { driver_id: trip.assigned_driver_id, trip_id: tripId, role: 'driver' },
+            86400
+        );
+        // Client side — email held server-side only, never forwarded to driver
+        await setSession(
+            `session:trip:${tripId}:client`,
+            { client_email: trip.client_corporate_email, trip_id: tripId, role: 'client' },
+            86400
+        );
+
+        // Step 4: Write audit log entry
+        await query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+       VALUES ($1, $2, $3, $4, $5)`,
+            [
+                'TRIP_SESSION_CREATED',
+                actorId,
+                'fleet_manager',
+                tripId,
+                JSON.stringify({ trip_id: tripId, session_keys_created: 2 }),
+            ]
+        );
+
+        return res.status(200).json(updateResult.rows[0]);
+    } catch (err) {
+        console.error('[trips] accept error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
