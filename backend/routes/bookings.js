@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
-import { setSession, getSession, deleteSession } from '../config/redisHelpers.js';
+import client, { setSession, getSession, deleteSession } from '../config/redisHelpers.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import jwt from 'jsonwebtoken';
+import { requireClientAuth } from '../middleware/clientAuth.js';
 
 const router = Router();
 
@@ -190,6 +191,120 @@ router.get('/session', async (req, res) => {
     } catch (err) {
         // Token is malformed, tampered, or expired
         return res.status(401).json({ error: 'Invalid or expired session' });
+    }
+});
+
+// ── GET /:tripId — View Booking Details (Protected) ──────────────────────────
+// Protected explicit hydration channel for client app usage.
+// PRIVACY/SECURITY ARCHITECTURE:
+// 1. Validates the URL id matches the `req.client.trip_id` decoded from the Http Cookie.
+// 2. Data minimisation: Explicitly filters the JOIN against the `drivers` table
+//    to extract strictly the `full_name`, ensuring `work_email` and `employee_id`
+//    do not leave the backend perimeter.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/:tripId', requireClientAuth, async (req, res) => {
+    const { tripId } = req.params;
+
+    // Boundary constraint: You cannot access someone else's trip ID
+    if (tripId !== req.client.trip_id) {
+        return res.status(403).json({ error: 'Unauthorized access to booking' });
+    }
+
+    try {
+        const tripResult = await query(
+            `SELECT 
+                t.id, 
+                t.status, 
+                t.pickup_location, 
+                t.destination, 
+                t.pickup_time, 
+                t.flight_number, 
+                t.assigned_driver_id,
+                d.full_name AS driver_name
+             FROM trips t
+             LEFT JOIN drivers d ON t.assigned_driver_id = d.id
+             WHERE t.id = $1`,
+            [tripId]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Booking not found' });
+        }
+
+        return res.status(200).json(tripResult.rows[0]);
+
+    } catch (err) {
+        console.error('[bookings] get booking error:', err);
+        return res.status(500).json({ error: 'Internal server error while retrieving booking' });
+    }
+});
+
+// ── POST /:tripId/request-new-link — Magic Link Recovery ─────────────────────
+// Rate limited mechanism to re-dispatch a secure access token if the underlying
+// session or previous link natively timed out.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/:tripId/request-new-link', async (req, res) => {
+    const { tripId } = req.params;
+    const { client_corporate_email } = req.body;
+
+    if (!client_corporate_email) {
+        return res.status(400).json({ error: 'Email is required for recovery' });
+    }
+
+    try {
+        // 1. Rate Limiting verification (Max 3 / hr)
+        const rateLimitKey = `ratelimit:recovery:${tripId}`;
+        // Note: Using raw redis client directly via the default import from redisHelpers since 
+        // increment isn't natively wrapped.
+        const currentCount = await client.incr(rateLimitKey);
+        if (currentCount === 1) {
+            await client.expire(rateLimitKey, 3600); // 1 hour TTL
+        }
+        if (currentCount > 3) {
+            return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+        }
+
+        // 2. Authenticate structural validity of recovery request
+        const tripResult = await query(
+            'SELECT id, client_first_name FROM trips WHERE id = $1 AND client_corporate_email = $2',
+            [tripId, client_corporate_email]
+        );
+
+        if (tripResult.rows.length === 0) {
+            // Explicitly opaque response protecting enumeration
+            return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
+        }
+
+        const firstName = tripResult.rows[0].client_first_name;
+
+        // 3. Dispatch the new cryptostring token identically to creation
+        const token = crypto.randomBytes(32).toString('hex');
+
+        await setSession(
+            `booking_access_token:${token}`,
+            { client_corporate_email, trip_id: tripId },
+            86400 // 24 hours
+        );
+
+        const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}`;
+
+        await transporter.sendMail({
+            from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
+            to: client_corporate_email,
+            subject: 'Fleet Ops: New Booking Access Link',
+            text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,
+            html: `
+                <h3>Hello ${firstName},</h3>
+                <p>A new secure access link has been requested for your trip.</p>
+                <p><a href="${magicLink}" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track My Trip</a></p>
+            `
+        });
+
+        return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
+
+    } catch (err) {
+        console.error('[bookings] recovery error:', err);
+        return res.status(500).json({ error: 'Internal server error during recovery' });
     }
 });
 
