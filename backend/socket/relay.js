@@ -50,6 +50,38 @@ export default function registerRelay(io) {
         // Acknowledge successful join
         socket.emit('session_joined', { tripId, role });
 
+        // ─────────────────────────────────────────────────────────────────
+        // MESSAGE RELAY
+        // ─────────────────────────────────────────────────────────────────
+        // The server never stores the message content anywhere during relay — 
+        // it exists only in transit. The only time message content touches 
+        // storage is if a complaint is filed within the 24-hour window, 
+        // which triggers conditional persistence from Redis to PostgreSQL.
+        // ─────────────────────────────────────────────────────────────────
+        socket.on('send_message', async (data) => {
+            if (!data || !data.content) {
+                return socket.emit('message_error', 'Message content is required');
+            }
+
+            // Continuous validation: Re-verify the MEI session on every message
+            // If the trip was completed or cancelled, the key is gone, and this fails instantly.
+            const isActiveSession = await getSession(sessionKey);
+            if (!isActiveSession) {
+                console.warn(`[socket] Relay failed for ${role} on trip ${tripId}: Session expired/deleted`);
+                socket.emit('auth_error', 'Session expired');
+                return socket.disconnect(true);
+            }
+
+            const payload = {
+                from: role,
+                content: data.content,
+                timestamp: new Date().toISOString()
+            };
+
+            // Broadcast to the entire room (trip:{tripId}), including the sender
+            io.to(roomName).emit('receive_message', payload);
+        });
+
         socket.on('disconnect', () => {
             console.log(`[socket] ${role} disconnected from room ${roomName} (Socket: ${socket.id})`);
         });
