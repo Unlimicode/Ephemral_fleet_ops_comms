@@ -5,8 +5,12 @@
 import { Router } from 'express';
 import authRouter from './auth.js';
 import tripsRouter from './trips.js';
+import bookingsRouter from './bookings.js';
 
 const router = Router();
+
+// Public booking requests
+router.use('/api/bookings', bookingsRouter);
 
 // Fleet manager authentication (login / logout)
 router.use('/api/auth', authRouter);
