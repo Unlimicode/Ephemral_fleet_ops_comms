@@ -1,10 +1,17 @@
+import { Server } from 'socket.io';
 import { getSession } from '../config/redisHelpers.js';
 
+let io;
+
 /**
- * Registers the WebSocket relay logic for the given Socket.IO server instance.
- * @param {import('socket.io').Server} io 
+ * Initializes the Socket.IO server and sets up the strict MEI connection handlers.
+ * @param {import('http').Server} httpServer 
  */
-export default function registerRelay(io) {
+export function initIo(httpServer) {
+    io = new Server(httpServer, {
+        cors: { origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' },
+    });
+
     io.on('connection', async (socket) => {
         const { tripId, role } = socket.handshake.auth || {};
 
@@ -21,17 +28,6 @@ export default function registerRelay(io) {
         // ─────────────────────────────────────────────────────────────────
         // IDENTITY GATE - Mediated Ephemeral Identity (MEI) Framework
         // ─────────────────────────────────────────────────────────────────
-        // The existence of the Redis session key *is* the cryptographic proof
-        // of authorization to enter this room. 
-        // 
-        // A driver evaluates `session:trip:{tripId}:driver`
-        // A client evaluates `session:trip:{tripId}:client`
-        //
-        // This ensures a driver cannot listen to a room waiting for a client if 
-        // the client hasn't been provisioned a session, and vice versa. 
-        // The room only facilitates communication when *both* parties are present 
-        // and hold valid, unexpired Redis keys.
-        // ─────────────────────────────────────────────────────────────────
         const sessionKey = `session:trip:${tripId}:${role}`;
         const sessionData = await getSession(sessionKey);
 
@@ -41,30 +37,19 @@ export default function registerRelay(io) {
             return socket.disconnect(true);
         }
 
-        // Valid session exists -> Join the private room
         const roomName = `trip:${tripId}`;
         socket.join(roomName);
-
         console.log(`[socket] ${role} joined room ${roomName} (Socket: ${socket.id})`);
-
-        // Acknowledge successful join
         socket.emit('session_joined', { tripId, role });
 
         // ─────────────────────────────────────────────────────────────────
         // MESSAGE RELAY
-        // ─────────────────────────────────────────────────────────────────
-        // The server never stores the message content anywhere during relay — 
-        // it exists only in transit. The only time message content touches 
-        // storage is if a complaint is filed within the 24-hour window, 
-        // which triggers conditional persistence from Redis to PostgreSQL.
         // ─────────────────────────────────────────────────────────────────
         socket.on('send_message', async (data) => {
             if (!data || !data.content) {
                 return socket.emit('message_error', 'Message content is required');
             }
 
-            // Continuous validation: Re-verify the MEI session on every message
-            // If the trip was completed or cancelled, the key is gone, and this fails instantly.
             const isActiveSession = await getSession(sessionKey);
             if (!isActiveSession) {
                 console.warn(`[socket] Relay failed for ${role} on trip ${tripId}: Session expired/deleted`);
@@ -78,7 +63,6 @@ export default function registerRelay(io) {
                 timestamp: new Date().toISOString()
             };
 
-            // Broadcast to the entire room (trip:{tripId}), including the sender
             io.to(roomName).emit('receive_message', payload);
         });
 
@@ -86,4 +70,17 @@ export default function registerRelay(io) {
             console.log(`[socket] ${role} disconnected from room ${roomName} (Socket: ${socket.id})`);
         });
     });
+
+    return io;
+}
+
+/**
+ * Returns the initialized io instance. Throws if called before initIo.
+ * @returns {import('socket.io').Server}
+ */
+export function getIo() {
+    if (!io) {
+        throw new Error('Socket.io has not been initialized. Call initIo first.');
+    }
+    return io;
 }

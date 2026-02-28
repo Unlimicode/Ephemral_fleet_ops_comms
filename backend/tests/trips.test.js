@@ -6,10 +6,14 @@ import client, { connect as connectRedis } from '../config/redis.js';
 import { getSession } from '../config/redisHelpers.js';
 import tripsRouter from '../routes/trips.js';
 import jwt from 'jsonwebtoken';
-
+import { createServer } from 'http';
+import { initIo } from '../socket/io.js';
 
 // Setup inline Express app to test the trips router exactly as mounted
 const app = express();
+const httpServer = createServer(app);
+initIo(httpServer); // Initialize the module-level io instance used by the router
+
 app.use(express.json());
 app.use('/api/trips', tripsRouter);
 

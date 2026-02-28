@@ -6,15 +6,12 @@ import cors from 'cors';
 import { connect as connectDb } from './config/db.js';
 import { connect as connectRedis } from './config/redis.js';
 import router from './routes/index.js';
-
 const PORT = process.env.PORT || 3001;
 
 const app = express();
 const httpServer = createServer(app);
 
-const io = new Server(httpServer, {
-  cors: { origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' },
-});
+import { initIo } from './socket/io.js';
 
 // ── Middleware ────────────────────────────────────────────────
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
@@ -24,10 +21,8 @@ app.use(router);
 // ── REST health check ─────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-import registerRelay from './socket/relay.js';
-
 // ── Socket.IO ─────────────────────────────────────────────────
-registerRelay(io);
+initIo(httpServer);
 
 // ── Start ─────────────────────────────────────────────────────
 (async () => {

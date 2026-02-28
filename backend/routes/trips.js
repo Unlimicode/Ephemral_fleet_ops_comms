@@ -10,6 +10,7 @@ import { Router } from 'express';
 import { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { setSession, deleteSession, getSession } from '../config/redisHelpers.js';
+import { getIo } from '../socket/io.js';
 
 const router = Router();
 
@@ -221,6 +222,20 @@ router.patch('/:tripId/complete', requireAuth, async (req, res) => {
             { trip_id: tripId, opened_at: new Date().toISOString(), status: 'open' },
             86400
         );
+
+        // ─────────────────────────────────────────────────────────────────
+        // EXPLICIT CHANNEL CLOSURE — UX Guarantee
+        // ─────────────────────────────────────────────────────────────────
+        // We explicitly notify connected clients and drivers that the channel 
+        // is closing rather than letting them discover it silently on their 
+        // next message attempt. The complaint_window_hours payload primes 
+        // the UI for the fallback state.
+        // ─────────────────────────────────────────────────────────────────
+        getIo().to(`trip:${tripId}`).emit('session_closed', {
+            tripId,
+            reason: 'Trip completed — communication channel closed',
+            complaint_window_hours: 24
+        });
 
         // Step 5: Write audit log entry
         await query(
