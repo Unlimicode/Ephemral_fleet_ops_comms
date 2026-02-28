@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
-import client, { setSession, getSession, deleteSession } from '../config/redisHelpers.js';
+import { setSession, getSession, deleteSession } from '../config/redisHelpers.js';
+import client from '../config/redis.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import jwt from 'jsonwebtoken';
@@ -70,19 +71,21 @@ router.post('/', async (req, res) => {
         // 5. Send the magic link via email
         const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}`;
 
-        await transporter.sendMail({
-            from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
-            to: client_corporate_email,
-            subject: 'Fleet Ops: Your Booking Confirmation & Access Link',
-            text: `Hello ${firstName},\n\nYour trip has been successfully requested and is pending driver assignment.\n\nYou can track and manage your trip securely using this one-time access link:\n${magicLink}\n\nThis link acts as your secure key. Do not share it with anyone.`,
-            html: `
-                <h3>Hello ${firstName},</h3>
-                <p>Your trip has been successfully requested and is pending driver assignment.</p>
-                <p>You can track and manage your trip securely using this access link:</p>
-                <p><a href="${magicLink}" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track My Trip</a></p>
-                <p><em>This link acts as your secure key. Do not share it with anyone.</em></p>
-            `
-        });
+        if (process.env.NODE_ENV !== 'test') {
+            await transporter.sendMail({
+                from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
+                to: client_corporate_email,
+                subject: 'Fleet Ops: Your Booking Confirmation & Access Link',
+                text: `Hello ${firstName},\n\nYour trip has been successfully requested and is pending driver assignment.\n\nYou can track and manage your trip securely using this one-time access link:\n${magicLink}\n\nThis link acts as your secure key. Do not share it with anyone.`,
+                html: `
+                    <h3>Hello ${firstName},</h3>
+                    <p>Your trip has been successfully requested and is pending driver assignment.</p>
+                    <p>You can track and manage your trip securely using this access link:</p>
+                    <p><a href="${magicLink}" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track My Trip</a></p>
+                    <p><em>This link acts as your secure key. Do not share it with anyone.</em></p>
+                `
+            });
+        }
 
         // 6. Return success response (token explicitly omitted)
         return res.status(201).json({
@@ -288,17 +291,19 @@ router.post('/:tripId/request-new-link', async (req, res) => {
 
         const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}`;
 
-        await transporter.sendMail({
-            from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
-            to: client_corporate_email,
-            subject: 'Fleet Ops: New Booking Access Link',
-            text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,
-            html: `
-                <h3>Hello ${firstName},</h3>
-                <p>A new secure access link has been requested for your trip.</p>
-                <p><a href="${magicLink}" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track My Trip</a></p>
-            `
-        });
+        if (process.env.NODE_ENV !== 'test') {
+            await transporter.sendMail({
+                from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
+                to: client_corporate_email,
+                subject: 'Fleet Ops: New Booking Access Link',
+                text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,
+                html: `
+                    <h3>Hello ${firstName},</h3>
+                    <p>A new secure access link has been requested for your trip.</p>
+                    <p><a href="${magicLink}" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track My Trip</a></p>
+                `
+            });
+        }
 
         return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
 
