@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
-import { setSession } from '../config/redisHelpers.js';
+import { setSession, getSession, deleteSession } from '../config/redisHelpers.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 
@@ -91,6 +92,104 @@ router.post('/', async (req, res) => {
     } catch (err) {
         console.error('[bookings] create error:', err);
         return res.status(500).json({ error: 'Internal server error while processing booking' });
+    }
+});
+
+// ── GET /auth?token={token} — Validate magic link & establish HttpOnly session
+// 
+// PRIVACY/SECURITY ARCHITECTURE:
+// 1. Single-use: The Redis token is deleted immediately upon successful read, preventing replay attacks.
+// 2. Cookie Security Flags:
+//    - HttpOnly: Cannot be read by client-side JS (neutralizes XSS extraction).
+//    - Secure: Travels only over HTTPS in production (neutralizes MiTM).
+//    - SameSite=strict: Browser refuses to send cookie on cross-site requests (neutralizes CSRF).
+// 3. The raw JWT is NEVER returned in the JSON response body.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/auth', async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(400).json({ error: 'Missing access token' });
+
+    try {
+        const sessionKey = `booking_access_token:${token}`;
+        const sessionData = await getSession(sessionKey);
+
+        if (!sessionData) {
+            return res.status(401).json({ error: 'Invalid or expired access link' });
+        }
+
+        // 1. Single-use constraint
+        await deleteSession(sessionKey);
+
+        // 2. Retrieve supplementary info
+        const tripResult = await query(
+            'SELECT client_first_name FROM trips WHERE id = $1',
+            [sessionData.trip_id]
+        );
+        const firstName = tripResult.rows[0]?.client_first_name || 'Client';
+
+        // 3. Issue the secure session JWT
+        const jwtPayload = {
+            client_corporate_email: sessionData.client_corporate_email,
+            trip_id: sessionData.trip_id,
+            role: 'client'
+        };
+        const jwtToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+        // 4. Set the native HttpOnly browser cookie
+        res.cookie('client_session', jwtToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        });
+
+        // 5. Respond without exposing token
+        return res.status(200).json({
+            message: 'Session established',
+            trip_id: sessionData.trip_id,
+            client_first_name: firstName
+        });
+
+    } catch (err) {
+        console.error('[bookings] auth error:', err);
+        return res.status(500).json({ error: 'Internal server error during authentication' });
+    }
+});
+
+// ── GET /session — Hydrate the active client session ─────────────────────────
+// PWA initialization route. If the browser holds a valid HttpOnly cookie, 
+// this decrypts it and sends back the actionable session state so the UI 
+// can mount without forcing a re-login.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/session', async (req, res) => {
+    const token = req.cookies.client_session;
+    if (!token) return res.status(401).json({ error: 'No active session' });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Ensure this is a client session, not a fleet manager
+        if (decoded.role !== 'client') throw new Error('Invalid token role for client session');
+
+        const tripResult = await query(
+            'SELECT client_first_name, status FROM trips WHERE id = $1',
+            [decoded.trip_id]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(401).json({ error: 'Trip associated with session not found' });
+        }
+
+        return res.status(200).json({
+            trip_id: decoded.trip_id,
+            client_corporate_email: decoded.client_corporate_email,
+            client_first_name: tripResult.rows[0].client_first_name,
+            status: tripResult.rows[0].status
+        });
+
+    } catch (err) {
+        // Token is malformed, tampered, or expired
+        return res.status(401).json({ error: 'Invalid or expired session' });
     }
 });
 
