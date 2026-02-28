@@ -24,13 +24,10 @@ app.use(router);
 // ── REST health check ─────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
+import registerRelay from './socket/relay.js';
+
 // ── Socket.IO ─────────────────────────────────────────────────
-io.on('connection', (socket) => {
-  console.log(`[socket] client connected: ${socket.id}`);
-  socket.on('disconnect', () =>
-    console.log(`[socket] client disconnected: ${socket.id}`)
-  );
-});
+registerRelay(io);
 
 // ── Start ─────────────────────────────────────────────────────
 (async () => {
