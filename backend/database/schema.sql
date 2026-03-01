@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS drivers (
                            REFERENCES fleet_managers(id) ON DELETE CASCADE,
   full_name        TEXT    NOT NULL,
   work_email       TEXT    NOT NULL UNIQUE,
+  password_hash    TEXT    NOT NULL,
   employee_id      TEXT    NOT NULL UNIQUE,
   active_status    BOOLEAN NOT NULL DEFAULT TRUE
 );

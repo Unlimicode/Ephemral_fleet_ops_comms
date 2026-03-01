@@ -6,6 +6,7 @@ import { Router } from 'express';
 import authRouter from './auth.js';
 import tripsRouter from './trips.js';
 import bookingsRouter from './bookings.js';
+import driversRouter from './drivers.js';
 
 const router = Router();
 

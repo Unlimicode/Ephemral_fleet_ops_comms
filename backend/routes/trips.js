@@ -18,7 +18,7 @@ const router = Router();
 // Protected: only authenticated fleet managers may create trip records.
 // Accepts the six permitted fields; flight_number is optional.
 // Returns 201 with the newly created trip row on success.
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
     const {
         client_corporate_email,
         client_first_name,
@@ -56,7 +56,7 @@ router.post('/', requireAuth, async (req, res) => {
 // the driver receives only client_first_name from the trip record —
 // client_corporate_email is never exposed to the driver layer. This endpoint
 // enforces that boundary by operating solely on IDs during assignment.
-router.patch('/:tripId/assign', requireAuth, async (req, res) => {
+router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res) => {
     const { tripId } = req.params;
     const { driver_id, vehicle_id } = req.body;
 
@@ -117,7 +117,7 @@ router.patch('/:tripId/assign', requireAuth, async (req, res) => {
 // the server side only; it is never transmitted to the driver. The mandatory
 // 24-hour TTL ensures automatic, guaranteed destruction of the channel — no
 // manual cleanup required, no persistent identity linkage.
-router.patch('/:tripId/accept', requireAuth, async (req, res) => {
+router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;
     const actorId = req.user.id;
 
@@ -187,7 +187,7 @@ router.patch('/:tripId/accept', requireAuth, async (req, res) => {
 // there is no grace period for the channel itself. The complaint window key
 // is then created with a 24-hour TTL, giving the client exactly 24 hours to
 // file a complaint before all trip-level records are permanently wiped.
-router.patch('/:tripId/complete', requireAuth, async (req, res) => {
+router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;
     const actorId = req.user.id;
     const actorRole = req.user.role;
@@ -264,7 +264,7 @@ router.patch('/:tripId/complete', requireAuth, async (req, res) => {
 
 // ── GET / — List all trips (fleet manager dispatch view) ───────────────
 // Protected: only authenticated fleet managers may query all trips.
-router.get('/', requireAuth, async (_req, res) => {
+router.get('/', requireAuth(['fleet_manager']), async (_req, res) => {
     try {
         const result = await query(
             'SELECT * FROM trips ORDER BY pickup_time DESC'
@@ -284,7 +284,7 @@ router.get('/', requireAuth, async (_req, res) => {
 // tool for research validation scenarios — an observer can watch session keys
 // appear on trip acceptance and disappear on completion, demonstrating the
 // automatic ephemeral channel lifecycle with no manual intervention.
-router.get('/:tripId/session-status', requireAuth, async (req, res) => {
+router.get('/:tripId/session-status', requireAuth(['fleet_manager']), async (req, res) => {
     const { tripId } = req.params;
     try {
         const [driverSession, clientSession, complaintWindow] = await Promise.all([
@@ -306,7 +306,7 @@ router.get('/:tripId/session-status', requireAuth, async (req, res) => {
 
 // ── GET /:tripId — Retrieve a single trip ───────────────────────────
 // Protected: requires a valid JWT.
-router.get('/:tripId', requireAuth, async (req, res) => {
+router.get('/:tripId', requireAuth(['fleet_manager']), async (req, res) => {
     const { tripId } = req.params;
     try {
         const result = await query(
