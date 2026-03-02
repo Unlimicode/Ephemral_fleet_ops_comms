@@ -52,7 +52,7 @@ router.post('/auth/login', async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
         );
 
-        await setSession(`driver:availability:${driver.id}`, { status: 'available', updated_at: new Date().toISOString() });
+        await setSession(`driver:availability:${driver.id}`, { status: 'available', updated_at: new Date().toISOString(), token });
 
         return res.status(200).json({ token });
     } catch (err) {

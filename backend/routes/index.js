@@ -8,6 +8,8 @@ import tripsRouter from './trips.js';
 import bookingsRouter from './bookings.js';
 import driversRouter from './drivers.js';
 import driverTripsRouter from './driverTrips.js';
+import rosterRouter from './roster.js';
+import vehiclesRouter from './vehicles.js';
 
 const router = Router();
 
@@ -23,5 +25,9 @@ router.use('/api/trips', tripsRouter);
 // Driver mobile endpoints
 router.use('/api/drivers', driversRouter);
 router.use('/api/driver/trips', driverTripsRouter);
+
+// Fleet Physical Roster endpoints
+router.use('/api/roster', rosterRouter);
+router.use('/api/vehicles', vehiclesRouter);
 
 export default router;
