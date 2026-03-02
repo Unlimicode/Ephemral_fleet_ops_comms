@@ -7,6 +7,8 @@ import pool, { connect as connectDb } from '../config/db.js';
 import client, { connect as connectRedis } from '../config/redis.js';
 import { initIo, getIo } from '../socket/io.js';
 import tripsRouter from '../routes/trips.js';
+import driversRouter from '../routes/drivers.js';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,6 +30,7 @@ initIo(httpServer);
 
 app.use(express.json());
 app.use('/api/trips', tripsRouter);
+app.use('/api/drivers', driversRouter);
 
 describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
     let authToken;
@@ -36,6 +39,7 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
     let vehicleId;
     let testTripId;
     let port;
+    let driverToken;
 
     // Test clients
     let driverSocket;
@@ -59,11 +63,17 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
         managerId = managerResult.rows[0].id;
         authToken = jwt.sign({ id: managerId, role: 'fleet_manager' }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
+        const driverHash = await bcrypt.hash('driverpassword', 10);
         const driverResult = await pool.query(
-            "INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, active_status) VALUES ($1, 'Relay Driver', 'relay@test.com', 'RLY-123', true) RETURNING id",
-            [managerId]
+            "INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status) VALUES ($1, 'Relay Driver', 'relay@test.com', 'RLY-123', $2, true) RETURNING id",
+            [managerId, driverHash]
         );
         driverId = driverResult.rows[0].id;
+
+        const loginRes = await request(app)
+            .post('/api/drivers/auth/login')
+            .send({ email: 'relay@test.com', password: 'driverpassword' });
+        driverToken = loginRes.body.token;
 
         const vehicleResult = await pool.query(
             "INSERT INTO vehicles (registration_number, type, capacity) VALUES ($1, 'sedan', 4) RETURNING id",
@@ -76,7 +86,9 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
         if (driverSocket) driverSocket.disconnect();
         if (clientSocket) clientSocket.disconnect();
 
+        getIo().close();
         await new Promise((resolve) => httpServer.close(resolve));
+
         await pool.query('DELETE FROM trips WHERE client_corporate_email = $1', ['relayclient@corporate.com']);
         await pool.query('DELETE FROM vehicles WHERE id = $1', [vehicleId]);
         await pool.query('DELETE FROM drivers WHERE id = $1', [driverId]);
@@ -106,7 +118,7 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
 
         // This creates the Redis session keys
         const acceptRes = await request(app).patch(`/api/trips/${testTripId}/accept`)
-            .set('Authorization', `Bearer ${authToken}`);
+            .set('Authorization', `Bearer ${driverToken}`);
         expect(acceptRes.status).toBe(200);
 
         // B. Connect the Socket.IO client mimicking the driver
@@ -173,7 +185,7 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
 
         // Complete the trip via REST — this intrinsically destroys the Redis keys and broadcasts closure
         const completeRes = await request(app).patch(`/api/trips/${testTripId}/complete`)
-            .set('Authorization', `Bearer ${authToken}`);
+            .set('Authorization', `Bearer ${driverToken}`);
         expect(completeRes.status).toBe(200);
 
         // Await the push notifications

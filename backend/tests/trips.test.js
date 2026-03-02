@@ -5,6 +5,8 @@ import pool, { connect as connectDb } from '../config/db.js';
 import client, { connect as connectRedis } from '../config/redis.js';
 import { getSession } from '../config/redisHelpers.js';
 import tripsRouter from '../routes/trips.js';
+import driversRouter from '../routes/drivers.js';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { createServer } from 'http';
 import { initIo } from '../socket/io.js';
@@ -16,6 +18,7 @@ initIo(httpServer); // Initialize the module-level io instance used by the route
 
 app.use(express.json());
 app.use('/api/trips', tripsRouter);
+app.use('/api/drivers', driversRouter);
 
 // Base URLs
 const TRIPS_API = '/api/trips';
@@ -28,6 +31,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
     let managerId;
     let driverId;
     let vehicleId;
+    let driverToken;
     let currentTripId; // Keep track of the trip across sequential tests
 
     beforeAll(async () => {
@@ -52,13 +56,20 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
         );
 
         // 3. Seed test driver
+        const driverHash = await bcrypt.hash('driverpassword', 10);
         const driverResult = await pool.query(
-            `INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, active_status) 
-             VALUES ($1, 'Test Driver', 'driver@test.com', 'EMP-1234', true) 
+            `INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status) 
+             VALUES ($1, 'Test Driver', 'driver@test.com', 'EMP-1234', $2, true) 
              RETURNING id`,
-            [managerId]
+            [managerId, driverHash]
         );
         driverId = driverResult.rows[0].id;
+
+        // Login explicitly to acquire the native driverToken evaluating through RBAC
+        const loginRes = await request(app)
+            .post('/api/drivers/auth/login')
+            .send({ email: 'driver@test.com', password: 'driverpassword' });
+        driverToken = loginRes.body.token;
 
         // 4. Seed test vehicle
         const vehicleResult = await pool.query(
@@ -138,7 +149,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
         // Accept the trip
         const acceptRes = await request(app)
             .patch(`${TRIPS_API}/${currentTripId}/accept`)
-            .set('Authorization', `Bearer ${authToken}`);
+            .set('Authorization', `Bearer ${driverToken}`);
 
         expect(acceptRes.status).toBe(200);
         expect(acceptRes.body.status).toBe('in_progress');
@@ -165,7 +176,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
         // Complete the trip
         const completeRes = await request(app)
             .patch(`${TRIPS_API}/${currentTripId}/complete`)
-            .set('Authorization', `Bearer ${authToken}`);
+            .set('Authorization', `Bearer ${driverToken}`);
 
         expect(completeRes.status).toBe(200);
         expect(completeRes.body.status).toBe('completed');

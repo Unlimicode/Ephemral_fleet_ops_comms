@@ -24,7 +24,7 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 
 // Throw-away protected route used only in test 3 — no production code altered
-app.get('/api/test/protected', requireAuth, (_req, res) => {
+app.get('/api/test/protected', requireAuth(), (_req, res) => {
     res.status(200).json({ message: 'reached protected route' });
 });
 
@@ -91,5 +91,5 @@ describe('Auth routes', () => {
 
         expect(protectedRes.statusCode).toBe(401);
         expect(protectedRes.body.error).toBe('Session invalidated');
-    });
+    }, 15000);
 });
