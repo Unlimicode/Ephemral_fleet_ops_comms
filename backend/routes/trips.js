@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Router } from 'express';
-import { query } from '../config/db.js';
+import pool, { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { setSession, deleteSession, getSession } from '../config/redisHelpers.js';
 import { getIo } from '../socket/io.js';
@@ -64,32 +64,39 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
         return res.status(400).json({ error: 'driver_id and vehicle_id are required' });
     }
 
+    const client = await pool.connect();
+
     try {
+        await client.query('BEGIN');
+
         // Step 1: Verify the trip exists and is pending
-        const tripResult = await query(
-            'SELECT id, status FROM trips WHERE id = $1',
+        const tripResult = await client.query(
+            'SELECT id, status FROM trips WHERE id = $1 FOR UPDATE',
             [tripId]
         );
 
         if (tripResult.rows.length === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: 'Trip not found' });
         }
         if (tripResult.rows[0].status !== 'pending') {
+            await client.query('ROLLBACK');
             return res.status(409).json({ error: `Trip is already in status '${tripResult.rows[0].status}'` });
         }
 
         // Step 2: Verify the driver exists and is active
-        const driverResult = await query(
+        const driverResult = await client.query(
             'SELECT id, active_status FROM drivers WHERE id = $1',
             [driver_id]
         );
 
         if (driverResult.rows.length === 0 || !driverResult.rows[0].active_status) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: 'Driver not found or inactive' });
         }
 
         // Step 3: Assign driver and vehicle, advance status to accepted
-        const updateResult = await query(
+        const updateResult = await client.query(
             `UPDATE trips
        SET assigned_driver_id = $1,
            vehicle_id         = $2,
@@ -99,10 +106,14 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
             [driver_id, vehicle_id, tripId]
         );
 
+        await client.query('COMMIT');
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('[trips] assign error:', err);
         return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
     }
 });
 

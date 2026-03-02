@@ -6,7 +6,8 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
-import { setSession } from '../config/redisHelpers.js';
+import { setSession, getSession } from '../config/redisHelpers.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -51,6 +52,8 @@ router.post('/auth/login', async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
         );
 
+        await setSession(`driver:availability:${driver.id}`, { status: 'available', updated_at: new Date().toISOString() });
+
         return res.status(200).json({ token });
     } catch (err) {
         console.error('[drivers] login error:', err);
@@ -81,10 +84,42 @@ router.post('/auth/logout', async (req, res) => {
                 // Drop token into blocklist specifically for its remaining valid cryptographic window
                 await setSession(`blocklist:${token}`, true, ttl);
             }
+
+            if (decoded.id) {
+                await setSession(`driver:availability:${decoded.id}`, { status: 'offline', updated_at: new Date().toISOString() });
+            }
         }
         return res.status(200).json({ message: 'Logged out successfully' });
     } catch (err) {
         console.error('[drivers] logout error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── GET /availability — Fleet Manager Real-Time Dashboard ────────────────────
+// This provides the fleet manager a real-time dispatch view without storing
+// availability state in PostgreSQL — it's operational state that belongs in
+// Redis, not permanent data.
+router.get('/availability', requireAuth(['fleet_manager']), async (req, res) => {
+    try {
+        const result = await query(
+            'SELECT id AS driver_id, full_name FROM drivers WHERE active_status = true'
+        );
+
+        const driversWithStatus = await Promise.all(
+            result.rows.map(async (driver) => {
+                const sessionData = await getSession(`driver:availability:${driver.driver_id}`);
+                return {
+                    driver_id: driver.driver_id,
+                    full_name: driver.full_name,
+                    status: sessionData && sessionData.status ? sessionData.status : 'offline'
+                };
+            })
+        );
+
+        return res.status(200).json(driversWithStatus);
+    } catch (err) {
+        console.error('[drivers] availability error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
