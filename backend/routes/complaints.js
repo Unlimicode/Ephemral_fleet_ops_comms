@@ -3,6 +3,8 @@ import { requireAuth } from '../middleware/auth.js';
 import { requireClientAuth } from '../middleware/clientAuth.js';
 import pool from '../config/db.js';
 import { getSession } from '../config/redisHelpers.js';
+import redisClient from '../config/redis.js';
+import { encrypt } from '../utils/encryption.js';
 
 const router = express.Router();
 
@@ -64,9 +66,48 @@ router.post('/:tripId', requireClientAuth, async (req, res) => {
                 tripId,         // Preserving anonymity, using trip boundary as actor
                 'client',       // Structural role preservation
                 complaintId,
-                { category, trip_id: tripId }
+                JSON.stringify({ category, trip_id: tripId })
             ]
         );
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // CONDITIONAL PERSISTENCE LOGIC
+        // ─────────────────────────────────────────────────────────────────────────────
+        const bufferKey = `messages:trip:${tripId}`;
+        const rawBuffer = await redisClient.lRange(bufferKey, 0, -1);
+
+        if (rawBuffer && rawBuffer.length > 0) {
+            const parsedMessages = rawBuffer.map(msg => JSON.parse(msg));
+            const stringifiedPayload = JSON.stringify(parsedMessages);
+            const encryptedArchive = encrypt(stringifiedPayload);
+
+            await pool.query(
+                `UPDATE complaints SET encrypted_message_archive = $1 WHERE id = $2`,
+                [encryptedArchive, complaintId]
+            );
+
+            // The Redis message buffer is deleted immediately after archiving — not 
+            // left to expire. This is intentional: once messages are conditionally 
+            // persisted to PostgreSQL, the Redis copy serves no purpose and its 
+            // continued existence would be a data minimisation violation.
+            await redisClient.del(bufferKey);
+
+            await pool.query(
+                `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [
+                    'MESSAGE_ARCHIVE_CREATED',
+                    tripId,
+                    'system',
+                    complaintId,
+                    JSON.stringify({
+                        complaint_id: complaintId,
+                        message_count: parsedMessages.length,
+                        archived_at: new Date().toISOString()
+                    })
+                ]
+            );
+        }
 
         return res.status(201).json({
             message: 'Complaint filed successfully.',
