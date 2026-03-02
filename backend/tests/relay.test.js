@@ -178,7 +178,29 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
         expect(clientMsg).toHaveProperty('timestamp');
     });
 
-    it('Test 4: Broadcasts explicit Channel Closure upon Trip Completion', async () => {
+    it('Test 4: Message buffer created in Redis', async () => {
+        // We know from Test 3 that `testTripId` has messages
+        const bufferKey = `messages:trip:${testTripId}`;
+        const rawBuffer = await client.lRange(bufferKey, 0, -1);
+
+        // Assert the block exists structurally holding >= 1 entry
+        expect(rawBuffer.length).toBeGreaterThanOrEqual(1);
+
+        // Parse JSON natively asserting explicit object structures
+        const lastMessage = JSON.parse(rawBuffer[rawBuffer.length - 1]);
+
+        expect(lastMessage).toHaveProperty('from', 'driver');
+        expect(lastMessage).toHaveProperty('content');
+        expect(lastMessage).toHaveProperty('timestamp');
+
+        // Let's quickly double check the TTL was created structurally 
+        // Note: TTL might be slightly less than 86400 by the time this runs 
+        const ttl = await client.ttl(bufferKey);
+        expect(ttl).toBeGreaterThan(0);
+        expect(ttl).toBeLessThanOrEqual(86400);
+    });
+
+    it('Test 5: Broadcasts explicit Channel Closure upon Trip Completion', async () => {
         // Setup listeners *before* triggering the REST completion to avoid race conditions
         const driverPromise = new Promise((resolve) => driverSocket.once('session_closed', resolve));
         const clientPromise = new Promise((resolve) => clientSocket.once('session_closed', resolve));

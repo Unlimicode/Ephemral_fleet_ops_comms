@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { getSession } from '../config/redisHelpers.js';
+import redisClient from '../config/redis.js';
 
 let io;
 
@@ -64,6 +65,20 @@ export function initIo(httpServer) {
             };
 
             io.to(roomName).emit('receive_message', payload);
+
+            // ─────────────────────────────────────────────────────────────────
+            // CONDITIONAL PERSISTENCE: Message Buffering
+            // ─────────────────────────────────────────────────────────────────
+            // This message buffer exists purely to support conditional persistence 
+            // arrays natively mapped inside Redis. If no complaint is filed within 
+            // 24 hours (86400s), the TTL physically fires and the DB buffer is 
+            // permanently deleted with zero intervention required naturally. 
+            // The buffer is never read during normal active trip operations — it 
+            // exists exclusively as insurance against an active complaint being filed.
+            // ─────────────────────────────────────────────────────────────────
+            const bufferKey = `messages:trip:${tripId}`;
+            await redisClient.rPush(bufferKey, JSON.stringify(payload));
+            await redisClient.expire(bufferKey, 86400);
         });
 
         socket.on('disconnect', () => {
