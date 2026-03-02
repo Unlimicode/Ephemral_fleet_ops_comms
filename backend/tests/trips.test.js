@@ -59,7 +59,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
         const driverHash = await bcrypt.hash('driverpassword', 10);
         const driverResult = await pool.query(
             `INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status) 
-             VALUES ($1, 'Test Driver', 'driver@test.com', 'EMP-1234', $2, true) 
+             VALUES ($1, 'Test Driver', 'trips_unique_driver@test.com', 'EMP-TRIPS-001', $2, true) 
              RETURNING id`,
             [managerId, driverHash]
         );
@@ -68,7 +68,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
         // Login explicitly to acquire the native driverToken evaluating through RBAC
         const loginRes = await request(app)
             .post('/api/drivers/auth/login')
-            .send({ email: 'driver@test.com', password: 'driverpassword' });
+            .send({ email: 'trips_unique_driver@test.com', password: 'driverpassword' });
         driverToken = loginRes.body.token;
 
         // 4. Seed test vehicle
