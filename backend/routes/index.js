@@ -10,6 +10,7 @@ import driversRouter from './drivers.js';
 import driverTripsRouter from './driverTrips.js';
 import rosterRouter from './roster.js';
 import vehiclesRouter from './vehicles.js';
+import dashboardRouter from './dashboard.js';
 
 const router = Router();
 
@@ -29,5 +30,8 @@ router.use('/api/driver/trips', driverTripsRouter);
 // Fleet Physical Roster endpoints
 router.use('/api/roster', rosterRouter);
 router.use('/api/vehicles', vehiclesRouter);
+
+// Dashboard endpoints
+router.use('/api/dashboard', dashboardRouter);
 
 export default router;

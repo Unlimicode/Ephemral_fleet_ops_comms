@@ -47,3 +47,15 @@ export async function deleteSession(key) {
 export async function extendSession(key, ttlSeconds) {
     await client.expire(key, ttlSeconds);
 }
+
+/**
+ * getTTL(key)
+ * - Returns -2 if the key does not exist.
+ * - Returns -1 if the key exists but has no expiry.
+ * - Returns positive integer (TTL in seconds) otherwise.
+ * The dashboard uses this to drive countdown timers on the frontend.
+ */
+export async function getTTL(key) {
+    const ttl = await client.ttl(key);
+    return ttl;
+}
