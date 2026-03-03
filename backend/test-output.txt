@@ -1,183 +1,40 @@
 ﻿
 > backend@1.0.0 test
-> node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --runInBand tests/bookings.test.js
+> node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --runInBand tests/driverAuth.test.js
 
-node.exe : (node:23156) ExperimentalWarning: VM Modules is 
-an experimental feature and might change at any time
+node.exe : FAIL 
+tests/driverAuth.test.js
 At line:1 char:1
 + & "D:\Programming\Tools/node.exe" 
-"C:\Users\ils\AppData\Roaming\npm/n ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ((node:23156) Ex 
-   ...nge at any time:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
+"C:\Users\ils\AppData\Roaming\npm/n 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpec 
+   ified: (FAIL tests/driverAuth.tes  
+  t.js:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeC 
+   ommandError
  
-(Use `node --trace-warnings ...` to show where the warning 
-was created)
-  console.log
-    [db] PostgreSQL connected
+  ΓùÅ Test suite failed to run
 
-      at log (config/db.js:13:13)
+    SyntaxError: The requested module 
+'../config/db.js' does not provide an 
+export named 'close'
 
-  console.log
-    [redis] Redis connected
-
-      at Class.log (config/redis.js:6:36)
-
-  console.error
-    [bookings] create error: Error: connect ECONNREFUSED ::1:587
-        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
-      errno: -4078,
-      code: 'ESOCKET',
-      syscall: 'connect',
-      address: '::1',
-      port: 587,
-      command: 'CONN'
-    }
-
-    [0m [90m 93 |[39m
-     [90m 94 |[39m     } [36mcatch[39m (err) {
-    [31m[1m>[22m[39m[90m 95 |[39m         console[33m.[39merror([32m'[bookings] create error:'[39m[33m,[39m err)[33m;[39m
-     [90m    |[39m                 [31m[1m^[22m[39m
-     [90m 96 |[39m         [36mreturn[39m res[33m.[39mstatus([35m500[39m)[33m.[39mjson({ error[33m:[39m [32m'Internal server error while processing booking'[39m })[33m;[39m
-     [90m 97 |[39m     }
-     [90m 98 |[39m })[33m;[39m[0m
-
-      at error (routes/bookings.js:95:17)
-
-FAIL tests/bookings.test.js (5.888 s)
-  Client Authentication & Privacy Guarantees
-    ├ù Scenario 1: Booking submission ΓÇö 201, token 
-generated in Redis, NO token in API response (853 ms)
-    ├ù Scenario 2: Token validation & cookie establishment 
-ΓÇö Single-use verification (259 ms)
-    ├ù Scenario 3: Persistent session check ΓÇö Hydrate 
-state (3 ms)
-    ├ù Scenario 4: Booking view data minimisation (2 ms)
-    ├ù Scenario 5: Cross-client access prevention (149 ms)
-    ΓêÜ Scenario 6: Expired or invalid token check (246 ms)
-
-  ΓùÅ Client Authentication & Privacy Guarantees ΓÇ║ 
-Scenario 1: Booking submission ΓÇö 201, token generated in 
-Redis, NO token in API response
-
-    expected 201 "Created", got 500 "Internal Server Error"
-
-    [0m [90m 79 |[39m             
-[33m.[39mpost([33mAPI[39m)
-     [90m 80 |[39m             [33m.[39msend(payload)
-    [31m[1m>[22m[39m[90m 81 |[39m             
-[33m.[39mexpect([35m201[39m)[33m;[39m
-     [90m    |[39m              [31m[1m^[22m[39m
-     [90m 82 |[39m
-     [90m 83 |[39m         expect(response[33m.[39mbody)
-[33m.[39mtoHaveProperty([32m'message'[39m)[33m;[39m
-     [90m 84 |[39m         expect(response[33m.[39mbody)
-[33m.[39mtoHaveProperty([32m'trip_id'[39m)[33m;[39m[0m
-
-      at Object.expect (tests/bookings.test.js:81:14)
-      ----
-      at Test._assertStatus 
-(node_modules/supertest/lib/test.js:309:14)
-      at node_modules/supertest/lib/test.js:365:13
-      at Test._assertFunction 
-(node_modules/supertest/lib/test.js:342:13)
-      at Test.assert 
-(node_modules/supertest/lib/test.js:195:23)
-      at localAssert 
-(node_modules/supertest/lib/test.js:138:14)
-      at Server.<anonymous> 
-(node_modules/supertest/lib/test.js:152:11)
-
-  ΓùÅ Client Authentication & Privacy Guarantees ΓÇ║ 
-Scenario 2: Token validation & cookie establishment ΓÇö 
-Single-use verification
-
-    expected 200 "OK", got 401 "Unauthorized"
-
-    [0m [90m 112 |[39m         [36mconst[39m response 
-[33m=[39m [36mawait[39m request(app)
-     [90m 113 |[39m             [33m.[39m[36mget[39m([
-32m`${API}/auth?token=${activeToken}`[39m)
-    [31m[1m>[22m[39m[90m 114 |[39m             
-[33m.[39mexpect([35m200[39m)[33m;[39m
-     [90m     |[39m              [31m[1m^[22m[39m
-     [90m 115 |[39m
-     [90m 116 |[39m         expect(response[33m.[39mbody)
-[33m.[39mtoHaveProperty([32m'message'[39m[33m,[39m 
-[32m'Session established'[39m)[33m;[39m
-     [90m 117 |[39m         expect(response[33m.[39mbody)
-[33m.[39mtoHaveProperty([32m'trip_id'[39m[33m,[39m 
-tripIdA)[33m;[39m[0m
-
-      at Object.expect (tests/bookings.test.js:114:14)
-      ----
-      at Test._assertStatus 
-(node_modules/supertest/lib/test.js:309:14)
-      at node_modules/supertest/lib/test.js:365:13
-      at Test._assertFunction 
-(node_modules/supertest/lib/test.js:342:13)
-      at Test.assert 
-(node_modules/supertest/lib/test.js:195:23)
-      at localAssert 
-(node_modules/supertest/lib/test.js:138:14)
-      at Server.<anonymous> 
-(node_modules/supertest/lib/test.js:152:11)
-
-  ΓùÅ Client Authentication & Privacy Guarantees ΓÇ║ 
-Scenario 3: Persistent session check ΓÇö Hydrate state
-
-    TypeError: Invalid value "undefined" for header "Cookie"
-
-      at Test.setHeader [as request] 
-(node_modules/superagent/src/node/index.js:830:39)
-      at Test.request [as end] 
-(node_modules/superagent/src/node/index.js:965:8)
-      at Test.end (node_modules/supertest/lib/test.js:136:11)
-      at end 
-(node_modules/superagent/src/request-base.js:283:12)
-      at Test.RequestBase.then 
-(node_modules/superagent/src/request-base.js:265:31)
-
-  ΓùÅ Client Authentication & Privacy Guarantees ΓÇ║ 
-Scenario 4: Booking view data minimisation
-
-    TypeError: Invalid value "undefined" for header "Cookie"
-
-      at Test.setHeader [as request] 
-(node_modules/superagent/src/node/index.js:830:39)
-      at Test.request [as end] 
-(node_modules/superagent/src/node/index.js:965:8)
-      at Test.end (node_modules/supertest/lib/test.js:136:11)
-      at end 
-(node_modules/superagent/src/request-base.js:283:12)
-      at Test.RequestBase.then 
-(node_modules/superagent/src/request-base.js:265:31)
-
-  ΓùÅ Client Authentication & Privacy Guarantees ΓÇ║ 
-Scenario 5: Cross-client access prevention
-
-    TypeError: Invalid value "undefined" for header "Cookie"
-
-      at Test.setHeader [as request] 
-(node_modules/superagent/src/node/index.js:830:39)
-      at Test.request [as end] 
-(node_modules/superagent/src/node/index.js:965:8)
-      at Test.end (node_modules/supertest/lib/test.js:136:11)
-      at end 
-(node_modules/superagent/src/request-base.js:283:12)
-      at Test.RequestBase.then 
-(node_modules/superagent/src/request-base.js:265:31)
+      at 
+Runtime.linkAndEvaluateModule (node_mo
+dules/jest-runtime/build/index.js:684:
+5)
 
 Test Suites: 1 failed, 1 total
-Tests:       5 failed, 1 passed, 6 total
+Tests:       0 total
 Snapshots:   0 total
-Time:        5.961 s, estimated 6 s
-Ran all test suites matching tests/bookings.test.js.
-Jest did not exit one second after the test run has 
-completed.
-
-'This usually means that there are asynchronous operations 
-that weren't stopped in your tests. Consider running Jest 
-with `--detectOpenHandles` to troubleshoot this issue.
+Time:        2.356 s
+Ran all test suites matching 
+tests/driverAuth.test.js.
+(node:20384) ExperimentalWarning: VM 
+Modules is an experimental feature 
+and might change at any time
+(Use `node --trace-warnings ...` to 
+show where the warning was created)

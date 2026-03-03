@@ -1,0 +1,4 @@
+﻿
+> backend@1.0.0 test
+> node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --runInBand tests/bookings.test.js tests/trips.test.js tests/relay.test.js
+

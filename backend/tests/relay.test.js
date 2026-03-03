@@ -121,6 +121,9 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
             .set('Authorization', `Bearer ${driverToken}`);
         expect(acceptRes.status).toBe(200);
 
+        // Manually simulate the Gap 1 phase `PATCH /start`
+        await pool.query("UPDATE trips SET status = 'in_progress' WHERE id = $1", [testTripId]);
+
         // B. Connect the Socket.IO client mimicking the driver
         driverSocket = Client(`http://localhost:${port}`, {
             auth: { tripId: testTripId, role: 'driver' }

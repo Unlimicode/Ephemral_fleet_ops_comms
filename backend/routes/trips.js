@@ -11,6 +11,7 @@ import pool, { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { setSession, deleteSession, getSession } from '../config/redisHelpers.js';
 import { getIo } from '../socket/io.js';
+import nodemailer from 'nodemailer';
 
 const router = Router();
 
@@ -149,9 +150,9 @@ router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
             return res.status(409).json({ error: `Trip is already in status '${trip.status}'` });
         }
 
-        // Step 2: Advance trip status to in_progress
+        // Step 2: Advance trip status to accepted
         const updateResult = await query(
-            `UPDATE trips SET status = 'in_progress' WHERE id = $1 RETURNING *`,
+            `UPDATE trips SET status = 'accepted' WHERE id = $1 RETURNING *`,
             [tripId]
         );
 
@@ -206,7 +207,7 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     try {
         // Step 1: Verify trip exists and is in_progress
         const tripResult = await query(
-            'SELECT id, status FROM trips WHERE id = $1',
+            'SELECT id, status, client_corporate_email FROM trips WHERE id = $1',
             [tripId]
         );
 
@@ -233,6 +234,29 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
             { trip_id: tripId, opened_at: new Date().toISOString(), status: 'open' },
             86400
         );
+
+        // Gap 4: Send trip completion email to client
+        if (process.env.NODE_ENV !== 'test') {
+            try {
+                const transporter = nodemailer.createTransport({
+                    host: process.env.SMTP_HOST || 'localhost',
+                    port: process.env.SMTP_PORT || 1025,
+                    auth: {
+                        user: process.env.SMTP_USER || 'test-user',
+                        pass: process.env.SMTP_PASS || 'test-pass'
+                    }
+                });
+
+                await transporter.sendMail({
+                    from: '"Fleet Ops" <noreply@fleetops.com>',
+                    to: tripResult.rows[0].client_corporate_email,
+                    subject: 'Your trip is complete — you have 24 hours to submit feedback',
+                    text: `Your trip has been completed.\n\nYou have a 24-hour window to file a complaint if needed. After this window, all communication records will no longer be accessible.\n\nLink: ${process.env.CLIENT_ORIGIN || 'http://localhost:3000'}/booking/${tripId}`
+                });
+            } catch (emailErr) {
+                console.error('[trips] send completion email error:', emailErr);
+            }
+        }
 
         // ─────────────────────────────────────────────────────────────────
         // EXPLICIT CHANNEL CLOSURE — UX Guarantee

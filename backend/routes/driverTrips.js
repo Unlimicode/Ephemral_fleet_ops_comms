@@ -3,6 +3,7 @@ import { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { setSession, deleteSession } from '../config/redisHelpers.js';
 import { getIo } from '../socket/io.js';
+import nodemailer from 'nodemailer';
 
 const router = Router();
 
@@ -42,9 +43,9 @@ router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
 
         const trip = tripCheck.rows[0];
 
-        // Update trip status to in_progress
+        // Update trip status to accepted
         const updateResult = await query(
-            `UPDATE trips SET status = 'in_progress' WHERE id = $1 RETURNING *`,
+            `UPDATE trips SET status = 'accepted' WHERE id = $1 RETURNING *`,
             [tripId]
         );
 
@@ -116,6 +117,47 @@ router.patch('/:tripId/reject', requireAuth(['driver']), async (req, res) => {
     }
 });
 
+// ── PATCH /:tripId/start — Start Trip ────────────────────────────────────────
+// Architectural Note: The distinction between 'accepted' and 'in_progress' is critical.
+// 'accepted' means the driver has acknowledged the assignment and is en route.
+// 'in_progress' means the client has been physically picked up and the trip is underway.
+// This distinction ensures accurate audit trails and dispatch monitoring.
+router.patch('/:tripId/start', requireAuth(['driver']), async (req, res) => {
+    const { tripId } = req.params;
+    const driverId = req.user.id;
+
+    try {
+        const tripCheck = await query(
+            'SELECT id, status FROM trips WHERE id = $1 AND assigned_driver_id = $2',
+            [tripId, driverId]
+        );
+
+        if (tripCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found or not assigned to you' });
+        }
+
+        if (tripCheck.rows[0].status !== 'accepted') {
+            return res.status(409).json({ error: 'Trip must be in accepted status to start' });
+        }
+
+        const updateResult = await query(
+            `UPDATE trips SET status = 'in_progress' WHERE id = $1 RETURNING *`,
+            [tripId]
+        );
+
+        await query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['TRIP_STARTED', driverId, 'driver', tripId, {}]
+        );
+
+        return res.status(200).json(updateResult.rows[0]);
+    } catch (err) {
+        console.error('[driverTrips] start error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ── PATCH /:tripId/complete — Complete Trip ──────────────────────────────────
 router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;
@@ -124,7 +166,7 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     try {
         // Verify trip exists, is assigned to this driver, and has status in_progress
         const tripCheck = await query(
-            'SELECT id FROM trips WHERE id = $1 AND assigned_driver_id = $2 AND status = $3',
+            'SELECT id, client_corporate_email FROM trips WHERE id = $1 AND assigned_driver_id = $2 AND status = $3',
             [tripId, driverId, 'in_progress']
         );
 
@@ -144,6 +186,29 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
 
         // Create complaint window key
         await setSession(`complaint:window:${tripId}`, { active: true }, 86400);
+
+        // Send trip completion email to client
+        if (process.env.NODE_ENV !== 'test') {
+            try {
+                const transporter = nodemailer.createTransport({
+                    host: process.env.SMTP_HOST || 'localhost',
+                    port: process.env.SMTP_PORT || 1025,
+                    auth: {
+                        user: process.env.SMTP_USER || 'test-user',
+                        pass: process.env.SMTP_PASS || 'test-pass'
+                    }
+                });
+
+                await transporter.sendMail({
+                    from: '"Fleet Ops" <noreply@fleetops.com>',
+                    to: tripCheck.rows[0].client_corporate_email,
+                    subject: 'Your trip is complete — you have 24 hours to submit feedback',
+                    text: `Your trip has been completed.\n\nYou have a 24-hour window to file a complaint if needed. After this window, all communication records will no longer be accessible.\n\nLink: ${process.env.CLIENT_ORIGIN || 'http://localhost:3000'}/booking/${tripId}`
+                });
+            } catch (emailErr) {
+                console.error('[driverTrips] send completion email error:', emailErr);
+            }
+        }
 
         // Update driver availability
         await setSession(`driver:availability:${driverId}`, { status: 'available', updated_at: new Date().toISOString() });

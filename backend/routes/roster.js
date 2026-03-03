@@ -168,4 +168,65 @@ router.get('/drivers', requireAuth(['fleet_manager']), async (req, res) => {
     }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /audit - Read-Only Audit Log Retrieval (Append-Only Enforcement)
+// ─────────────────────────────────────────────────────────────────────────────
+// Architectural Note: The audit log is explicitly append-only by design.
+// This endpoint is functionally read-only. No update or delete endpoint exists
+// or will ever exist for audit log entries. This is physically enforced at the
+// PostgreSQL database role level as mapped in Phase 2.2 constraints cleanly.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/audit', requireAuth(['fleet_manager']), async (req, res) => {
+    let { action_type, limit = 50, offset = 0 } = req.query;
+
+    limit = parseInt(limit, 10);
+    offset = parseInt(offset, 10);
+
+    if (isNaN(limit) || limit < 1) limit = 50;
+    if (limit > 200) limit = 200;
+    if (isNaN(offset) || offset < 0) offset = 0;
+
+    try {
+        let entriesQuery;
+        let countQuery;
+        let queryParams = [];
+
+        if (action_type) {
+            entriesQuery = `
+                SELECT id, action_type, actor_id, actor_role, target_id, details, timestamp
+                FROM audit_log
+                WHERE action_type = $1
+                ORDER BY timestamp DESC
+                LIMIT $2 OFFSET $3
+            `;
+            countQuery = `SELECT COUNT(*) FROM audit_log WHERE action_type = $1`;
+            queryParams = [action_type, limit, offset];
+        } else {
+            entriesQuery = `
+                SELECT id, action_type, actor_id, actor_role, target_id, details, timestamp
+                FROM audit_log
+                ORDER BY timestamp DESC
+                LIMIT $1 OFFSET $2
+            `;
+            countQuery = `SELECT COUNT(*) FROM audit_log`;
+            queryParams = [limit, offset];
+        }
+
+        const countResult = await pool.query(countQuery, action_type ? [action_type] : []);
+        const total_count = parseInt(countResult.rows[0].count, 10);
+
+        const entriesResult = await pool.query(entriesQuery, queryParams);
+
+        return res.status(200).json({
+            entries: entriesResult.rows,
+            total_count,
+            limit,
+            offset
+        });
+    } catch (err) {
+        console.error('[roster] GET /audit error:', err);
+        return res.status(500).json({ error: 'Internal server error while retrieving audit logs' });
+    }
+});
+
 export default router;

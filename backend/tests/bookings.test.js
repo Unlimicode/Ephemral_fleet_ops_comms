@@ -190,4 +190,20 @@ describe('Client Authentication & Privacy Guarantees', () => {
 
         expect(response.body).toHaveProperty('error', 'Invalid or expired access link');
     });
+
+    it('Scenario 7: Booking history data minimisation', async () => {
+        const response = await request(app)
+            .get(`${API}/history`)
+            .set('Cookie', clientSessionCookie)
+            .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBeGreaterThan(0);
+
+        // Assert no entry contains assigned_driver_id
+        response.body.forEach(trip => {
+            expect(trip).not.toHaveProperty('assigned_driver_id');
+            expect(trip).toHaveProperty('pickup_location');
+        });
+    });
 });

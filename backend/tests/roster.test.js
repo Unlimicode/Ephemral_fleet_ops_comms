@@ -205,4 +205,14 @@ describe('Roster & Vehicle Management API', () => {
         expect(vehicleAudit.rows.length).toBe(1);
         expect(vehicleAudit.rows[0].details.registration_number).toBe('VAN-444');
     });
+
+    it('Test 8: Audit log read endpoint returns entries and total_count', async () => {
+        const res = await request(app)
+            .get('/api/roster/audit')
+            .set('Authorization', `Bearer ${managerToken}`);
+
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body.entries)).toBe(true);
+        expect(res.body.total_count).toBeGreaterThanOrEqual(2);
+    });
 });

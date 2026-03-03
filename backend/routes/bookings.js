@@ -197,6 +197,31 @@ router.get('/session', async (req, res) => {
     }
 });
 
+// ── GET /history — Client Booking History ────────────────────────────────────
+// Architectural Note: Booking history is scoped strictly to the authenticated
+// client's corporate email — a client cannot query another client's history.
+// The cookie session proves identity without requiring a persistent account,
+// explicitly enforcing identity bounds natively.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/history', requireClientAuth, async (req, res) => {
+    const { client_corporate_email } = req.client;
+
+    try {
+        const historyResult = await query(
+            `SELECT id, status, pickup_location, destination, pickup_time, flight_number
+             FROM trips 
+             WHERE client_corporate_email = $1 
+             ORDER BY pickup_time DESC`,
+            [client_corporate_email]
+        );
+
+        return res.status(200).json(historyResult.rows);
+    } catch (err) {
+        console.error('[bookings] history error:', err);
+        return res.status(500).json({ error: 'Internal server error while retrieving history' });
+    }
+});
+
 // ── GET /:tripId — View Booking Details (Protected) ──────────────────────────
 // Protected explicit hydration channel for client app usage.
 // PRIVACY/SECURITY ARCHITECTURE:
