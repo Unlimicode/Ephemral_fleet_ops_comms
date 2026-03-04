@@ -6,7 +6,6 @@ import { getSession } from '../config/redisHelpers.js';
 import redisClient from '../config/redis.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { getIo } from '../socket/io.js';
-import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 
 const router = express.Router();
 
@@ -109,16 +108,6 @@ router.post('/:tripId', requireClientAuth, async (req, res) => {
                     })
                 ]
             );
-        }
-
-        try {
-            emitDashboardEvent(getIo(), 'complaint_filed', {
-                trip_id: tripId,
-                complaint_id: complaintId,
-                timestamp: new Date().toISOString()
-            });
-        } catch (_) {
-            // io not initialised in this context (e.g. test environments); skip emit
         }
 
         return res.status(201).json({
