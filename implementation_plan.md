@@ -307,4 +307,20 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 
 ---
 
+### Phase 8.3 — Frontend Service Worker Push Event Handler
+**Files created:** `frontend/public/sw.js`, `frontend/src/hooks/usePushNotifications.js`, `frontend/src/components/PushNotificationToggle.jsx`  
+**Files modified:** `frontend/src/index.css`, `frontend/tailwind.config.js`, `frontend/package.json`, `frontend/package-lock.json`, `frontend/postcss.config.js`
+
+**Tailwind CSS v3:** Installed as a dev dependency alongside `postcss` and `autoprefixer`. `npx tailwindcss init -p` generated `tailwind.config.js` and `postcss.config.js`. Content paths set to `['./index.html', './src/**/*.{js,jsx}']` so Vite's PostCSS pipeline scans all source files and includes only the utility classes in use. The three `@tailwind` directives were prepended to `frontend/src/index.css` so the Tailwind layers are injected into the build output.
+
+**`frontend/public/sw.js`:** Service worker with two event handlers. The `push` handler deserialises the JSON payload, constructs a notification options object, and calls `self.registration.showNotification`. `requireInteraction` is set to `true` when `data.type === 'trip_assigned'` — this keeps the notification on screen until the driver actively dismisses it, preventing missed assignment notifications on a busy device. The `notificationclick` handler closes the notification, then uses `clients.matchAll` to focus an existing tab at the target URL before opening a new window — preventing duplicate tabs when the driver taps the notification.
+
+**`frontend/src/hooks/usePushNotifications.js`:** React hook managing the full push subscription lifecycle. On mount, fetches the VAPID public key from `GET /api/push/vapid-public-key`, registers `/sw.js` via `navigator.serviceWorker.register`, and checks for an existing subscription via `pushManager.getSubscription`. `subscribe(token)` accepts a driver auth token as a parameter so the hook is decoupled from any storage or auth context assumption — the calling component supplies the token from wherever auth state lives at the time of invocation. `unsubscribe(token)` follows the same pattern. The `urlBase64ToUint8Array` helper converts the VAPID public key from URL-safe base64 to the `Uint8Array` format required by `pushManager.subscribe` — standard `atob` does not handle the URL-safe character substitutions or absent padding. Returns `{ supported, subscribed, subscribe, unsubscribe, loading, error }`.
+
+**`frontend/src/components/PushNotificationToggle.jsx`:** Driver-facing toggle button consuming `usePushNotifications`. Renders `null` when `supported` is false. Uses `bg-green-600` (subscribed) and `bg-blue-600` (not subscribed) Tailwind classes for clear visual state distinction. Passes the `token` prop through to `subscribe` and `unsubscribe`. Renders the error message below the button in `text-red-600` text when present.
+
+**Verification:** `npm run build` completed with 32 modules transformed, 0 errors, in 1.37s.
+
+---
+
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*
