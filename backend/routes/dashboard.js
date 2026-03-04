@@ -157,4 +157,129 @@ router.get('/overview', requireAuth(['fleet_manager']), async (req, res) => {
     }
 });
 
+/**
+ * GET /audit
+ * Exposes the append-only audit trail for fleet manager review.
+ * Every sensitive action in the system — session creation, session
+ * destruction, message archive access, complaint filing — is recorded
+ * here and cannot be modified or deleted.
+ */
+router.get('/audit', requireAuth(['fleet_manager']), async (req, res) => {
+    try {
+        const { action_type, actor_role, limit: queryLimit, offset: queryOffset } = req.query;
+
+        let limit = parseInt(queryLimit, 10) || 50;
+        if (limit > 200) limit = 200;
+        const offset = parseInt(queryOffset, 10) || 0;
+
+        const conditions = [];
+        const params = [];
+        let paramIndex = 1;
+
+        if (action_type) {
+            conditions.push(`action_type = $${paramIndex++}`);
+            params.push(action_type);
+        }
+
+        if (actor_role) {
+            conditions.push(`actor_role = $${paramIndex++}`);
+            params.push(actor_role);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+        const countRes = await query(`SELECT COUNT(*) FROM audit_log ${whereClause}`, params);
+        const total_count = parseInt(countRes.rows[0].count, 10);
+
+        const dataRes = await query(
+            `SELECT * FROM audit_log ${whereClause} ORDER BY timestamp DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
+            [...params, limit, offset]
+        );
+
+        return res.status(200).json({
+            entries: dataRes.rows,
+            total_count,
+            limit,
+            offset
+        });
+
+    } catch (err) {
+        console.error('[dashboard] audit error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * GET /compliance-report
+ * This report is the quantitative answer to Research Question 4 — it produces
+ * a documented record of data minimisation in practice that can be presented
+ * to regulators and used as evidence in the research validation chapter.
+ */
+router.get('/compliance-report', requireAuth(['fleet_manager']), async (req, res) => {
+    try {
+        const auditActionQuery = await query(`SELECT action_type, COUNT(*) FROM audit_log GROUP BY action_type`);
+        const complaintStatusQuery = await query(`SELECT status, COUNT(*) FROM complaints GROUP BY status`);
+        const tripStatusQuery = await query(`SELECT status, COUNT(*) FROM trips GROUP BY status`);
+
+        const expiredNaturallyQuery = await query(`
+            SELECT COUNT(t.id) 
+            FROM trips t 
+            LEFT JOIN complaints c ON t.id = c.trip_id 
+            WHERE t.status = 'completed' AND c.id IS NULL
+        `);
+
+        // Convert db grouped rows into hash maps natively
+        const auditCounts = {};
+        auditActionQuery.rows.forEach(r => { auditCounts[r.action_type] = parseInt(r.count, 10); });
+
+        const complaintCounts = {};
+        complaintStatusQuery.rows.forEach(r => { complaintCounts[r.status] = parseInt(r.count, 10); });
+
+        const tripCounts = {};
+        tripStatusQuery.rows.forEach(r => { tripCounts[r.status] = parseInt(r.count, 10); });
+
+        const data_expired_naturally = parseInt(expiredNaturallyQuery.rows[0].count, 10);
+
+        // Aggregate session metrics logically across the two parallel APIs (trips / driverTrips) natively
+        const sessionsCreated = (auditCounts['TRIP_SESSION_CREATED'] || 0) + (auditCounts['TRIP_ACCEPTED'] || 0);
+        const sessionsDestroyed = (auditCounts['TRIP_SESSION_DESTROYED'] || 0) + (auditCounts['TRIP_COMPLETED'] || 0);
+
+        // Calculate currently active sessions structurally protecting against negative bounds logically
+        const currentlyActive = Math.max(0, sessionsCreated - sessionsDestroyed);
+
+        // Total complaints natively calculated 
+        const totalComplaints = Object.values(complaintCounts).reduce((a, b) => a + b, 0);
+
+        // Total audit entries natively globally scaled
+        const totalAuditEntries = Object.values(auditCounts).reduce((a, b) => a + b, 0);
+
+        return res.status(200).json({
+            generated_at: new Date().toISOString(),
+            sessions: {
+                created: sessionsCreated,
+                destroyed: sessionsDestroyed,
+                currently_active: currentlyActive
+            },
+            data_lifecycle: {
+                trips_completed: tripCounts['completed'] || 0,
+                message_archives_created: auditCounts['MESSAGE_ARCHIVE_CREATED'] || 0,
+                message_archives_accessed: auditCounts['MESSAGE_ARCHIVE_ACCESSED'] || 0,
+                data_expired_naturally: data_expired_naturally
+            },
+            complaints: {
+                total_filed: totalComplaints,
+                pending: (complaintCounts['open'] || 0) + (complaintCounts['pending'] || 0),
+                under_investigation: complaintCounts['under_investigation'] || 0,
+                resolved: complaintCounts['resolved'] || 0,
+                escalated: complaintCounts['escalated'] || 0
+            },
+            audit_entries_total: totalAuditEntries
+        });
+
+    } catch (err) {
+        console.error('[dashboard] compliance report error:', err);
+        return res.status(500).json({ error: 'Internal server error while formulating compliance report natively' });
+    }
+});
+
 export default router;

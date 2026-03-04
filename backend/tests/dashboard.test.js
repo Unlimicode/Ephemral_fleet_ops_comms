@@ -191,4 +191,28 @@ describe('Privacy Dashboard API', () => {
         expect(res.body.complaint_filed).toBe(true);
     });
 
+    it('Audit trail returns entries', async () => {
+        const res = await request(app)
+            .get(`${API}/audit`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(Array.isArray(res.body.entries)).toBe(true);
+        expect(res.body.total_count).toBeGreaterThan(0);
+    });
+
+    it('Compliance report structure', async () => {
+        const res = await request(app)
+            .get(`${API}/compliance-report`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(res.body).toHaveProperty('generated_at');
+        expect(res.body).toHaveProperty('sessions');
+        expect(res.body).toHaveProperty('data_lifecycle');
+        expect(res.body).toHaveProperty('complaints');
+        expect(res.body).toHaveProperty('audit_entries_total');
+        expect(typeof res.body.data_lifecycle.trips_completed).toBe('number');
+    });
+
 });

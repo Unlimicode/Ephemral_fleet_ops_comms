@@ -1,0 +1,62 @@
+(node:9620) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+  console.log
+    [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+  console.log
+    [socket] driver joined room trip:8f348477-f2ec-4239-b70d-958af3900d95 (Socket: t8C57KuDYOHFgujvAAAB)
+
+      at Namespace.log (socket/io.js:43:17)
+
+  console.warn
+    [socket] Auth failed for driver on trip 99999999-9999-9999-9999-999999999999: No session key
+
+    [0m [90m 34 |[39m
+     [90m 35 |[39m         [36mif[39m ([33m![39msessionData) {
+    [31m[1m>[22m[39m[90m 36 |[39m             console[33m.[39mwarn([32m`[socket] Auth failed for ${role} on trip ${tripId}: No session key`[39m)[33m;[39m
+     [90m    |[39m                     [31m[1m^[22m[39m
+     [90m 37 |[39m             socket[33m.[39memit([32m'auth_error'[39m[33m,[39m [32m'No active session for this trip'[39m)[33m;[39m
+     [90m 38 |[39m             [36mreturn[39m socket[33m.[39mdisconnect([36mtrue[39m)[33m;[39m
+     [90m 39 |[39m         }[0m
+
+      at Namespace.warn (socket/io.js:36:21)
+
+  console.log
+    [socket] client joined room trip:8f348477-f2ec-4239-b70d-958af3900d95 (Socket: 6GyKuHzf1ixMtSPEAAAF)
+
+      at Namespace.log (socket/io.js:43:17)
+
+  console.log
+    [socket] driver disconnected from room trip:8f348477-f2ec-4239-b70d-958af3900d95 (Socket: t8C57KuDYOHFgujvAAAB)
+
+      at Socket.log (socket/io.js:85:21)
+          at Map.forEach (<anonymous>)
+          at Array.map (<anonymous>)
+
+  console.log
+    [socket] client disconnected from room trip:8f348477-f2ec-4239-b70d-958af3900d95 (Socket: 6GyKuHzf1ixMtSPEAAAF)
+
+      at Socket.log (socket/io.js:85:21)
+          at Map.forEach (<anonymous>)
+          at Array.map (<anonymous>)
+
+PASS tests/relay.test.js (13.181 s)
+  WebSocket Relay & Ephemeral Privacy Guarantees
+    √ Test 1: Creates a trip and establishes a Valid Session Connection (4221 ms)
+    √ Test 2: Rejects Invalid Session connections (350 ms)
+    √ Test 3: Mediates Message Relay Broadcast without persistent storage (699 ms)
+    √ Test 4: Message buffer created in Redis (688 ms)
+    √ Test 5: Broadcasts explicit Channel Closure upon Trip Completion (1949 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        13.23 s, estimated 16 s
+Ran all test suites matching tests/relay.test.js.

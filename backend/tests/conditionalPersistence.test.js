@@ -42,6 +42,10 @@ describe('Conditional Persistence Lifecycle Validation', () => {
         await connectRedis();
 
         // 1. Setup Global Context Metrics
+        await pool.query("DELETE FROM trips WHERE client_corporate_email LIKE 'client_%@corp.com'");
+        await pool.query("DELETE FROM vehicles WHERE registration_number = 'V-MAS'");
+        await pool.query("DELETE FROM drivers WHERE work_email = 'dm@corp.com'");
+        await pool.query("DELETE FROM fleet_managers WHERE work_email = 'admin.master@corp.com'");
         const hash = await bcrypt.hash('masterpass', 10);
         const managerResult = await pool.query(
             "INSERT INTO fleet_managers (full_name, work_email, password_hash) VALUES ('Admin Master', 'admin.master@corp.com', $1) RETURNING id",

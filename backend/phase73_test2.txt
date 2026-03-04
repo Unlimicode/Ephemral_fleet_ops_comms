@@ -1,0 +1,237 @@
+
+> backend@1.0.0 test
+> node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --runInBand
+
+(node:15180) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS tests/trips.test.js (15.161 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/roster.test.js (15.496 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/relay.test.js (12.462 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+    console.log
+      [socket] driver joined room trip:e4a3e6ab-148f-4eff-9119-467ec620da85 (Socket: CCHr5BLFnzWCGSlFAAAB)
+
+      at Namespace.log (socket/io.js:43:17)
+
+    console.warn
+      [socket] Auth failed for driver on trip 99999999-9999-9999-9999-999999999999: No session key
+
+    [0m [90m 34 |[39m
+     [90m 35 |[39m         [36mif[39m ([33m![39msessionData) {
+    [31m[1m>[22m[39m[90m 36 |[39m             console[33m.[39mwarn([32m`[socket] Auth failed for ${role} on trip ${tripId}: No session key`[39m)[33m;[39m
+     [90m    |[39m                     [31m[1m^[22m[39m
+     [90m 37 |[39m             socket[33m.[39memit([32m'auth_error'[39m[33m,[39m [32m'No active session for this trip'[39m)[33m;[39m
+     [90m 38 |[39m             [36mreturn[39m socket[33m.[39mdisconnect([36mtrue[39m)[33m;[39m
+     [90m 39 |[39m         }[0m
+
+      at Namespace.warn (socket/io.js:36:21)
+
+    console.log
+      [socket] client joined room trip:e4a3e6ab-148f-4eff-9119-467ec620da85 (Socket: uPwjTu2o_5L9_qaaAAAF)
+
+      at Namespace.log (socket/io.js:43:17)
+
+    console.log
+      [socket] driver disconnected from room trip:e4a3e6ab-148f-4eff-9119-467ec620da85 (Socket: CCHr5BLFnzWCGSlFAAAB)
+
+      at Socket.log (socket/io.js:85:21)
+          at Map.forEach (<anonymous>)
+          at Array.map (<anonymous>)
+
+    console.log
+      [socket] client disconnected from room trip:e4a3e6ab-148f-4eff-9119-467ec620da85 (Socket: uPwjTu2o_5L9_qaaAAAF)
+
+      at Socket.log (socket/io.js:85:21)
+          at Map.forEach (<anonymous>)
+          at Array.map (<anonymous>)
+
+PASS tests/investigation.test.js (8.373 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/driverTrips.test.js (20.229 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/driverAuth.test.js (7.701 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/dashboard.test.js (18.403 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+FAIL tests/conditionalPersistence.test.js
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+  ● Conditional Persistence Lifecycle Validation › Scenario 1: Clean trip, no complaint, data wiped
+
+    error: duplicate key value violates unique constraint "fleet_managers_work_email_key"
+
+    [0m [90m 44 |[39m         [90m// 1. Setup Global Context Metrics[39m
+     [90m 45 |[39m         [36mconst[39m hash [33m=[39m [36mawait[39m bcrypt[33m.[39mhash([32m'masterpass'[39m[33m,[39m [35m10[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 46 |[39m         [36mconst[39m managerResult [33m=[39m [36mawait[39m pool[33m.[39mquery(
+     [90m    |[39m                               [31m[1m^[22m[39m
+     [90m 47 |[39m             [32m"INSERT INTO fleet_managers (full_name, work_email, password_hash) VALUES ('Admin Master', 'admin.master@corp.com', $1) RETURNING id"[39m[33m,[39m
+     [90m 48 |[39m             [hash]
+     [90m 49 |[39m         )[33m;[39m[0m
+
+      at node_modules/pg-pool/index.js:45:11
+      at Object.<anonymous> (tests/conditionalPersistence.test.js:46:31)
+
+  ● Conditional Persistence Lifecycle Validation › Scenario 2: Complaint filed within window, messages conditionally persisted
+
+    error: duplicate key value violates unique constraint "fleet_managers_work_email_key"
+
+    [0m [90m 44 |[39m         [90m// 1. Setup Global Context Metrics[39m
+     [90m 45 |[39m         [36mconst[39m hash [33m=[39m [36mawait[39m bcrypt[33m.[39mhash([32m'masterpass'[39m[33m,[39m [35m10[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 46 |[39m         [36mconst[39m managerResult [33m=[39m [36mawait[39m pool[33m.[39mquery(
+     [90m    |[39m                               [31m[1m^[22m[39m
+     [90m 47 |[39m             [32m"INSERT INTO fleet_managers (full_name, work_email, password_hash) VALUES ('Admin Master', 'admin.master@corp.com', $1) RETURNING id"[39m[33m,[39m
+     [90m 48 |[39m             [hash]
+     [90m 49 |[39m         )[33m;[39m[0m
+
+      at node_modules/pg-pool/index.js:45:11
+      at Object.<anonymous> (tests/conditionalPersistence.test.js:46:31)
+
+  ● Conditional Persistence Lifecycle Validation › Scenario 3: Complaint window expires before complaint filed
+
+    error: duplicate key value violates unique constraint "fleet_managers_work_email_key"
+
+    [0m [90m 44 |[39m         [90m// 1. Setup Global Context Metrics[39m
+     [90m 45 |[39m         [36mconst[39m hash [33m=[39m [36mawait[39m bcrypt[33m.[39mhash([32m'masterpass'[39m[33m,[39m [35m10[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 46 |[39m         [36mconst[39m managerResult [33m=[39m [36mawait[39m pool[33m.[39mquery(
+     [90m    |[39m                               [31m[1m^[22m[39m
+     [90m 47 |[39m             [32m"INSERT INTO fleet_managers (full_name, work_email, password_hash) VALUES ('Admin Master', 'admin.master@corp.com', $1) RETURNING id"[39m[33m,[39m
+     [90m 48 |[39m             [hash]
+     [90m 49 |[39m         )[33m;[39m[0m
+
+      at node_modules/pg-pool/index.js:45:11
+      at Object.<anonymous> (tests/conditionalPersistence.test.js:46:31)
+
+PASS tests/bookings.test.js (8.125 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/complaints.test.js (12.638 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/auth.test.js (5.89 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+
+Test Suites: 1 failed, 10 passed, 11 total
+Tests:       3 failed, 58 passed, 61 total
+Snapshots:   0 total
+Time:        129.736 s
+Ran all test suites.
