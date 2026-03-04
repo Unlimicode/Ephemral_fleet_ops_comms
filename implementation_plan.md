@@ -241,6 +241,52 @@ This document is the engineering log for the system build. Each entry records wh
 **What was built:** `GET /api/dashboard/audit` — paginated audit log with optional `action_type` and `actor_role` filters. `GET /api/dashboard/compliance-report` — aggregates audit log counts by action type, complaint counts by status, trip counts by status, returns structured report with `sessions`, `data_lifecycle`, `complaints`, and `audit_entries_total` fields.  
 **Architectural relevance:** The compliance report is the quantitative answer to Research Question 4. It produces a documented record of data minimisation in practice — sessions created, destroyed, data expired naturally, data conditionally persisted — suitable for presentation to regulators and research examiners.
 
+### Phase 7.4 — Privacy Dashboard Integration Tests
+**Files created:** `backend/tests/privacyDashboard.test.js`  
+**What was built:** Integration test suite executing the complete trip lifecycle against dashboard endpoints. Five sequential tests covering: (1) `GET /api/dashboard/trips/:tripId` after assignment asserting sessions inactive; (2) the same endpoint after `PATCH /api/driver/trips/:tripId/accept` asserting sessions active with positive TTLs; (3) after `PATCH /api/driver/trips/:tripId/start` and `PATCH /api/driver/trips/:tripId/complete` asserting sessions destroyed and complaint window active; (4) `GET /api/dashboard/overview` asserting `sessions_destroyed_today >= 1`; (5) `GET /api/dashboard/compliance-report` asserting `sessions.destroyed >= 1` and `data_lifecycle.trips_completed >= 1`.  
+**Architectural relevance:** The test suite is machine-verified evidence that the Privacy Dashboard accurately reflects all five phases of Ephemeral Identity across the entire trip lifecycle. The setup hook revealed that the `/complete` endpoint enforces a strict `in_progress` precondition — the test mirrors the real operational sequence: assign → accept → start → complete.
+
+---
+
+## Sprint 8 — Push Notifications
+
+### Phase 8.1 — VAPID Configuration and Push Subscription Storage
+**Files created:** `backend/config/webpush.js`, `backend/routes/push.js`, `backend/tests/push.test.js`, `backend/scripts/migratePushSubscriptions.js`  
+**Files modified:** `backend/database/schema.sql`, `backend/routes/index.js`, `backend/.env.example`  
+
+**Database change:** Added `push_subscriptions` table to `backend/database/schema.sql` and applied to the live Supabase database.
+
+```sql
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  driver_id  UUID        NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  endpoint   TEXT        NOT NULL UNIQUE,
+  p256dh     TEXT        NOT NULL,
+  auth       TEXT        NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+`endpoint` is `UNIQUE` to support upsert on subscription refresh. `ON DELETE CASCADE` removes subscriptions automatically when a driver account is deleted, preventing push attempts to stale endpoints.
+
+**Endpoint signatures:**
+
+| Method | Path | Auth | Status | Response |
+|--------|------|------|--------|----------|
+| `GET` | `/api/push/vapid-public-key` | None | 200 | `{ publicKey: string }` |
+| `POST` | `/api/push/subscribe` | `driver` | 201 | `{ message: 'Push subscription registered.' }` |
+| `DELETE` | `/api/push/subscribe` | `driver` | 200 | `{ message: 'Push subscription removed.' }` |
+
+`POST /api/push/subscribe` accepts `{ endpoint, keys: { p256dh, auth } }`. It performs `INSERT ... ON CONFLICT (endpoint) DO UPDATE SET p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth`. This upsert handles browser subscription refresh: when a browser rotates its encryption keys, the endpoint stays the same but `p256dh` and `auth` change. Without the upsert, the refreshed subscription would silently fail on the next push attempt.
+
+`DELETE /api/push/subscribe` guards with `driver_id = req.user.id` to prevent a driver from removing another driver's subscription.
+
+`GET /api/push/vapid-public-key` is public. The VAPID public key is the public half of an asymmetric key pair and safe to expose to the PWA frontend. The private key is used server-side to sign push requests and never transmitted.
+
+**VAPID configuration:** `backend/config/webpush.js` initialises the `web-push` library with `VAPID_MAILTO`, `VAPID_PUBLIC_KEY`, and `VAPID_PRIVATE_KEY` from environment variables. Keys are generated once via `node -e "import('web-push').then(m => console.log(m.default.generateVAPIDKeys()))"` and stored as environment variables — never committed to the repository.
+
+**Test results:** 3 new tests in `backend/tests/push.test.js`. Full suite: 13 suites, 69 tests, 0 failures.
+
 ---
 
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*

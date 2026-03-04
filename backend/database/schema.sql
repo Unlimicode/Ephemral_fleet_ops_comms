@@ -83,3 +83,19 @@ CREATE TABLE IF NOT EXISTS audit_log (
   ip_address  INET,
   details     JSONB
 );
+
+-- ── 7. push_subscriptions ─────────────────────────────────────
+-- Stores Web Push subscription objects registered by drivers via the PWA.
+-- endpoint, p256dh, and auth together form the subscription object generated
+-- by the browser's PushManager. endpoint is unique per browser/device
+-- combination — the same browser always produces the same endpoint.
+-- ON DELETE CASCADE removes subscriptions automatically when a driver account
+-- is deleted, preventing push attempts to stale or orphaned endpoints.
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  driver_id  UUID        NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  endpoint   TEXT        NOT NULL UNIQUE,
+  p256dh     TEXT        NOT NULL,
+  auth       TEXT        NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

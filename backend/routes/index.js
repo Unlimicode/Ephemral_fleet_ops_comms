@@ -11,6 +11,7 @@ import driverTripsRouter from './driverTrips.js';
 import rosterRouter from './roster.js';
 import vehiclesRouter from './vehicles.js';
 import dashboardRouter from './dashboard.js';
+import pushRouter from './push.js';
 
 const router = Router();
 
@@ -33,5 +34,8 @@ router.use('/api/vehicles', vehiclesRouter);
 
 // Dashboard endpoints
 router.use('/api/dashboard', dashboardRouter);
+
+// Push notification endpoints
+router.use('/api/push', pushRouter);
 
 export default router;
