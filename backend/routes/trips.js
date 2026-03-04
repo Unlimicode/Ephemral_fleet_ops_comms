@@ -109,7 +109,20 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
             [driver_id, vehicle_id, tripId]
         );
 
+        await client.query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [
+                'TRIP_ASSIGNED',
+                driver_id,
+                'fleet_manager',
+                updateResult.rows[0].id,
+                JSON.stringify({ driver_id, vehicle_id, trip_id: tripId }),
+            ]
+        );
+
         await client.query('COMMIT');
+
 
         emitDashboardEvent('trip_assigned', { trip_id: tripId, driver_id, status: 'accepted' });
 

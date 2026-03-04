@@ -322,5 +322,18 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 **Verification:** `npm run build` completed with 32 modules transformed, 0 errors, in 1.37s.
 
 ---
+### Phase 8.4 — Push Notification Integration Tests
+**Files created:** `backend/tests/pushNotifications.test.js`  
+**Files modified:** `backend/routes/trips.js`, `backend/routes/index.js`
+
+**`backend/routes/trips.js`:** Added `INSERT INTO audit_log` inside the assign handler's transaction, after `UPDATE trips` and before `COMMIT`. The entry records `action_type = 'TRIP_ASSIGNED'`, `actor_role = 'fleet_manager'`, `target_id = trip.id`, and a JSON `details` object containing `driver_id`, `vehicle_id`, and `trip_id`. This makes trip assignment auditable and consistent with complaint status changes, which already write to `audit_log`. It also enables the Test 3 assertion in `pushNotifications.test.js`.
+
+**`backend/routes/index.js`:** Added `import complaintsRouter from './complaints.js'` and mounted it at `/api/complaints`. The complaints router existed in production code but was absent from the index router aggregator — it was only reachable by the `complaints.test.js` suite which mounted it directly. Adding it here makes `/api/complaints` reachable via the full application router used by all other suites and by the deployed server.
+
+**`backend/tests/pushNotifications.test.js`:** Six integration tests covering the complete push notification lifecycle. Mounts the full `routes/index.js` router and uses `cookieParser` for the Test 4 client session. Test 3 asserts a `TRIP_ASSIGNED` audit entry after assignment, confirming the assignment completes despite push failure. Test 4 seeds a completed trip, creates a client session JWT (`role: 'client'`, `tripId`) as the `client_session` cookie, seeds the Redis complaint window key via `setSession`, files the complaint via `POST /api/complaints/:tripId`, updates status to `under_investigation`, and asserts 200 with the updated status. Tests 3 and 4 confirm push failures are caught and do not block core operations. Test 5 asserts the subscription row is deleted after unsubscribe. Test 6 asserts 401 on an unauthenticated subscription attempt.
+
+**Test results:** 6 new tests in `backend/tests/pushNotifications.test.js`. Full suite: 14 suites, 77 tests, 0 failures.
+
+---
 
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*

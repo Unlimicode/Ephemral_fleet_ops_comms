@@ -12,6 +12,7 @@ import rosterRouter from './roster.js';
 import vehiclesRouter from './vehicles.js';
 import dashboardRouter from './dashboard.js';
 import pushRouter from './push.js';
+import complaintsRouter from './complaints.js';
 
 const router = Router();
 
@@ -37,5 +38,8 @@ router.use('/api/dashboard', dashboardRouter);
 
 // Push notification endpoints
 router.use('/api/push', pushRouter);
+
+// Complaint management endpoints
+router.use('/api/complaints', complaintsRouter);
 
 export default router;
