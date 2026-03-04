@@ -287,6 +287,24 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 
 **Test results:** 3 new tests in `backend/tests/push.test.js`. Full suite: 13 suites, 69 tests, 0 failures.
 
+### Phase 8.2 — Push Notification Delivery on Trip Assignment and Complaint Review
+**Files created:** `backend/utils/sendPushNotification.js`  
+**Files modified:** `backend/routes/trips.js`, `backend/routes/complaints.js`, `backend/tests/push.test.js`, `backend/config/webpush.js`, `backend/package.json`  
+
+**`backend/utils/sendPushNotification.js`:** Exports `sendPushNotification(driverId, payload)`. Queries `push_subscriptions` for all rows matching `driver_id`. For each row, calls `webpush.sendNotification`. If the push service returns 404 or 410, the subscription row is deleted — these status codes indicate the browser has unsubscribed or the subscription has expired, and retaining the row would cause repeated failed delivery attempts. All other errors are logged and swallowed. Push notifications are best-effort and must not block callers. `setVapidDetails` is called inside the function body, not at module load time, so importing any route that transitively imports this utility does not throw in test environments where VAPID env vars are absent.
+
+**`backend/config/webpush.js`:** Removed the `setVapidDetails` call from module scope. The call was moved into `sendPushNotification` to prevent a throw at module initialisation time when VAPID env vars are not set — which affects all test suites that import any route file via `routes/index.js`.
+
+**`backend/routes/trips.js`:** Added `import { sendPushNotification }` at line 15. After `emitDashboardEvent` in the `PATCH /:tripId/assign` handler, added a `try/catch` block calling `sendPushNotification(driver_id, { title: 'New Trip Assignment', body: 'Pickup: ... → ...', tripId, type: 'trip_assigned' })`. The `try/catch` isolation ensures a push failure cannot affect the 200 assignment response.
+
+**`backend/routes/complaints.js`:** Added `import { sendPushNotification }` at line 10. In the `PATCH /:complaintId/status` handler, before the `return` statement, added a conditional block: when `status === 'under_investigation'`, queries `trips.assigned_driver_id` for the complaint's trip and calls `sendPushNotification` with a generic `'Trip Review In Progress'` body. The notification body contains no complaint details or client information — only that a review is in progress. Wrapped in `try/catch` so a push failure does not affect the status update response.
+
+**`backend/tests/push.test.js`:** Added `managerToken`, `vehicleId`, `tripId` variables. Extended `beforeAll` to seed a vehicle and a pending trip and generate a manager JWT for the assignment test. Extended `afterAll` to clean up those resources. Added two new `it()` blocks:  
+- *Push notification sent on trip assignment does not block assignment* — registers the mock push endpoint, calls `PATCH /api/trips/:tripId/assign`, asserts 200 and `status: 'accepted'`. The push fails silently because the mock endpoint is not a real push service.  
+- *Expired subscription is deleted after 410 response from push service* — monkey-patches `webpush.sendNotification` on the shared ESM module instance to throw `{ statusCode: 410 }`, inserts a subscription row, calls `sendPushNotification` directly, then asserts the row is deleted. The original method is restored in a `finally` block.
+
+**Test results:** 5 new tests in `backend/tests/push.test.js` (2 new + 3 existing). Full suite: 13 suites, 71 tests, 0 failures.
+
 ---
 
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*

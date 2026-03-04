@@ -7,6 +7,7 @@ import redisClient from '../config/redis.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
+import { sendPushNotification } from '../utils/sendPushNotification.js';
 
 const router = express.Router();
 
@@ -287,6 +288,26 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
                 })
             ]
         );
+
+        // When a complaint enters investigation, notify the assigned driver.
+        // The message body contains no complaint details or client information.
+        if (status === 'under_investigation') {
+            try {
+                const tripRes = await pool.query(
+                    'SELECT assigned_driver_id FROM trips WHERE id = $1',
+                    [updatedResult.rows[0].trip_id]
+                );
+                if (tripRes.rows.length > 0 && tripRes.rows[0].assigned_driver_id) {
+                    await sendPushNotification(tripRes.rows[0].assigned_driver_id, {
+                        title: 'Trip Review In Progress',
+                        body: 'A review has been opened for one of your recent trips.',
+                        type: 'complaint_review',
+                    });
+                }
+            } catch (err) {
+                console.error('[complaints] Push notification failed on review open:', err.message);
+            }
+        }
 
         return res.status(200).json(updatedResult.rows[0]);
 

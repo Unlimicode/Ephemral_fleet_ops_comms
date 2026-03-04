@@ -13,6 +13,7 @@ import { setSession, deleteSession, getSession } from '../config/redisHelpers.js
 import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import nodemailer from 'nodemailer';
+import { sendPushNotification } from '../utils/sendPushNotification.js';
 
 const router = Router();
 
@@ -112,7 +113,19 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
 
         emitDashboardEvent('trip_assigned', { trip_id: tripId, driver_id, status: 'accepted' });
 
-        return res.status(200).json(updateResult.rows[0]);
+        const trip = updateResult.rows[0];
+        try {
+            await sendPushNotification(driver_id, {
+                title: 'New Trip Assignment',
+                body: `Pickup: ${trip.pickup_location} → ${trip.destination}`,
+                tripId: trip.id,
+                type: 'trip_assigned',
+            });
+        } catch (err) {
+            console.error('[trips] Push notification failed on assignment:', err.message);
+        }
+
+        return res.status(200).json(trip);
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('[trips] assign error:', err);
