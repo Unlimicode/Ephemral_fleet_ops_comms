@@ -1,0 +1,188 @@
+﻿
+> backend@1.0.0 test
+> node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --runInBand --testPathPatterns=complaints|conditionalPersistence --verbose
+
+node.exe : (node:28212) ExperimentalWarning: VM Modules is an 
+experimental feature and might change at any time
+At line:1 char:1
++ & "D:\Programming\Tools/node.exe" 
+"C:\Users\ils\AppData\Roaming\npm/n ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:28212) Ex... 
+   nge at any time:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was 
+created)
+  console.log
+    [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+  console.log
+    [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+  console.error
+    [complaints] POST / error: Error: Socket.io has not been initialized. Call initIo first.
+        at getIo (D:\Programming\Development\Ephemral_fleet_ops_comms\backend\socket\io.js:98:15)
+        at getIo (D:\Programming\Development\Ephemral_fleet_ops_comms\backend\routes\complaints.js:114:28)
+        at processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+    [0m [90m 124 |[39m
+     [90m 125 |[39m     } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 126 |[39m         console[33m.[39merror([32m'[complaints] POST / error:'[39m[33m,[39m err)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 127 |[39m         [36mreturn[39m res[33m.[39mstatus([35m500[39m)[33m.[39mjson({ error[33m:[39m [32m'Internal server error'[39m })[33m;[39m
+     [90m 128 |[39m     }
+     [90m 129 |[39m })[33m;[39m[0m
+
+      at error (routes/complaints.js:126:17)
+
+FAIL tests/conditionalPersistence.test.js (18.223 s)
+  Conditional Persistence Lifecycle Validation
+    ΓêÜ Scenario 1: Clean trip, no complaint, data wiped (3265 
+ms)
+    ├ù Scenario 2: Complaint filed within window, messages 
+conditionally persisted (3283 ms)
+    ΓêÜ Scenario 3: Complaint window expires before complaint 
+filed (2705 ms)
+
+  ΓùÅ Conditional Persistence Lifecycle Validation ΓÇ║ Scenario 
+2: Complaint filed within window, messages conditionally 
+persisted
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 500
+
+    [0m [90m 148 |[39m             [33m.[39msend({ 
+category[33m:[39m [32m'professionalism'[39m[33m,[39m 
+description[33m:[39m [32m'Driver took wrong turns.'[39m 
+})[33m;[39m
+     [90m 149 |[39m
+    [31m[1m>[22m[39m[90m 150 |[39m         expect(res[33m
+.[39mstatus)[33m.[39mtoBe([35m201[39m)[33m;[39m
+     [90m     |[39m                            
+[31m[1m^[22m[39m
+     [90m 151 |[39m         [36mconst[39m complaintId 
+[33m=[39m res[33m.[39mbody[33m.[39mcomplaint_id[33m;[39m
+     [90m 152 |[39m
+     [90m 153 |[39m         [90m// 3. Database Encrypted 
+Archival Validation[39m[0m
+
+      at Object.toBe 
+(tests/conditionalPersistence.test.js:150:28)
+
+  console.log
+    [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+  console.log
+    [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+  console.error
+    [complaints] POST / error: Error: Socket.io has not been initialized. Call initIo first.
+        at getIo (D:\Programming\Development\Ephemral_fleet_ops_comms\backend\socket\io.js:98:15)
+        at getIo (D:\Programming\Development\Ephemral_fleet_ops_comms\backend\routes\complaints.js:114:28)
+        at processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+    [0m [90m 124 |[39m
+     [90m 125 |[39m     } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 126 |[39m         console[33m.[39merror([32m'[complaints] POST / error:'[39m[33m,[39m err)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 127 |[39m         [36mreturn[39m res[33m.[39mstatus([35m500[39m)[33m.[39mjson({ error[33m:[39m [32m'Internal server error'[39m })[33m;[39m
+     [90m 128 |[39m     }
+     [90m 129 |[39m })[33m;[39m[0m
+
+      at error (routes/complaints.js:126:17)
+
+  console.error
+    [complaints] POST / error: Error: Socket.io has not been initialized. Call initIo first.
+        at getIo (D:\Programming\Development\Ephemral_fleet_ops_comms\backend\socket\io.js:98:15)
+        at getIo (D:\Programming\Development\Ephemral_fleet_ops_comms\backend\routes\complaints.js:114:28)
+        at processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+    [0m [90m 124 |[39m
+     [90m 125 |[39m     } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 126 |[39m         console[33m.[39merror([32m'[complaints] POST / error:'[39m[33m,[39m err)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 127 |[39m         [36mreturn[39m res[33m.[39mstatus([35m500[39m)[33m.[39mjson({ error[33m:[39m [32m'Internal server error'[39m })[33m;[39m
+     [90m 128 |[39m     }
+     [90m 129 |[39m })[33m;[39m[0m
+
+      at error (routes/complaints.js:126:17)
+
+FAIL tests/complaints.test.js (12.64 s)
+  Complaint Lodgment API
+    ├ù Test 1: Complaint filed within window (962 ms)
+    ΓêÜ Test 2: Complaint window closed (468 ms)
+    ΓêÜ Test 3: Cross-client access prevented (8 ms)
+    ΓêÜ Test 4: Fleet manager can view complaints (424 ms)
+    ├ù Test 5: Message archive created on complaint filing 
+(2755 ms)
+    ΓêÜ Test 6: No complaint ΓÇö message buffer expires (1300 
+ms)
+
+  ΓùÅ Complaint Lodgment API ΓÇ║ Test 1: Complaint filed within 
+window
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 500
+
+    [0m [90m 114 |[39m             })[33m;[39m
+     [90m 115 |[39m
+    [31m[1m>[22m[39m[90m 116 |[39m         expect(res[33m
+.[39mstatus)[33m.[39mtoBe([35m201[39m)[33m;[39m
+     [90m     |[39m                            
+[31m[1m^[22m[39m
+     [90m 117 |[39m         expect(res[33m.[39mbody[33m.[3
+9mmessage)[33m.[39mtoBe([32m'Complaint filed 
+successfully.'[39m)[33m;[39m
+     [90m 118 |[39m         expect(res[33m.[39mbody)[33m.[
+39mtoHaveProperty([32m'complaint_id'[39m)[33m;[39m
+     [90m 119 |[39m     })[33m;[39m[0m
+
+      at Object.toBe (tests/complaints.test.js:116:28)
+
+  ΓùÅ Complaint Lodgment API ΓÇ║ Test 5: Message archive 
+created on complaint filing
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 500
+
+    [0m [90m 188 |[39m             [33m.[39msend({ 
+category[33m:[39m [32m'safety'[39m[33m,[39m 
+description[33m:[39m [32m'Driving erratically'[39m 
+})[33m;[39m
+     [90m 189 |[39m
+    [31m[1m>[22m[39m[90m 190 |[39m         expect(res[33m
+.[39mstatus)[33m.[39mtoBe([35m201[39m)[33m;[39m
+     [90m     |[39m                            
+[31m[1m^[22m[39m
+     [90m 191 |[39m
+     [90m 192 |[39m         [90m// Assert native 
+encrypted_message_archive population checking it drops down 
+properly[39m
+     [90m 193 |[39m         [36mconst[39m verifyDb 
+[33m=[39m [36mawait[39m pool[33m.[39mquery([32m`SELECT 
+encrypted_message_archive FROM complaints WHERE trip_id = 
+$1`[39m[33m,[39m [tripC_Id])[33m;[39m[0m
+
+      at Object.toBe (tests/complaints.test.js:190:28)
+
+Test Suites: 2 failed, 2 total
+Tests:       3 failed, 6 passed, 9 total
+Snapshots:   0 total
+Time:        31.183 s
+Ran all test suites matching complaints|conditionalPersistence.

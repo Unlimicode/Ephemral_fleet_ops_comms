@@ -11,6 +11,7 @@ import pool, { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { setSession, deleteSession, getSession } from '../config/redisHelpers.js';
 import { getIo } from '../socket/io.js';
+import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import nodemailer from 'nodemailer';
 
 const router = Router();
@@ -108,6 +109,8 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
         );
 
         await client.query('COMMIT');
+
+        emitDashboardEvent('trip_assigned', { trip_id: tripId, driver_id, status: 'accepted' });
 
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {

@@ -4,11 +4,18 @@ import express from 'express';
 import pool, { connect as connectDb } from '../config/db.js';
 import client, { connect as connectRedis } from '../config/redis.js';
 import jwt from 'jsonwebtoken';
+import { createServer } from 'http';
+import { io as Client } from 'socket.io-client';
+import { initIo, getIo } from '../socket/io.js';
+import { registerDashboardNamespace } from '../socket/dashboardNamespace.js';
 import dashboardRouter from '../routes/dashboard.js';
 import tripsRouter from '../routes/trips.js';
 
 // Setup inline Express app to test the dashboard router
 const app = express();
+const httpServer = createServer(app);
+initIo(httpServer);
+registerDashboardNamespace(getIo());
 app.use(express.json());
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/trips', tripsRouter);
@@ -16,10 +23,18 @@ app.use('/api/trips', tripsRouter);
 const API = '/api/dashboard';
 let managerToken = '';
 let testTripId = '';
+let port;
 
 beforeAll(async () => {
     await connectDb();
     await connectRedis();
+
+    await new Promise((resolve) => {
+        httpServer.listen(() => {
+            port = httpServer.address().port;
+            resolve();
+        });
+    });
 
     // Generate token explicitly
     const managerRes = await pool.query(`SELECT id FROM fleet_managers LIMIT 1`);
@@ -52,8 +67,27 @@ afterAll(async () => {
         await client.del(`complaint:window:${testTripId}`);
     }
 
+    if (getIo()) getIo().close();
+    await new Promise((resolve) => httpServer.close(resolve));
+
     await client.quit();
     await pool.end();
+});
+
+describe('Dashboard Socket.IO Namespace', () => {
+    it('Dashboard namespace rejects unauthorised connection', async () => {
+        const attackerSocket = Client(`http://localhost:${port}/dashboard`, {
+            auth: { token: 'invalid_token' }
+        });
+
+        const errorMsg = await new Promise((resolve, reject) => {
+            attackerSocket.on('auth_error', resolve);
+            setTimeout(() => reject(new Error('Timeout waiting for auth_error')), 2000);
+        });
+
+        expect(errorMsg).toBe('Unauthorised');
+        attackerSocket.disconnect();
+    });
 });
 
 describe('Privacy Dashboard API', () => {

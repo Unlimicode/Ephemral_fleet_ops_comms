@@ -3,6 +3,7 @@ import { query } from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { setSession, deleteSession } from '../config/redisHelpers.js';
 import { getIo } from '../socket/io.js';
+import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import nodemailer from 'nodemailer';
 
 const router = Router();
@@ -62,6 +63,8 @@ router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
              VALUES ($1, $2, $3, $4, $5)`,
             ['TRIP_ACCEPTED', driverId, 'driver', tripId, {}]
         );
+
+        emitDashboardEvent('session_created', { trip_id: tripId, timestamp: new Date().toISOString() });
 
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {
@@ -229,6 +232,8 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
              VALUES ($1, $2, $3, $4, $5)`,
             ['TRIP_COMPLETED', driverId, 'driver', tripId, {}]
         );
+
+        emitDashboardEvent('session_destroyed', { trip_id: tripId, timestamp: new Date().toISOString() });
 
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {

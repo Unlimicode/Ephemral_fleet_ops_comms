@@ -6,6 +6,7 @@ import { getSession } from '../config/redisHelpers.js';
 import redisClient from '../config/redis.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { getIo } from '../socket/io.js';
+import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 
 const router = express.Router();
 
@@ -109,6 +110,10 @@ router.post('/:tripId', requireClientAuth, async (req, res) => {
                 ]
             );
         }
+
+        try {
+            emitDashboardEvent('complaint_filed', { trip_id: tripId, complaint_id: complaintId, category });
+        } catch (_) { }
 
         return res.status(201).json({
             message: 'Complaint filed successfully.',

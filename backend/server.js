@@ -12,7 +12,8 @@ const PORT = process.env.PORT || 3001;
 const app = express();
 const httpServer = createServer(app);
 
-import { initIo } from './socket/io.js';
+import { initIo, getIo } from './socket/io.js';
+import { registerDashboardNamespace } from './socket/dashboardNamespace.js';
 
 // ── Middleware ────────────────────────────────────────────────
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173', credentials: true }));
@@ -25,6 +26,7 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 // ── Socket.IO ─────────────────────────────────────────────────
 initIo(httpServer);
+registerDashboardNamespace(getIo());
 
 // ── Start ─────────────────────────────────────────────────────
 (async () => {
