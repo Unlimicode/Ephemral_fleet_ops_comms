@@ -28,6 +28,9 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           TEST_MANAGER_EMAIL: ${{ secrets.TEST_MANAGER_EMAIL }}
           TEST_MANAGER_PASSWORD: ${{ secrets.TEST_MANAGER_PASSWORD }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_MAILTO: ${{ secrets.VAPID_MAILTO }}
 
   frontend:
     name: Frontend – Install, Lint & Build
