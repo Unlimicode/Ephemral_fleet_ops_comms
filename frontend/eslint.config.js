@@ -26,4 +26,16 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    files: ['public/sw.js'],
+    languageOptions: {
+      globals: {
+        clients: 'readonly',
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+      },
+    },
+  },
 ])
+
