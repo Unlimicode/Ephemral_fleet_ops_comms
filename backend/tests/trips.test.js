@@ -55,6 +55,11 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
             { expiresIn: '1h' }
         );
 
+        // Defensive cleanup for consecutive test runs
+        await pool.query("DELETE FROM trips WHERE client_corporate_email = 'testclient@corp.com'");
+        await pool.query("DELETE FROM vehicles WHERE registration_number = 'TEST-123'");
+        await pool.query("DELETE FROM drivers WHERE work_email = 'trips_unique_driver@test.com'");
+
         // 3. Seed test driver
         const driverHash = await bcrypt.hash('driverpassword', 10);
         const driverResult = await pool.query(

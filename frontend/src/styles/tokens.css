@@ -1,37 +1,29 @@
 :root {
-    /* Backgrounds */
-    --bg-base: #F0F2F7;
-    --bg-card: rgba(255, 255, 255, 0.25);
-    --bg-card-solid: rgba(255, 255, 255, 0.85);
+    --bg-base: #F5EDE3;
+    --bg-card: #FFFFFF;
+    --bg-input: #F5F5F5;
+    --bg-input-focus: #FFFFFF;
+    --bg-sidebar: #EDE4D8;
 
-    /* Glass effect */
-    --glass-blur: blur(30px);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.6);
-    --glass-shadow: 0 8px 32px rgba(108, 99, 255, 0.08);
+    --blob-primary: rgba(240, 180, 140, 0.45);
+    --blob-secondary: rgba(220, 160, 120, 0.3);
+    --blob-accent: rgba(108, 99, 255, 0.08);
 
-    /* Accent colours */
+    --card-border: 1px solid rgba(0, 0, 0, 0.06);
+    --card-shadow: 0 4px 40px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 8px 60px rgba(0, 0, 0, 0.12);
+
     --accent-primary: #6C63FF;
     --accent-secondary: #00D4FF;
     --accent-success: #00F5A0;
-    --accent-warning: #FF6B6B;
-    --accent-gradient: linear-gradient(135deg, #6C63FF, #00D4FF);
+    --accent-warning: #E05A5A;
+    --accent-gradient: linear-gradient(135deg, #6C63FF 0%, #00D4FF 100%);
 
-    /* Text */
-    --text-primary: #1A1A2E;
-    --text-secondary: #6B7280;
-    --text-mono: 'JetBrains Mono', monospace;
+    --text-dark: #0D0D0D;
+    --text-primary: #0D0D0D;
+    --text-secondary: #6B6B6B;
+    --text-muted: #A0A0A0;
 
-    /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* Dark theme */
-[data-theme="dark"] {
-    --bg-base: #0D0D1A;
-    --bg-card: rgba(255, 255, 255, 0.05);
-    --bg-card-solid: rgba(255, 255, 255, 0.08);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-    --text-primary: #F0F2F7;
-    --text-secondary: #9CA3AF;
 }

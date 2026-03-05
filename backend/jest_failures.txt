@@ -1,0 +1,276 @@
+
+> backend@1.0.0 test
+> node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --runInBand
+
+(node:2012) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/relay.test.js (14.977 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+    console.warn
+      [socket] Auth failed for driver on trip 99999999-9999-9999-9999-999999999999: No session key
+
+    [0m [90m 34 |[39m
+     [90m 35 |[39m         [36mif[39m ([33m![39msessionData) {
+    [31m[1m>[22m[39m[90m 36 |[39m             console[33m.[39mwarn([32m`[socket] Auth failed for ${role} on trip ${tripId}: No session key`[39m)[33m;[39m
+     [90m    |[39m                     [31m[1m^[22m[39m
+     [90m 37 |[39m             socket[33m.[39memit([32m'auth_error'[39m[33m,[39m [32m'No active session for this trip'[39m)[33m;[39m
+     [90m 38 |[39m             [36mreturn[39m socket[33m.[39mdisconnect([36mtrue[39m)[33m;[39m
+     [90m 39 |[39m         }[0m
+
+      at Namespace.warn (socket/io.js:36:21)
+
+    console.log
+      [socket] driver joined room trip:1e9951b4-916f-4b03-ac4c-dcaa85d9e717 (Socket: D0bDGw8GzrDII9e2AAAD)
+
+      at Namespace.log (socket/io.js:43:17)
+
+    console.log
+      [socket] client joined room trip:1e9951b4-916f-4b03-ac4c-dcaa85d9e717 (Socket: D92G9BuW88fyFKdzAAAF)
+
+      at Namespace.log (socket/io.js:43:17)
+
+    console.log
+      [socket] driver disconnected from room trip:1e9951b4-916f-4b03-ac4c-dcaa85d9e717 (Socket: D0bDGw8GzrDII9e2AAAD)
+
+      at Socket.log (socket/io.js:85:21)
+          at Map.forEach (<anonymous>)
+          at Array.map (<anonymous>)
+
+    console.log
+      [socket] client disconnected from room trip:1e9951b4-916f-4b03-ac4c-dcaa85d9e717 (Socket: D92G9BuW88fyFKdzAAAF)
+
+      at Socket.log (socket/io.js:85:21)
+          at Map.forEach (<anonymous>)
+          at Array.map (<anonymous>)
+
+  ● WebSocket Relay & Ephemeral Privacy Guarantees › Test 1: Creates a trip and establishes a Valid Session Connection
+
+    thrown: "Exceeded timeout of 5000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 100 |[39m     [90m// ─────────────────────────────────────────────────────────────────────────[39m
+     [90m 101 |[39m
+    [31m[1m>[22m[39m[90m 102 |[39m     it([32m'Test 1: Creates a trip and establishes a Valid Session Connection'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 103 |[39m         [90m// A. Setup the MEI Rest State[39m
+     [90m 104 |[39m         [36mconst[39m createRes [33m=[39m [36mawait[39m request(app)[33m.[39mpost([32m'/api/trips'[39m)
+     [90m 105 |[39m             [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${authToken}`[39m)[0m
+
+      at it (tests/relay.test.js:102:5)
+      at describe (tests/relay.test.js:35:1)
+
+FAIL tests/trips.test.js
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+  ● Trip Lifecycle & Privacy Guarantees › Test 1: Data minimisation — Create a trip (phone number not accepted)
+
+    error: duplicate key value violates unique constraint "drivers_work_email_key"
+
+    [0m [90m 58 |[39m         [90m// 3. Seed test driver[39m
+     [90m 59 |[39m         [36mconst[39m driverHash [33m=[39m [36mawait[39m bcrypt[33m.[39mhash([32m'driverpassword'[39m[33m,[39m [35m10[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 60 |[39m         [36mconst[39m driverResult [33m=[39m [36mawait[39m pool[33m.[39mquery(
+     [90m    |[39m                              [31m[1m^[22m[39m
+     [90m 61 |[39m             [32m`INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status) [39m
+     [90m 62 |[39m [32m             VALUES ($1, 'Test Driver', 'trips_unique_driver@test.com', 'EMP-TRIPS-001', $2, true) [39m
+     [90m 63 |[39m [32m             RETURNING id`[39m[33m,[39m[0m
+
+      at node_modules/pg-pool/index.js:45:11
+      at Object.<anonymous> (tests/trips.test.js:60:30)
+
+  ● Trip Lifecycle & Privacy Guarantees › Test 2: State advancement — Assign a driver
+
+    error: duplicate key value violates unique constraint "drivers_work_email_key"
+
+    [0m [90m 58 |[39m         [90m// 3. Seed test driver[39m
+     [90m 59 |[39m         [36mconst[39m driverHash [33m=[39m [36mawait[39m bcrypt[33m.[39mhash([32m'driverpassword'[39m[33m,[39m [35m10[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 60 |[39m         [36mconst[39m driverResult [33m=[39m [36mawait[39m pool[33m.[39mquery(
+     [90m    |[39m                              [31m[1m^[22m[39m
+     [90m 61 |[39m             [32m`INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status) [39m
+     [90m 62 |[39m [32m             VALUES ($1, 'Test Driver', 'trips_unique_driver@test.com', 'EMP-TRIPS-001', $2, true) [39m
+     [90m 63 |[39m [32m             RETURNING id`[39m[33m,[39m[0m
+
+      at node_modules/pg-pool/index.js:45:11
+      at Object.<anonymous> (tests/trips.test.js:60:30)
+
+  ● Trip Lifecycle & Privacy Guarantees › Test 3: Ephemeral session creation — Accept trip & verify Redis channels
+
+    error: duplicate key value violates unique constraint "drivers_work_email_key"
+
+    [0m [90m 58 |[39m         [90m// 3. Seed test driver[39m
+     [90m 59 |[39m         [36mconst[39m driverHash [33m=[39m [36mawait[39m bcrypt[33m.[39mhash([32m'driverpassword'[39m[33m,[39m [35m10[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 60 |[39m         [36mconst[39m driverResult [33m=[39m [36mawait[39m pool[33m.[39mquery(
+     [90m    |[39m                              [31m[1m^[22m[39m
+     [90m 61 |[39m             [32m`INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status) [39m
+     [90m 62 |[39m [32m             VALUES ($1, 'Test Driver', 'trips_unique_driver@test.com', 'EMP-TRIPS-001', $2, true) [39m
+     [90m 63 |[39m [32m             RETURNING id`[39m[33m,[39m[0m
+
+      at node_modules/pg-pool/index.js:45:11
+      at Object.<anonymous> (tests/trips.test.js:60:30)
+
+  ● Trip Lifecycle & Privacy Guarantees › Test 4: Guaranteed session destruction — Complete trip & verify Redis wiped
+
+    error: duplicate key value violates unique constraint "drivers_work_email_key"
+
+    [0m [90m 58 |[39m         [90m// 3. Seed test driver[39m
+     [90m 59 |[39m         [36mconst[39m driverHash [33m=[39m [36mawait[39m bcrypt[33m.[39mhash([32m'driverpassword'[39m[33m,[39m [35m10[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 60 |[39m         [36mconst[39m driverResult [33m=[39m [36mawait[39m pool[33m.[39mquery(
+     [90m    |[39m                              [31m[1m^[22m[39m
+     [90m 61 |[39m             [32m`INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status) [39m
+     [90m 62 |[39m [32m             VALUES ($1, 'Test Driver', 'trips_unique_driver@test.com', 'EMP-TRIPS-001', $2, true) [39m
+     [90m 63 |[39m [32m             RETURNING id`[39m[33m,[39m[0m
+
+      at node_modules/pg-pool/index.js:45:11
+      at Object.<anonymous> (tests/trips.test.js:60:30)
+
+PASS tests/driverTrips.test.js (23.674 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/conditionalPersistence.test.js (23.396 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/dashboard.test.js (24.233 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/complaints.test.js (17.36 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/roster.test.js (17.439 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/investigation.test.js (10.606 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/bookings.test.js (9.201 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/driverAuth.test.js (8.079 s)
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+PASS tests/auth.test.js
+  ● Console
+
+    console.log
+      [db] PostgreSQL connected
+
+      at log (config/db.js:13:13)
+
+    console.log
+      [redis] Redis connected
+
+      at Class.log (config/redis.js:6:36)
+
+
+ReferenceError: You are trying to `import` a file after the Jest environment has been torn down. From tests/privacyDashboard.test.js.
+FAIL tests/privacyDashboard.test.js
+  ● Test suite failed to run
+
+    Cannot find module 'bcrypt' from 'tests/privacyDashboard.test.js'
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/index.js:863:11)
+
+Test Suites: 3 failed, 9 passed, 12 total
+Tests:       5 failed, 56 passed, 61 total
+Snapshots:   0 total
+Time:        158.25 s, estimated 159 s
+Ran all test suites.
