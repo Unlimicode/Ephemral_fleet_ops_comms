@@ -336,4 +336,35 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 
 ---
 
+### Sprint 9 — Frontend Foundation
+**Files created:** 20 files across `frontend/src/styles/`, `frontend/src/context/`, `frontend/src/api/`, `frontend/src/components/layout/`, `frontend/src/pages/`, `frontend/.env`, `frontend/.env.example`  
+**Files modified:** `frontend/src/index.css`, `frontend/src/main.jsx`, `frontend/src/App.jsx`, `frontend/package.json`, `frontend/package-lock.json`
+
+**Dependencies installed:** `react-router-dom`, `axios`, `socket.io-client`, `@fontsource/inter`, `@fontsource/jetbrains-mono` — 34 packages added.
+
+**`frontend/src/styles/tokens.css`:** CSS custom properties defining the Swiftlink design system: background values, glass-effect blur/border/shadow, four accent colours plus a gradient, typography variables, and two animation timing functions. A `[data-theme="dark"]` selector overrides the token values that change in dark mode.
+
+**`frontend/src/index.css`:** Replaced the Vite scaffold CSS with `@tailwind` directives, a `tokens.css` import, a Google Fonts `@import url()` runtime fallback for Inter and JetBrains Mono, a global box-model reset, and the three design system utility classes: `.glass-card` (glass backdrop-filter with token values), `.session-pulse` (keyframe animation on box-shadow), and `.gradient-text` (gradient background-clip).
+
+**`frontend/src/context/AuthContext.jsx`:** React context holding `{ token, role, user }` in component state only. `login(token, role, user)` calls `setAuthToken(token)` on the axios module to inject the bearer token. `logout()` posts to the correct backend endpoint determined by `role`, then calls `setAuthToken(null)` and clears state. Exports `AuthProvider` and `useAuth`.
+
+**`frontend/src/api/axios.js`:** Axios instance with `baseURL: import.meta.env.VITE_API_URL`. A module-level `_token` variable and `setAuthToken(token)` function decouple the instance from the React context tree (avoiding circular imports). The request interceptor injects `Authorization: Bearer` when `_token` is set. The response interceptor calls `window.location.replace('/login')` on 401.
+
+**`frontend/src/main.jsx`:** Wraps `<App />` with `<BrowserRouter>` then `<AuthProvider>` so all components in the tree have access to both routing and auth context.
+
+**`frontend/src/App.jsx`:** React Router v6 route tree. `ProtectedRoute` reads `isAuthenticated` and `role` from `useAuth` — unauthenticated users get `<Navigate to="/login" replace />`, authenticated users with wrong role are redirected to their correct home. Manager and driver pages are declared as nested routes under their layout components so the layout shell renders once via `<Outlet />`.
+
+**Layout components:** `GlassCard.jsx` — applies `.glass-card` and optional `session-pulse` via class composition. `ManagerLayout.jsx` — sticky glass header with gradient logo, NavLink pill navigation (gradient on active, neomorphic inset shadow on inactive), and `<Outlet />` content area. `DriverLayout.jsx` — fixed top bar, scrollable content area with bottom padding, fixed bottom tab bar with NavLink active state. `PageWrapper.jsx` — `p-4 md:p-6` padding container.
+
+**Placeholder pages:** 10 page components in `pages/manager/`, `pages/driver/`, `pages/booking/`, and `pages/LoginPage.jsx`. Each placeholder renders the page name inside `<GlassCard>` via `<PageWrapper>`.
+
+**`frontend/src/pages/LoginPage.jsx`:** Full implementation. Role selector toggles between Fleet Manager and Driver. Form posts to the correct login endpoint, calls `login(token, role, user)` on success, and navigates to the role home. Error displayed in `--accent-warning`. Submit disabled with reduced opacity during loading.
+
+**`.env` / `.env.example`:** `VITE_API_URL=http://localhost:3000`.
+
+**Build:** `npm run build` — 108 modules transformed, 0 errors, 2.73s.  
+**Lint:** `npm run lint` — 0 errors after fixing a bare `catch` binding and adding `eslint-disable-next-line react-refresh/only-export-components` above the `useAuth` export in `AuthContext.jsx`.
+
+---
+
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*
