@@ -1,41 +1,54 @@
-export default function StatCard({ title, value, subtitle, icon, pulse }) {
+const tints = {
+    green: { arc: 'rgba(0,245,160,0.12)', icon: 'rgba(0,245,160,0.15)' },
+    amber: { arc: 'rgba(255,180,0,0.12)', icon: 'rgba(255,180,0,0.15)' },
+    blue: { arc: 'rgba(0,212,255,0.12)', icon: 'rgba(0,212,255,0.15)' },
+    purple: { arc: 'rgba(108,99,255,0.12)', icon: 'rgba(108,99,255,0.15)' },
+};
+
+export default function StatCard({ title, value, subtitle, icon, pulse, tint = 'blue' }) {
     return (
         <div className={`glass-card ${pulse ? 'session-pulse' : ''}`} style={{
-            padding: '24px',
+            padding: '28px 24px',
             position: 'relative',
-            overflow: 'hidden'
-        }}>
+            overflow: 'hidden',
+            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            cursor: 'default'
+        }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(180,130,80,0.18)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ''; }}
+        >
+            {/* Decorative arc — top right */}
+            <div style={{
+                position: 'absolute', top: '-20px', right: '-20px',
+                width: '100px', height: '100px',
+                borderRadius: '50%',
+                background: tints[tint]?.arc || tints['blue'].arc,
+                filter: 'blur(20px)'
+            }} />
+
+            {/* Top row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <div style={{
-                    width: '40px', height: '40px', borderRadius: '10px',
-                    background: 'rgba(13,13,13,0.06)', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', fontSize: '20px'
-                }}>
-                    {icon}
-                </div>
-                <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>
-                    {title}
-                </h3>
+                    width: '44px', height: '44px',
+                    borderRadius: '12px',
+                    background: tints[tint]?.icon || tints['blue'].icon,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '20px'
+                }}>{icon}</div>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>{title}</span>
             </div>
 
+            {/* Value */}
             <div style={{
-                fontFamily: 'Inter, sans-serif', fontSize: '2rem',
-                fontWeight: 700, color: 'var(--text-dark)',
-                lineHeight: 1, marginBottom: '8px'
-            }}>
-                {value}
-            </div>
+                fontSize: '3rem', fontWeight: 800,
+                color: 'var(--text-dark)',
+                letterSpacing: '-2px', lineHeight: 1,
+                marginBottom: '6px',
+                fontFamily: 'Inter, sans-serif'
+            }}>{value}</div>
 
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {subtitle}
-            </div>
-
-            <div style={{
-                position: 'absolute', top: 0, right: 0,
-                width: '80px', height: '80px', borderRadius: '50%',
-                background: 'var(--accent-gradient)', opacity: 0.06,
-                transform: 'translate(20px, -20px)', pointerEvents: 'none'
-            }} />
+            {/* Subtitle */}
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{subtitle}</div>
         </div>
     );
 }

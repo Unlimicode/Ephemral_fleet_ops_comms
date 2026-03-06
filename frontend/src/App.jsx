@@ -11,12 +11,15 @@ import ManagerDashboardPage from './pages/manager/ManagerDashboardPage.jsx';
 import ManagerAuditPage from './pages/manager/ManagerAuditPage.jsx';
 import DriverTripsPage from './pages/driver/DriverTripsPage.jsx';
 import DriverActiveTripPage from './pages/driver/DriverActiveTripPage.jsx';
+import DriverProfilePage from './pages/driver/DriverProfilePage.jsx';
+import DriverNotificationsPage from './pages/driver/DriverNotificationsPage.jsx';
 import BookingLandingPage from './pages/booking/BookingLandingPage.jsx';
 import BookingViewPage from './pages/booking/BookingViewPage.jsx';
 
-// Layout imports
+// Layout & Context imports
 import ManagerLayout from './components/layout/ManagerLayout.jsx';
 import DriverLayout from './components/layout/DriverLayout.jsx';
+import { ToastProvider } from './components/Toast.jsx';
 
 // ProtectedRoute guards a route by authentication status and required role.
 // Unauthenticated users are redirected to /login. Authenticated users with the
@@ -38,42 +41,46 @@ function ProtectedRoute({ children, role: requiredRole }) {
 
 export default function App() {
   return (
-    <Routes>
-      {/* Root redirects to login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+    <ToastProvider>
+      <Routes>
+        {/* Root redirects to login */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* Public routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/booking" element={<BookingLandingPage />} />
-      <Route path="/booking/:tripId" element={<BookingViewPage />} />
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/booking" element={<BookingLandingPage />} />
+        <Route path="/booking/:tripId" element={<BookingViewPage />} />
 
-      {/* Fleet manager routes — nested under ManagerLayout */}
-      <Route
-        element={
-          <ProtectedRoute role="fleet_manager">
-            <ManagerLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/manager/dispatch" element={<ManagerDispatchPage />} />
-        <Route path="/manager/drivers" element={<ManagerDriversPage />} />
-        <Route path="/manager/vehicles" element={<ManagerVehiclesPage />} />
-        <Route path="/manager/complaints" element={<ManagerComplaintsPage />} />
-        <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
-        <Route path="/manager/audit" element={<ManagerAuditPage />} />
-      </Route>
+        {/* Fleet manager routes — nested under ManagerLayout */}
+        <Route
+          element={
+            <ProtectedRoute role="fleet_manager">
+              <ManagerLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/manager/dispatch" element={<ManagerDispatchPage />} />
+          <Route path="/manager/drivers" element={<ManagerDriversPage />} />
+          <Route path="/manager/vehicles" element={<ManagerVehiclesPage />} />
+          <Route path="/manager/complaints" element={<ManagerComplaintsPage />} />
+          <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
+          <Route path="/manager/audit" element={<ManagerAuditPage />} />
+        </Route>
 
-      {/* Driver routes — nested under DriverLayout */}
-      <Route
-        element={
-          <ProtectedRoute role="driver">
-            <DriverLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/driver/trips" element={<DriverTripsPage />} />
-        <Route path="/driver/trips/:tripId" element={<DriverActiveTripPage />} />
-      </Route>
-    </Routes>
+        {/* Driver routes — nested under DriverLayout */}
+        <Route
+          element={
+            <ProtectedRoute role="driver">
+              <DriverLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/driver/trips" element={<DriverTripsPage />} />
+          <Route path="/driver/trips/:tripId" element={<DriverActiveTripPage />} />
+          <Route path="/driver/profile" element={<DriverProfilePage />} />
+          <Route path="/driver/notifications" element={<DriverNotificationsPage />} />
+        </Route>
+      </Routes>
+    </ToastProvider>
   );
 }

@@ -391,4 +391,29 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 
 ---
 
+## Sprint 11 — Driver PWA
+
+### Phase 11.1 — Standardized Driver Layout
+**Files modified:** `frontend/src/components/layout/DriverLayout.jsx`
+**What was built:** Replaced the generic driver placeholder page wrapper with a strictly-fitted mobile-first envelope. It sports a sticky header for identity reporting and a fixed-bottom tab nav routing directly to the core driver domains. Background features the identical triple-blob animated glass treatment mirroring the manager dash.
+**Architectural relevance:** Enforces the singular PWA UX mandate for on-road operability by locking bounds and minimizing thumb transit times on small viewports.
+
+### Phase 11.2 — Realtime Trip Triage Array
+**Files created:** `frontend/src/components/DriverTripCard.jsx`, `frontend/src/pages/driver/DriverTripsPage.jsx`
+**What was built:** A polling-capable (20s interval) array matrix dividing active trip contexts into three literal states: Upcoming (Assigned), Active (In Progress), and Completed. Each card leverages the generic REST endpoints to accept/decline dynamically, with inline string-state form handling for rejection reasons.
+**Architectural relevance:** Provides robust fault tolerance through short interval HTTP polling without relying on constant WebSocket linkages for volatile mobile connections.
+
+### Phase 11.3 — Active Trip Single-Column Pipeline
+**Files modified:** `frontend/src/pages/driver/DriverActiveTripPage.jsx`
+**What was built:** Integrated a dense, single-column status reader linking the active passenger context to specific status milestones (`PATCH /start`, `PATCH /complete`). Added stubs for secure-channel messaging boundaries set to launch in Sprint 12.
+**Architectural relevance:** Ensures no local state branching during live trips; data is bound directly to the database representations through the unified `/driver/trips/:tripId` context.
+
+### Phase 11.4 — Driver Profile & Global Notification Hooks
+**Files created:** `frontend/src/pages/driver/DriverProfilePage.jsx`, `frontend/src/pages/driver/DriverNotificationsPage.jsx`, `frontend/src/components/Toast.jsx`
+**Files modified:** `frontend/src/App.jsx`
+**What was built:** Bootstrapped the Profile view linking driver identity, active JWT session state monitoring, and the `PushNotificationToggle` context. Built isolated `DriverNotificationsPage` stub. Wired the new layout components and a floating globally-scoped `<ToastProvider>` straight into the root `App.jsx` routing tree.
+**Architectural relevance:** Reuses generic authentication primitives while localizing feedback (Toasts) directly against standard DOM manipulations.
+
+---
+
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*

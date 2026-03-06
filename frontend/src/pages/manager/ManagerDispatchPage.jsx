@@ -105,24 +105,46 @@ export default function ManagerDispatchPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             {/* Section 1: Stat Bar */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                <StatCard title="Active Trips" value={activeTrips.length} subtitle="Currently in progress" icon="🟢" pulse={activeTrips.length > 0} />
-                <StatCard title="Pending Bookings" value={pendingTrips.length} subtitle="Awaiting assignment" icon="⚡" />
-                <StatCard title="Available Drivers" value={availableDrivers.length} subtitle="Ready for dispatch" icon="👥" />
-                <StatCard title="Vehicles Deployed" value={deployedVehicles} subtitle="Active assignments" icon="🚗" />
+                <StatCard title="Active Trips" value={activeTrips.length} subtitle="Currently in progress" icon="🟢" pulse={activeTrips.length > 0} tint="green" />
+                <StatCard title="Pending Bookings" value={pendingTrips.length} subtitle="Awaiting assignment" icon="⚡" tint="amber" />
+                <StatCard title="Available Drivers" value={availableDrivers.length} subtitle="Ready for dispatch" icon="👥" tint="blue" />
+                <StatCard title="Vehicles Deployed" value={deployedVehicles} subtitle="Active assignments" icon="🚗" tint="purple" />
             </div>
 
             {/* Section 2: Pending Bookings */}
             <section>
-                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                    Incoming Bookings
-                    <span style={{ background: 'var(--accent-gradient)', color: '#fff', fontSize: '12px', padding: '2px 10px', borderRadius: '50px' }}>
-                        {pendingTrips.length}
-                    </span>
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                    <h2 style={{
+                        fontSize: '22px', fontWeight: 800,
+                        color: 'var(--text-dark)',
+                        letterSpacing: '-0.5px',
+                        fontFamily: 'Inter, sans-serif'
+                    }}>Incoming Bookings</h2>
+                    <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '50px',
+                        background: 'rgba(13,13,13,0.08)',
+                        color: 'var(--text-dark)',
+                        fontSize: '13px',
+                        fontWeight: 700
+                    }}>{pendingTrips.length}</span>
+                </div>
 
                 {pendingTrips.length === 0 ? (
-                    <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        No pending bookings
+                    <div style={{
+                        padding: '48px 24px',
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center',
+                        gap: '12px',
+                        border: '1.5px dashed rgba(13,13,13,0.1)',
+                        borderRadius: '20px',
+                        background: 'rgba(255,255,255,0.3)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)'
+                    }}>
+                        <span style={{ fontSize: '32px' }}>📋</span>
+                        <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' }}>No pending bookings</p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>New bookings will appear here automatically</p>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
@@ -142,16 +164,38 @@ export default function ManagerDispatchPage() {
 
             {/* Section 3: Active Trips */}
             <section>
-                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                    Active Trips
-                    <span style={{ background: 'var(--accent-gradient)', color: '#fff', fontSize: '12px', padding: '2px 10px', borderRadius: '50px' }}>
-                        {activeTrips.length}
-                    </span>
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                    <h2 style={{
+                        fontSize: '22px', fontWeight: 800,
+                        color: 'var(--text-dark)',
+                        letterSpacing: '-0.5px',
+                        fontFamily: 'Inter, sans-serif'
+                    }}>Active Trips</h2>
+                    <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '50px',
+                        background: 'rgba(13,13,13,0.08)',
+                        color: 'var(--text-dark)',
+                        fontSize: '13px',
+                        fontWeight: 700
+                    }}>{activeTrips.length}</span>
+                </div>
 
                 {activeTrips.length === 0 ? (
-                    <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        No active trips
+                    <div style={{
+                        padding: '48px 24px',
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center',
+                        gap: '12px',
+                        border: '1.5px dashed rgba(13,13,13,0.1)',
+                        borderRadius: '20px',
+                        background: 'rgba(255,255,255,0.3)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)'
+                    }}>
+                        <span style={{ fontSize: '32px' }}>🚗</span>
+                        <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' }}>No active trips</p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Accepted trips in progress will appear here</p>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
@@ -168,16 +212,38 @@ export default function ManagerDispatchPage() {
 
             {/* Section 4: Awaiting Acceptance */}
             <section>
-                <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                    Awaiting Acceptance
-                    <span style={{ background: 'var(--accent-gradient)', color: '#fff', fontSize: '12px', padding: '2px 10px', borderRadius: '50px' }}>
-                        {assignedTrips.length}
-                    </span>
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                    <h2 style={{
+                        fontSize: '22px', fontWeight: 800,
+                        color: 'var(--text-dark)',
+                        letterSpacing: '-0.5px',
+                        fontFamily: 'Inter, sans-serif'
+                    }}>Awaiting Acceptance</h2>
+                    <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '50px',
+                        background: 'rgba(13,13,13,0.08)',
+                        color: 'var(--text-dark)',
+                        fontSize: '13px',
+                        fontWeight: 700
+                    }}>{assignedTrips.length}</span>
+                </div>
 
                 {assignedTrips.length === 0 ? (
-                    <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                        No trips awaiting driver acceptance
+                    <div style={{
+                        padding: '48px 24px',
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center',
+                        gap: '12px',
+                        border: '1.5px dashed rgba(13,13,13,0.1)',
+                        borderRadius: '20px',
+                        background: 'rgba(255,255,255,0.3)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)'
+                    }}>
+                        <span style={{ fontSize: '32px' }}>⏳</span>
+                        <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' }}>No trips awaiting acceptance</p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Assigned trips pending driver confirmation appear here</p>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

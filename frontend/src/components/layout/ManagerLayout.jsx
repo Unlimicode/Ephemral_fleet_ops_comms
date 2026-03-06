@@ -70,23 +70,25 @@ export default function ManagerLayout({ children }) {
                 position: 'fixed',
                 left: 0, top: 0, bottom: 0,
                 width: '240px',
-                background: 'rgba(255,255,255,0.45)',
-                backdropFilter: 'blur(40px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                zIndex: 10,
+                background: 'rgba(255, 255, 255, 0.35)',
+                backdropFilter: 'blur(60px) saturate(200%)',
+                WebkitBackdropFilter: 'blur(60px) saturate(200%)',
+                borderRight: '1px solid rgba(255,255,255,0.7)',
+                boxShadow: '4px 0 24px rgba(180,130,80,0.08), inset -1px 0 0 rgba(255,255,255,0.5)',
                 display: 'flex', flexDirection: 'column',
-                borderRight: '1px solid rgba(255,255,255,0.3)'
+                zIndex: 20,
+                padding: '28px 16px'
             }}>
                 {/* Logo Lockup */}
-                <div style={{ padding: '32px 24px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <img src="/swiftlink-icon.png" alt="S" style={{ height: '36px', width: '36px', objectFit: 'contain' }} />
-                    <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0D0D0D', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '24px', padding: '0 8px' }}>
+                    <img src="/swiftlink-icon.png" alt="S" style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
+                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0D0D0D', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>
                         wiftlink
                     </span>
                 </div>
 
                 {/* Vertical Navigation Links */}
-                <nav style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <nav style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     {NAV_LINKS.map(({ to, label, icon }) => (
                         <NavLink
                             key={to}
@@ -94,15 +96,17 @@ export default function ManagerLayout({ children }) {
                             style={({ isActive }) => ({
                                 display: 'flex', alignItems: 'center', gap: '12px',
                                 padding: '12px 16px',
+                                borderRadius: '14px',
+                                marginBottom: '4px',
                                 textDecoration: 'none',
-                                fontFamily: 'Inter, sans-serif',
-                                fontSize: '15px',
-                                transition: 'all 0.2s ease',
-                                color: isActive ? '#0D0D0D' : 'var(--text-secondary)',
+                                cursor: 'pointer',
+                                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                position: 'relative',
                                 background: isActive ? 'rgba(13,13,13,0.08)' : 'transparent',
-                                borderRadius: isActive ? '12px' : '0',
+                                color: isActive ? '#0D0D0D' : '#6B6B6B',
                                 fontWeight: isActive ? 700 : 500,
-                                borderLeft: isActive ? '3px solid #0D0D0D' : '3px solid transparent'
+                                fontSize: '14px',
+                                fontFamily: 'Inter, sans-serif'
                             })}
                             onMouseEnter={e => {
                                 if (e.currentTarget.style.backgroundColor === 'transparent' || e.currentTarget.style.backgroundColor === '') {
@@ -115,24 +119,55 @@ export default function ManagerLayout({ children }) {
                                 }
                             }}
                         >
-                            <span style={{ fontSize: '18px' }}>{icon}</span>
-                            {label}
+                            {({ isActive }) => (
+                                <>
+                                    {isActive && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            left: 0, top: '20%', bottom: '20%',
+                                            width: '3px',
+                                            borderRadius: '0 3px 3px 0',
+                                            background: '#0D0D0D'
+                                        }} />
+                                    )}
+                                    <span style={{ fontSize: '18px' }}>{icon}</span>
+                                    {label}
+                                </>
+                            )}
                         </NavLink>
                     ))}
                 </nav>
 
                 {/* User & Logout */}
-                <div style={{ padding: '24px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div style={{
+                    marginTop: 'auto',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    background: 'rgba(13,13,13,0.04)',
+                    border: '1px solid rgba(13,13,13,0.06)'
+                }}>
                     <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dark)', marginBottom: '4px' }}>
                         {user?.full_name || user?.name || 'Manager'}
                     </p>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '16px', wordBreak: 'break-all' }}>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>
                         {user?.corporate_email || user?.email || 'manager@company.com'}
                     </p>
-                    <button onClick={handleLogout} className="glass-button" style={{
-                        width: '100%', padding: '10px', borderRadius: '10px',
-                        color: '#F5EDE3', fontSize: '13px', fontWeight: 600,
-                        cursor: 'pointer'
+                    <button onClick={handleLogout} style={{
+                        width: '100%',
+                        marginTop: '12px',
+                        padding: '11px',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        background: 'rgba(13,13,13,0.85)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        color: '#F5EDE3',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        fontFamily: 'Inter, sans-serif',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
+                        transition: 'all 0.25s ease'
                     }}>
                         Logout
                     </button>
@@ -141,11 +176,33 @@ export default function ManagerLayout({ children }) {
 
             {/* Main Content Area */}
             <main style={{ marginLeft: '240px', minHeight: '100vh', position: 'relative', zIndex: 1, padding: '32px' }}>
-                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-dark)', letterSpacing: '-0.5px' }}>
-                        Fleet Operations
-                    </h1>
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.4)', padding: '6px 16px', borderRadius: '50px', backdropFilter: 'blur(10px)' }}>
+                <header style={{
+                    display: 'flex', alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '32px'
+                }}>
+                    <div>
+                        <h1 style={{
+                            fontSize: '28px', fontWeight: 800,
+                            color: 'var(--text-dark)',
+                            letterSpacing: '-1px',
+                            fontFamily: 'Inter, sans-serif'
+                        }}>Fleet Operations</h1>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Swiftlink Fleet Operations
+                        </p>
+                    </div>
+                    <div style={{
+                        padding: '10px 18px',
+                        borderRadius: '50px',
+                        background: 'rgba(255,255,255,0.5)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255,255,255,0.7)',
+                        fontSize: '13px', fontWeight: 500,
+                        color: 'var(--text-secondary)',
+                        boxShadow: '0 2px 8px rgba(180,130,80,0.08)'
+                    }}>
                         {currentTime.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} • {currentTime.toLocaleTimeString()}
                     </div>
                 </header>
