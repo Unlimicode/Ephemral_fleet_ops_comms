@@ -367,4 +367,28 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 
 ---
 
+## Sprint 10 — Fleet Manager Dispatch View
+
+### Phase 10.1 — Spatial Glass Layout
+**Files modified:** `frontend/src/components/layout/ManagerLayout.jsx`
+**What was built:** Replaced the layout shell with a permanent fixed `240px` left sidebar sporting the Swiftlink gradient lockup and unicode-driven navigation links. Main content was pushed out using `marginLeft: 240px`. The animated spatial background blobs originally from `LoginPage` were injected directly into the layout `zIndex: 0` layer to standardize the aesthetic across all managerial views. Active state links now construct with a solid left `#0D0D0D` accent bar.
+**Architectural relevance:** Standardizes the authenticated user envelope and physically injects the warm editorial spatial glass brand theme without polluting content boundaries.
+
+### Phase 10.2 — Extensible Card Components
+**Files created:** `frontend/src/components/StatCard.jsx`, `frontend/src/components/BookingCard.jsx`, `frontend/src/components/ActiveTripCard.jsx`
+**What was built:** Three reusable UI fragments. `StatCard` provides numeric monitoring with an optional cyclic `.session-pulse` emitter. `BookingCard` handles complex assignment matrixes (Driver/Vehicle selects) and validates payload requirements against fleet availability. `ActiveTripCard` traces live trips with absolute timestamps and green positive confirmation traces.
+**Architectural relevance:** De-links the UI complexity from the actual dispatch logic allowing for standardized reuse within future sub-page systems.
+
+### Phase 10.3 — Dispatch Command Dashboard
+**Files modified:** `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+**What was built:** Integrated Socket.IO connections tied natively to the `/dashboard` JWT infrastructure via `useAuth()`. Wired four parallel UI sectors (Stat Bar, Incoming Bookings, Active Trips, Awaiting Acceptance) to aggregate local arrays decoupled from the generic API layer. Hooked operational `assign` and `complete` HTTP events directly mapping to `Socket.IO` resynchronization hooks and a `30000ms` fallback interval polling system.
+**Architectural relevance:** Serves as the central command architecture for authentic operations testing connecting the WebSocket event layer directly to the DOM matrix.
+
+### Phase 10.4 — Wrapper Architecture Mapping
+**Files modified:** `frontend/src/pages/manager/ManagerDriversPage.jsx`, `frontend/src/pages/manager/ManagerVehiclesPage.jsx`, `frontend/src/pages/manager/ManagerComplaintsPage.jsx`, `frontend/src/pages/manager/ManagerDashboardPage.jsx`, `frontend/src/pages/manager/ManagerAuditPage.jsx`
+**What was built:** Wrapped the core `PageWrapper` and `GlassCard` hierarchies directly inside `<ManagerLayout>` to enforce individual module stability independent of global routing quirks.
+**Architectural relevance:** Ensures uniform layout rendering rules even if generic App routing boundaries get re-segregated.
+
+---
+
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*

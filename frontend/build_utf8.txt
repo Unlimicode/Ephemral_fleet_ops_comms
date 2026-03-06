@@ -1,0 +1,37 @@
+﻿
+> frontend@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 78 modules transformed.
+node.exe : [31mΓ£ù[39m Build failed in 1.03s
+At line:1 char:1
++ & "D:\Programming\Tools/node.exe" 
+"C:\Users\ils\AppData\Roaming\npm/n ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31mΓ£ù[ 
+   39m Build failed in 1.03s:String) [], RemoteExcepti  
+  on
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[31merror during build:
+[31mCould not resolve "../BookingCard.jsx" from 
+"src/pages/manager/ManagerDispatchPage.jsx"[31m
+file: [36mD:/Programming/Development/Ephemral_fleet_ops
+_comms/frontend/src/pages/manager/ManagerDispatchPage.js
+x[31m
+    at getRollupError (file:///D:/Programming/Developmen
+t/Ephemral_fleet_ops_comms/frontend/node_modules/rollup/
+dist/es/shared/parseAst.js:402:41)
+    at error (file:///D:/Programming/Development/Ephemra
+l_fleet_ops_comms/frontend/node_modules/rollup/dist/es/s
+hared/parseAst.js:398:42)
+    at ModuleLoader.handleInvalidResolvedId (file:///D:/
+Programming/Development/Ephemral_fleet_ops_comms/fronten
+d/node_modules/rollup/dist/es/shared/node-entry.js:21710
+:24)
+    at file:///D:/Programming/Development/Ephemral_fleet
+_ops_comms/frontend/node_modules/rollup/dist/es/shared/n
+ode-entry.js:21670:26[39m
