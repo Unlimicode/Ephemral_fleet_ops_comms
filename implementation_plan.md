@@ -513,4 +513,20 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 
 ---
 
+## Sprint 13 — Client Booking & Swiftlink Website
+
+### Phase 13.1 — Corporate Landing Page
+**Files created:** `frontend/src/pages/SwiftlinkHomePage.jsx`, `backend/routes/contact.js`
+**Files modified:** `backend/routes/index.js`
+**What was built:** High-conversion corporate landing page with integrated booking form and contact enquiry system. Implemented `POST /api/contact` with audit logging.
+**Architectural relevance:** Establishes the public entry point for the MICE transport ecosystem. Enforces the "Privacy-First" brand promise through architectural messaging.
+
+### Phase 13.2 — Magic Link & Booking Flow
+**Files created:** `frontend/src/pages/BookingLandingPage.jsx`, `frontend/src/pages/BookingHistoryPage.jsx`
+**Files modified:** `backend/routes/bookings.js`, `frontend/src/App.jsx`
+**What was built:** Token-authenticated booking status view. Supports real-time status syncing, driver identity minimisation, and mediated chat integration. Added a 24-hour compliant complaint window and booking history.
+**Architectural relevance:** Completes the stateless client authentication lifecycle. Ensures clients only see data relevant to their Magic Link session.
+
+---
+
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*

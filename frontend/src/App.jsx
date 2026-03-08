@@ -15,6 +15,8 @@ import DriverProfilePage from './pages/driver/DriverProfilePage.jsx';
 import DriverNotificationsPage from './pages/driver/DriverNotificationsPage.jsx';
 import BookingLandingPage from './pages/booking/BookingLandingPage.jsx';
 import ClientChatPage from './pages/ClientChatPage.jsx';
+import SwiftlinkHomePage from './pages/SwiftlinkHomePage.jsx';
+import BookingHistoryPage from './pages/BookingHistoryPage.jsx';
 
 // Layout & Context imports
 import ManagerLayout from './components/layout/ManagerLayout.jsx';
@@ -43,12 +45,11 @@ export default function App() {
   return (
     <ToastProvider>
       <Routes>
-        {/* Root redirects to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-
         {/* Public routes */}
+        <Route path="/" element={<SwiftlinkHomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/booking" element={<BookingLandingPage />} />
+        <Route path="/booking/history" element={<BookingHistoryPage />} />
         <Route path="/booking/:tripId" element={<ClientChatPage />} />
 
         {/* Fleet manager routes — nested under ManagerLayout */}

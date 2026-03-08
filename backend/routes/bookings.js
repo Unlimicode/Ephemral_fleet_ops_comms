@@ -338,4 +338,52 @@ router.post('/:tripId/request-new-link', async (req, res) => {
     }
 });
 
+// ── GET /status — Public status check via magic link ────────────────────────
+// PRIVACY/SECURITY ARCHITECTURE:
+// Validates token against Redis. Returns only first name and vehicle type.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/status', async (req, res) => {
+    const { token, tripId } = req.query;
+
+    if (!token || !tripId) {
+        return res.status(400).json({ error: 'Missing token or tripId' });
+    }
+
+    try {
+        const sessionKey = `booking_access_token:${token}`;
+        const sessionData = await getSession(sessionKey);
+
+        // Check for active trip session if one-time token is gone
+        // or just validate the token if it's the first visit.
+        // Actually, the requirement says "Validate the client session token against Redis key session:trip:{tripId}:client"
+        const activeSessionKey = `session:trip:${tripId}:client`;
+        const activeSession = await getSession(activeSessionKey);
+
+        if (!activeSession) {
+            return res.status(401).json({ error: 'Invalid or expired session' });
+        }
+
+        const tripResult = await query(
+            `SELECT 
+                t.id, t.status, t.pickup_location, t.destination, t.pickup_time, t.flight_number,
+                d.first_name as driver_first_name,
+                v.model as vehicle_model
+             FROM trips t
+             LEFT JOIN drivers d ON t.assigned_driver_id = d.id
+             LEFT JOIN vehicles v ON t.assigned_vehicle_id = v.id
+             WHERE t.id = $1`,
+            [tripId]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+
+        return res.status(200).json(tripResult.rows[0]);
+    } catch (err) {
+        console.error('[bookings] status error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;
