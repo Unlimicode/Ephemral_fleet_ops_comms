@@ -513,19 +513,24 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 
 ---
 
-## Sprint 13 — Client Booking & Swiftlink Website
+---
 
-### Phase 13.1 — Corporate Landing Page
-**Files created:** `frontend/src/pages/SwiftlinkHomePage.jsx`, `backend/routes/contact.js`
-**Files modified:** `backend/routes/index.js`
-**What was built:** High-conversion corporate landing page with integrated booking form and contact enquiry system. Implemented `POST /api/contact` with audit logging.
-**Architectural relevance:** Establishes the public entry point for the MICE transport ecosystem. Enforces the "Privacy-First" brand promise through architectural messaging.
+## Sprint 14 — Privacy Dashboard UI
 
-### Phase 13.2 — Magic Link & Booking Flow
-**Files created:** `frontend/src/pages/BookingLandingPage.jsx`, `frontend/src/pages/BookingHistoryPage.jsx`
-**Files modified:** `backend/routes/bookings.js`, `frontend/src/App.jsx`
-**What was built:** Token-authenticated booking status view. Supports real-time status syncing, driver identity minimisation, and mediated chat integration. Added a 24-hour compliant complaint window and booking history.
-**Architectural relevance:** Completes the stateless client authentication lifecycle. Ensures clients only see data relevant to their Magic Link session.
+### Phase 14.1 — Backend Dashboard API
+**Files modified:** `backend/routes/dashboard.js`
+**What was built:** Implemented `GET /summary`, `GET /sessions`, and refactored `GET /compliance-report`. These endpoints provide high-level metrics, real-time TTL state, and exportable compliance data.
+**Architectural relevance:** Exposes the "invisible" state of the ephemeral identity framework (Redis TTLs) to fleet managers, providing transparency and auditability without compromising privacy.
+
+### Phase 14.2 — Privacy Dashboard UI
+**Files created:** `frontend/src/pages/ManagerPrivacyDashboardPage.jsx`
+**Files modified:** `frontend/src/App.jsx`
+**What was built:** Sophisticated manager dashboard with:
+- **Live Session Monitor:** Real-time polling of active trip sessions.
+- **TTL Countdown Rings:** visual proof of ephemeral data expiry.
+- **Lifecycle Feed:** Socket.IO stream of session creation/destruction events.
+- **Compliance Export:** One-click JSON export for regulatory reporting.
+**Architectural relevance:** Transforms abstract privacy concepts into a tangible operational tool. Proves that data minimisation and operational visibility can coexist.
 
 ---
 

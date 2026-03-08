@@ -7,7 +7,7 @@ import ManagerDispatchPage from './pages/manager/ManagerDispatchPage.jsx';
 import ManagerDriversPage from './pages/manager/ManagerDriversPage.jsx';
 import ManagerVehiclesPage from './pages/manager/ManagerVehiclesPage.jsx';
 import ManagerComplaintsPage from './pages/manager/ManagerComplaintsPage.jsx';
-import ManagerDashboardPage from './pages/manager/ManagerDashboardPage.jsx';
+import ManagerDashboardPage from './pages/ManagerPrivacyDashboardPage.jsx';
 import ManagerAuditPage from './pages/manager/ManagerAuditPage.jsx';
 import DriverTripsPage from './pages/driver/DriverTripsPage.jsx';
 import DriverActiveTripPage from './pages/driver/DriverActiveTripPage.jsx';
