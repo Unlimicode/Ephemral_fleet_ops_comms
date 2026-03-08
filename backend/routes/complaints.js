@@ -134,14 +134,20 @@ router.get('/', requireAuth(['fleet_manager']), async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
-                id AS complaint_id,
-                trip_id,
-                category,
-                description,
-                status,
-                created_at
-            FROM complaints
-            ORDER BY created_at DESC
+                c.id AS complaint_id,
+                c.trip_id,
+                c.category,
+                c.description,
+                c.status,
+                c.investigation_notes,
+                c.created_at,
+                t.client_corporate_email,
+                t.pickup_location,
+                t.destination,
+                SUBSTRING(t.client_corporate_email FROM '@(.*)$') as organisation
+            FROM complaints c
+            JOIN trips t ON c.trip_id = t.id
+            ORDER BY c.created_at DESC
         `);
 
         return res.status(200).json(result.rows);
@@ -313,6 +319,66 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
 
     } catch (err) {
         console.error('[complaints] PATCH /:complaintId/status error:', err);
+        return res.status(500).json({ error: 'Internal server error natively' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /:complaintId/notes - Investigation Documentation
+// ─────────────────────────────────────────────────────────────────────────────
+router.patch('/:complaintId/notes', requireAuth(['fleet_manager']), async (req, res) => {
+    const { complaintId } = req.params;
+    const { notes } = req.body;
+
+    try {
+        await pool.query(
+            `UPDATE complaints SET investigation_notes = $1 WHERE id = $2`,
+            [notes, complaintId]
+        );
+
+        return res.status(200).json({ message: 'Investigation notes updated.' });
+    } catch (err) {
+        console.error('[complaints] PATCH /:complaintId/notes error:', err);
+        return res.status(500).json({ error: 'Internal server error natively' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /:complaintId/notify-driver - Explicit accountability trigger
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/:complaintId/notify-driver', requireAuth(['fleet_manager']), async (req, res) => {
+    const { complaintId } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT c.trip_id, t.assigned_driver_id 
+             FROM complaints c
+             JOIN trips t ON c.trip_id = t.id
+             WHERE c.id = $1`,
+            [complaintId]
+        );
+
+        if (result.rows.length === 0 || !result.rows[0].assigned_driver_id) {
+            return res.status(404).json({ error: 'Complaint or assigned driver not found' });
+        }
+
+        const driverId = result.rows[0].assigned_driver_id;
+
+        await sendPushNotification(driverId, {
+            title: 'Trip Review Update',
+            body: 'A fleet manager is reviewing a recent trip under investigation.',
+            type: 'complaint_review',
+        });
+
+        await pool.query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['DRIVER_NOTIFIED_OF_REVIEW', req.user.id, 'fleet_manager', driverId, { complaint_id: complaintId }]
+        );
+
+        return res.status(200).json({ message: 'Driver notified successfully.' });
+    } catch (err) {
+        console.error('[complaints] POST /notify-driver error:', err);
         return res.status(500).json({ error: 'Internal server error natively' });
     }
 });

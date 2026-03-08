@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 const NAV_LINKS = [
@@ -16,10 +17,25 @@ export default function ManagerLayout({ children }) {
     const navigate = useNavigate();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [complaintCount, setComplaintCount] = useState(0);
+
+    const fetchCounts = async () => {
+        try {
+            const res = await axios.get('/api/complaints');
+            const open = res.data.filter(c => c.status === 'open').length;
+            setComplaintCount(open);
+        } catch (err) {
+            console.error('Failed to fetch counts:', err);
+        }
+    };
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
+        // Explicitly deferred to avoid cascading synchronous render warnings
+        const deferredFetch = async () => await fetchCounts();
+        deferredFetch();
+        const countTimer = setInterval(fetchCounts, 60000);
+        return () => { clearInterval(timer); clearInterval(countTimer); };
     }, []);
 
     async function handleLogout() {
@@ -148,6 +164,21 @@ export default function ManagerLayout({ children }) {
                                     )}
                                     <span style={{ fontSize: '18px' }}>{icon}</span>
                                     {label}
+                                    {label === 'Complaints' && complaintCount > 0 && (
+                                        <span style={{
+                                            marginLeft: 'auto',
+                                            background: '#EF4444',
+                                            color: '#FFF',
+                                            fontSize: '10px',
+                                            fontWeight: 800,
+                                            padding: '2px 6px',
+                                            borderRadius: '10px',
+                                            minWidth: '18px',
+                                            textAlign: 'center'
+                                        }}>
+                                            {complaintCount}
+                                        </span>
+                                    )}
                                 </>
                             )}
                         </NavLink>

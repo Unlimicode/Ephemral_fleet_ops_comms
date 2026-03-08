@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS complaints (
   description               TEXT        NOT NULL,
   status                    TEXT        NOT NULL DEFAULT 'open',
   encrypted_message_archive TEXT,
+  investigation_notes      TEXT,
   created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

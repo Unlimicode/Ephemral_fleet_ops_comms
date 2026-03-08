@@ -103,9 +103,11 @@ router.get('/', requireAuth(['fleet_manager']), async (req, res) => {
                 CASE 
                     WHEN COUNT(t.id) > 0 THEN 'deployed'
                     ELSE 'available'
-                END as deployment_status
+                END as deployment_status,
+                MAX(d.full_name) as assigned_driver_name
             FROM vehicles v
             LEFT JOIN trips t ON v.id = t.vehicle_id AND t.status = 'in_progress'
+            LEFT JOIN drivers d ON t.assigned_driver_id = d.id
             GROUP BY v.id
             ORDER BY v.registration_number ASC
         `;

@@ -64,10 +64,12 @@ export default function ManagerPrivacyDashboardPage() {
         setEvents(prev => [event, ...prev].slice(0, 50));
     }, []);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-        fetchSessions();
-        fetchSummary();
+        const deferredFetch = async () => {
+            await fetchSessions();
+            await fetchSummary();
+        };
+        deferredFetch();
         const sessInterval = setInterval(fetchSessions, 5000);
         const summInterval = setInterval(fetchSummary, 30000);
 
