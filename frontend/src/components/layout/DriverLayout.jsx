@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import api from '../../api/axios.js';
 
 const TABS = [
     { to: '/driver/trips', label: 'Trips', icon: '🗂️' },
@@ -11,6 +13,24 @@ const TABS = [
 export default function DriverLayout() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [hasActiveTrip, setHasActiveTrip] = useState(false);
+
+    useEffect(() => {
+        const checkActiveTrips = async () => {
+            try {
+                const res = await api.get('/driver/trips');
+                const triplist = res.data.trips || [];
+                const active = triplist.some(t => t.status === 'in_progress');
+                setHasActiveTrip(active);
+            } catch (err) {
+                console.error('Failed to check active trips for indicator', err);
+            }
+        };
+
+        checkActiveTrips();
+        const interval = setInterval(checkActiveTrips, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div style={{
@@ -124,6 +144,16 @@ export default function DriverLayout() {
                             <>
                                 <span style={{ fontSize: '24px', marginBottom: '2px', filter: isActive ? 'none' : 'grayscale(1) opacity(0.6)' }}>
                                     {icon}
+                                    {label === 'Active' && hasActiveTrip && (
+                                        <div className="session-pulse" style={{
+                                            position: 'absolute',
+                                            top: '2px', right: '2px',
+                                            width: '8px', height: '8px',
+                                            borderRadius: '50%',
+                                            background: 'var(--accent-success)',
+                                            boxShadow: '0 0 8px var(--accent-success)'
+                                        }} />
+                                    )}
                                 </span>
                                 <span style={{ fontSize: '11px', fontWeight: isActive ? 700 : 500, fontFamily: 'Inter, sans-serif' }}>
                                     {label}

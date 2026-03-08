@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -10,8 +10,15 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState(null);
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    // Prevent authenticated users from seeing the login screen by auto-forwarding
+    React.useEffect(() => {
+        if (isAuthenticated) {
+            navigate(role === 'fleet_manager' ? '/manager/dispatch' : '/driver/trips', { replace: true });
+        }
+    }, [isAuthenticated, navigate, role]);
 
     const handleLogin = async () => {
         if (!email || !password) { setError('Please enter your email and password.'); return; }

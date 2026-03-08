@@ -7,10 +7,24 @@ import api, { setAuthToken } from '../api/axios.js';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-    const [auth, setAuth] = useState({ token: null, role: null, user: null });
+    const [auth, setAuth] = useState(() => {
+        const token = sessionStorage.getItem('swiftlink_token');
+        const role = sessionStorage.getItem('swiftlink_role');
+        let user = null;
+        try {
+            const userStr = sessionStorage.getItem('swiftlink_user');
+            user = userStr && userStr !== 'undefined' ? JSON.parse(userStr) : null;
+        } catch {
+            user = null;
+        }
+        return { token, role, user };
+    });
 
-    // login stores credentials in state and injects the token into the axios instance.
+    // login stores credentials in state, sessionStorage, and injects the token into the axios instance.
     const login = useCallback((token, role, user) => {
+        sessionStorage.setItem('swiftlink_token', token);
+        sessionStorage.setItem('swiftlink_role', role);
+        sessionStorage.setItem('swiftlink_user', JSON.stringify(user));
         setAuthToken(token);
         setAuth({ token, role, user });
     }, []);
@@ -20,14 +34,17 @@ export function AuthProvider({ children }) {
     const logout = useCallback(async () => {
         try {
             if (auth.role === 'fleet_manager') {
-                await api.post('/api/auth/logout');
+                await api.post('/auth/logout');
             } else if (auth.role === 'driver') {
-                await api.post('/api/drivers/auth/logout');
+                await api.post('/drivers/auth/logout');
             }
         } catch {
             // Logout errors are non-fatal — state is cleared regardless.
         }
         setAuthToken(null);
+        sessionStorage.removeItem('swiftlink_token');
+        sessionStorage.removeItem('swiftlink_role');
+        sessionStorage.removeItem('swiftlink_user');
         setAuth({ token: null, role: null, user: null });
     }, [auth.role]);
 

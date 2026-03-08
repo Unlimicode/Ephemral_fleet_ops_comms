@@ -24,7 +24,7 @@ router.post('/auth/login', async (req, res) => {
 
     try {
         const result = await query(
-            'SELECT id, password_hash, active_status FROM drivers WHERE work_email = $1',
+            'SELECT id, full_name, work_email, password_hash, active_status FROM drivers WHERE work_email = $1',
             [email]
         );
 
@@ -54,7 +54,14 @@ router.post('/auth/login', async (req, res) => {
 
         await setSession(`driver:availability:${driver.id}`, { status: 'available', updated_at: new Date().toISOString(), token });
 
-        return res.status(200).json({ token });
+        return res.status(200).json({
+            token,
+            user: {
+                id: driver.id,
+                full_name: driver.full_name,
+                email: driver.work_email
+            }
+        });
     } catch (err) {
         console.error('[drivers] login error:', err);
         return res.status(500).json({ error: 'Internal server error' });

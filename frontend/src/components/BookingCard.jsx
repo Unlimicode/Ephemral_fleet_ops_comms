@@ -18,7 +18,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
         <div className="glass-card animate-fade-in-up" style={{ padding: '24px', animationDelay: `${index * 0.1}s` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', margin: 0 }}>
-                    {booking.client_organisation}
+                    {booking.client_first_name}
                 </h3>
                 <span style={{
                     background: statusColor, color: statusText,
@@ -34,7 +34,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
                     {booking.pickup_location} <span style={{ color: 'var(--text-muted)' }}>→</span> {booking.destination}
                 </p>
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {new Date(booking.scheduled_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                    {booking.pickup_time ? new Date(booking.pickup_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Invalid Date'}
                 </p>
             </div>
 
@@ -62,7 +62,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
                 >
                     <option value="">Select Driver</option>
                     {drivers.map(d => (
-                        <option key={d.id} value={d.id}>{d.full_name}</option>
+                        <option key={d.driver_id} value={d.driver_id}>{d.full_name}</option>
                     ))}
                 </select>
 
@@ -77,7 +77,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
                 >
                     <option value="">Select Vehicle</option>
                     {vehicles.map(v => (
-                        <option key={v.id} value={v.id}>{v.registration_number} ({v.model})</option>
+                        <option key={v.vehicle_id} value={v.vehicle_id}>{v.registration_number} ({v.type})</option>
                     ))}
                 </select>
             </div>

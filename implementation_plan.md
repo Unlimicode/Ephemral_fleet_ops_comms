@@ -414,6 +414,103 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 **What was built:** Bootstrapped the Profile view linking driver identity, active JWT session state monitoring, and the `PushNotificationToggle` context. Built isolated `DriverNotificationsPage` stub. Wired the new layout components and a floating globally-scoped `<ToastProvider>` straight into the root `App.jsx` routing tree.
 **Architectural relevance:** Reuses generic authentication primitives while localizing feedback (Toasts) directly against standard DOM manipulations.
 
+## Chore — Master Seed Script
+
+### Proposed Changes
+
+#### [NEW] `backend/database/seed.js`
+- Create a Node.js script to act as the master seed for the database.
+- Import `db` from `backend/config/db.js` and `bcrypt` from `bcryptjs`.
+- Execute `DELETE` queries in the correct order to respect foreign key constraints: `push_subscriptions`, `complaints`, `messages`, `trips`, `bookings`, `vehicles`, `drivers`, `fleet_managers`.
+- Hash all passwords using `bcrypt.hash(password, 10)`.
+- Insert one Fleet Manager (`manager@fleetops.dev`).
+- Insert three Drivers (`james@fleetops.dev`, `amina@fleetops.dev`, `peter@fleetops.dev`).
+- Insert three Vehicles (`KDA 001A`, `KDB 002B`, `KDC 003C`).
+- Insert two pending Bookings for tomorrow with the specified details.
+- Log a formatted summary to the console upon successful completion.
+
+#### [MODIFY] `backend/package.json`
+- Add `"seed": "node database/seed.js"` to the `scripts` object to enable `npm run seed`.
+
+### Verification Plan
+#### Automated Tests
+- N/A
+#### Manual Verification
+- Run `npm run seed` from the `backend/` directory and verify the console output matches the exact requested summary format.
+- Connect to the local PostgreSQL database using a tool like DBeaver or `psql` and manually verify that the rows were inserted into `fleet_managers`, `drivers`, `vehicles`, and `trips` tables correctly.
+
+## Fix — Persist Auth Token Across Page Refreshes
+
+### Proposed Changes
+
+#### [MODIFY] `frontend/src/context/AuthContext.jsx`
+- Modify the `useState` initialization for `token`, `role`, and `user` to read from `sessionStorage` on mount. This ensures the React state restores existing session data after a refresh.
+- Within `login(token, role, user)`, add calls to `sessionStorage.setItem()` for `swiftlink_token`, `swiftlink_role`, and `swiftlink_user` (stringified). Check that this correctly caches the token payload in the active browser tab.
+- Within `logout()`, add calls to `sessionStorage.removeItem()` to synchronously destroy the cached data alongside the React state teardown, ensuring no stale data persists.
+
+#### [MODIFY] `frontend/src/api/axios.js`
+- Modify the module-level `authToken` declaration to initialize using `sessionStorage.getItem('swiftlink_token') || null`. This acts as a fallback injection for the axios interceptor during module initialization before the `AuthContext` mounts and explicitly calls `setAuthToken(token)`.
+
+### Verification Plan
+#### Automated Tests
+- N/A
+#### Manual Verification
+- Run `npm run dev` and authenticate as a fleet manager.
+- Refresh the browser page (`F5`) and confirm that the `/manager/dispatch` view loads directly without redirecting to `/login`.
+- Run `npm run lint` and `npm run build` to confirm no errors were introduced by the changes.
+- Commit the changes and execute a final push to `origin/main`.
+
+## Fix — Blank Login Page, SessionStorage Auth, and Driver PWA Issues
+
+### Proposed Changes
+
+#### [MODIFY] `frontend/src/context/AuthContext.jsx`
+- Wrap the initial `user` state parsing in a `try/catch` block to handle `undefined` or malformed JSON payloads gracefully, defaulting to `null` on error. This resolves the blank page crash caused by unhandled JSON parse exceptions during hydration.
+
+#### [MODIFY] `frontend/src/api/axios.js`
+- Wrap the `sessionStorage.getItem('swiftlink_token')` initialization inside a `try/catch` array. This ensures safe execution in environments where `sessionStorage` might be restricted or undefined during early module load.
+
+#### [VERIFY & MODIFY] `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- Validate that the Dispatch Page calls `GET /api/bookings` instead of `GET /api/trips` for incoming bookings data, ensuring `pending` assignments populate the matrix accurately. Update the fetch call if an incorrect endpoint is targeted.
+- Test viewport responsiveness down to 390px using `min-width` and `overflow-x` handling strategies to prevent truncation and ensure interactive UI scale appropriately.
+
+#### [VERIFY & MODIFY] `frontend/src/pages/driver/DriverTripsPage.jsx` / `DriverActiveTripPage.jsx`
+- Assess the UI execution during the `assign -> accept -> start` loop. Address console exceptions arising from faulty state mapping or missing array properties.
+- Verify that active trip layouts wrap without breaking container boundaries on a 390px viewport profile. Apply flexbox wrapping and text truncation styles on deeply nested elements if required.
+
+### Verification Plan
+#### Automated Tests
+- N/A
+#### Manual Verification
+- **Part 1**: Authenticate via the dev server. Target `http://localhost:5173/login` using the devtools to capture initial crash logs.
+- **Part 2**: Apply parser hardening and verify the application renders successfully.
+- **Part 3**: Audit the Fleet Manager pipeline. Log in as `manager@fleetops.dev`, verify that the dispatch list populates `Sarah Mitchell` and `David Okafor`, verify metrics update correctly, and verify persistence survives a manual refresh.
+- **Part 4**: Audit the Driver pipeline. Log out and switch to `james@fleetops.dev`. Track the trips list, assign a trip via the manager terminal, test the polling ingestion sequence to the Upcoming tab, accept the payload to the Active tab, and load the specific Active page to verify details.
+- **Part 5**: Inspect layouts on the 390px responsive threshold. Adjust styling constraints to eliminate horizontal overflow.
+- Run `npm run lint` and `npm run build` after modifications.
+- Commit the changes and execute a push to `origin/main`.
+
+---
+
+## Sprint 12 — WebSocket Chat Interface
+
+### Phase 12.1 — Chat Logic and Hook
+**Files created:** `frontend/src/hooks/useChat.js`  
+**Files modified:** `frontend/.env`, `frontend/.env.example`
+**What was built:** `useChat` hook implementing `socket.io-client` with handshake auth. Added `VITE_WS_URL` environment variables pointing to the Socket.IO relay.
+**Architectural relevance:** Centralizes WebSocket lifecycle in a reusable hook. handshake auth ensures no unauthorized socket can join a trip room.
+
+### Phase 12.2 — Chat UI Component
+**Files created:** `frontend/src/components/ChatWindow.jsx`
+**What was built:** Glassmorphic chat window with real-time status sync, message history, and auto-scrolling buffer.
+**Architectural relevance:** Separates communication UI from page logic. Communicates the "Mediated · No PII" privacy guarantee to users.
+
+### Phase 12.3 — Interface Integration
+**Files created:** `frontend/src/pages/ClientChatPage.jsx`
+**Files modified:** `frontend/src/pages/driver/DriverActiveTripPage.jsx`, `frontend/src/App.jsx`, `frontend/src/components/layout/DriverLayout.jsx`
+**What was built:** Swapped placeholder with `ChatWindow` in driver view. Registered new client booking chat route. Added pulsing live session indicator in driver layout bottom bar triggered by `in_progress` trips.
+**Architectural relevance:** Completes the human-to-human loop of the Ephemeral Identity framework. Pulse indicator provides low-latency visual feedback of active identity sessions.
+
 ---
 
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*

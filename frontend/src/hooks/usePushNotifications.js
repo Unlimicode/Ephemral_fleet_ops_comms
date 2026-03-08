@@ -35,7 +35,7 @@ export default function usePushNotifications() {
         async function init() {
             try {
                 // Fetch the VAPID public key from the backend.
-                const res = await fetch('/api/push/vapid-public-key');
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/push/vapid-public-key`);
                 if (!res.ok) throw new Error('Failed to fetch VAPID public key');
                 const { publicKey: key } = await res.json();
 
@@ -76,7 +76,7 @@ export default function usePushNotifications() {
                     applicationServerKey: urlBase64ToUint8Array(publicKey),
                 });
 
-                const res = await fetch('/api/push/subscribe', {
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/push/subscribe`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export default function usePushNotifications() {
                     return;
                 }
 
-                await fetch('/api/push/subscribe', {
+                await fetch(`${import.meta.env.VITE_API_URL}/push/subscribe`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',

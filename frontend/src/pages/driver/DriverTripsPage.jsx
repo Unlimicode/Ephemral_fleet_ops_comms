@@ -11,7 +11,7 @@ export default function DriverTripsPage() {
 
     const fetchTrips = useCallback(async () => {
         try {
-            const res = await api.get('/driver/trips');
+            const res = await api.get('/drivers/trips');
             setTrips(res.data.trips || []);
         } catch (err) {
             console.error('Failed to fetch driver trips', err);
@@ -29,7 +29,7 @@ export default function DriverTripsPage() {
 
     const handleAccept = async (tripId) => {
         try {
-            await api.patch(`/driver/trips/${tripId}/accept`, { response: 'accepted' });
+            await api.patch(`/drivers/trips/${tripId}/accept`, { response: 'accepted' });
             showToast('Trip accepted successfully.', 'success');
             fetchTrips();
         } catch {
@@ -39,7 +39,7 @@ export default function DriverTripsPage() {
 
     const handleDecline = async (tripId, reason) => {
         try {
-            await api.patch(`/driver/trips/${tripId}/accept`, { response: 'rejected', reason });
+            await api.patch(`/drivers/trips/${tripId}/accept`, { response: 'rejected', reason });
             showToast('Trip declined and returned to dispatch.', 'success');
             fetchTrips();
         } catch {

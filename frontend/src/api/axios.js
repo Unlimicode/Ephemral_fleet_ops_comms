@@ -4,6 +4,11 @@ import axios from 'axios';
 // reads this value so the axios instance never needs a direct reference to the
 // React auth context — avoiding a circular import between this module and AuthContext.
 let _token = null;
+try {
+    _token = sessionStorage.getItem('swiftlink_token') || null;
+} catch {
+    _token = null;
+}
 
 export function setAuthToken(token) {
     _token = token;

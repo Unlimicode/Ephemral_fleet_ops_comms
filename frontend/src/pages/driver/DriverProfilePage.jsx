@@ -2,7 +2,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import PushNotificationToggle from '../../components/PushNotificationToggle.jsx';
 
 export default function DriverProfilePage() {
-    const { user, token, handleLogout } = useAuth();
+    const { user, token, logout } = useAuth();
 
     return (
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -50,7 +50,7 @@ export default function DriverProfilePage() {
                             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-success)', textTransform: 'uppercase' }}>Active since login</span>
                         </div>
                     </div>
-                    <button onClick={handleLogout} style={{
+                    <button onClick={logout} style={{
                         width: '100%', padding: '16px', borderRadius: '16px',
                         background: 'rgba(13,13,13,0.85)', backdropFilter: 'blur(20px)',
                         color: '#F5EDE3', fontSize: '15px', fontWeight: 700,

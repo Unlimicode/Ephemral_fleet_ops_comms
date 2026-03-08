@@ -15,6 +15,7 @@ export default function ManagerLayout({ children }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -28,6 +29,22 @@ export default function ManagerLayout({ children }) {
 
     return (
         <div style={{ minHeight: '100vh', background: 'var(--bg-base)', position: 'relative', overflow: 'hidden' }}>
+            <style>{`
+                .manager-sidebar { width: 240px; transform: translateX(0); transition: transform 0.3s ease; }
+                .manager-main { margin-left: 240px; padding: 32px; }
+                .mobile-toggle { display: none; }
+                .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 15; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: opacity 0.3s; opacity: 0; pointer-events: none; }
+                .sidebar-overlay.open { display: block; opacity: 1; pointer-events: auto; }
+                @media (max-width: 768px) {
+                    .manager-sidebar { transform: translateX(-100%); }
+                    .manager-sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.2); }
+                    .manager-main { margin-left: 0 !important; padding: 16px !important; }
+                    .mobile-toggle { display: block; border: none; background: transparent; font-size: 24px; cursor: pointer; padding: 0; margin-right: 12px; }
+                    .manager-header-content { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+                }
+            `}</style>
+
+            <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
 
             {/* Background Blobs (z-index: 0) matching login page */}
             <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
@@ -66,10 +83,9 @@ export default function ManagerLayout({ children }) {
             </div>
 
             {/* Left Sidebar */}
-            <aside style={{
+            <aside className={`manager-sidebar ${sidebarOpen ? 'open' : ''}`} style={{
                 position: 'fixed',
                 left: 0, top: 0, bottom: 0,
-                width: '240px',
                 background: 'rgba(255, 255, 255, 0.35)',
                 backdropFilter: 'blur(60px) saturate(200%)',
                 WebkitBackdropFilter: 'blur(60px) saturate(200%)',
@@ -175,22 +191,25 @@ export default function ManagerLayout({ children }) {
             </aside>
 
             {/* Main Content Area */}
-            <main style={{ marginLeft: '240px', minHeight: '100vh', position: 'relative', zIndex: 1, padding: '32px' }}>
-                <header style={{
+            <main className="manager-main" style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+                <header className="manager-header-content" style={{
                     display: 'flex', alignItems: 'center',
                     justifyContent: 'space-between',
                     marginBottom: '32px'
                 }}>
-                    <div>
-                        <h1 style={{
-                            fontSize: '28px', fontWeight: 800,
-                            color: 'var(--text-dark)',
-                            letterSpacing: '-1px',
-                            fontFamily: 'Inter, sans-serif'
-                        }}>Fleet Operations</h1>
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                            Swiftlink Fleet Operations
-                        </p>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <button className="mobile-toggle" onClick={() => setSidebarOpen(true)}>☰</button>
+                        <div>
+                            <h1 style={{
+                                fontSize: '28px', fontWeight: 800,
+                                color: 'var(--text-dark)',
+                                letterSpacing: '-1px',
+                                fontFamily: 'Inter, sans-serif'
+                            }}>Fleet Operations</h1>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                Swiftlink Fleet Operations
+                            </p>
+                        </div>
                     </div>
                     <div style={{
                         padding: '10px 18px',

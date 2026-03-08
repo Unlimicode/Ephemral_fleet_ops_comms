@@ -14,7 +14,7 @@ import DriverActiveTripPage from './pages/driver/DriverActiveTripPage.jsx';
 import DriverProfilePage from './pages/driver/DriverProfilePage.jsx';
 import DriverNotificationsPage from './pages/driver/DriverNotificationsPage.jsx';
 import BookingLandingPage from './pages/booking/BookingLandingPage.jsx';
-import BookingViewPage from './pages/booking/BookingViewPage.jsx';
+import ClientChatPage from './pages/ClientChatPage.jsx';
 
 // Layout & Context imports
 import ManagerLayout from './components/layout/ManagerLayout.jsx';
@@ -49,7 +49,7 @@ export default function App() {
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/booking" element={<BookingLandingPage />} />
-        <Route path="/booking/:tripId" element={<BookingViewPage />} />
+        <Route path="/booking/:tripId" element={<ClientChatPage />} />
 
         {/* Fleet manager routes — nested under ManagerLayout */}
         <Route

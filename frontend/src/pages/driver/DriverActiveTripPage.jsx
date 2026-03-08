@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios.js';
 import { useToast } from '../../components/Toast.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import ChatWindow from '../../components/ChatWindow.jsx';
 
 export default function DriverActiveTripPage() {
     const { tripId } = useParams();
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const { token } = useAuth();
     const [trip, setTrip] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -128,8 +131,15 @@ export default function DriverActiveTripPage() {
                 )}
             </section>
 
-            {/* Section 3: Communication Panel Placeholder */}
-            <section className="glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
+            {/* Section 3: Communication Panel */}
+            <section className="glass-card" style={{
+                padding: '24px',
+                borderRadius: '24px',
+                flex: 1,
+                minHeight: '400px',
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         🔒 Secure Channel
@@ -141,8 +151,13 @@ export default function DriverActiveTripPage() {
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
                     End-to-end mediated communication — no contact details exchanged.
                 </p>
-                <div style={{ background: 'rgba(255,255,255,0.4)', padding: '20px', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', border: '1px dashed rgba(13,13,13,0.1)' }}>
-                    Chat interface loads in Sprint 12
+                <div style={{ flex: 1 }}>
+                    <ChatWindow
+                        tripId={tripId}
+                        token={token}
+                        role="driver"
+                        counterpartName={trip.client_first_name || 'Passenger'}
+                    />
                 </div>
             </section>
 
