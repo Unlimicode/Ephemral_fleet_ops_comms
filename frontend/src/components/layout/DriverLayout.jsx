@@ -83,7 +83,7 @@ export default function DriverLayout() {
                 alignItems: 'center',
                 justifyContent: 'space-between'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
                     <img src="/swiftlink-icon.png" alt="S" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
                     <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0D0D0D', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>
                         wiftlink

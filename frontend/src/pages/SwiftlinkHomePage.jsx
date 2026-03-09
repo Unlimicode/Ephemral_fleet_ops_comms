@@ -65,8 +65,8 @@ export default function SwiftlinkHomePage() {
 
             {/* Navigation */}
             <nav style={{ padding: '24px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'absolute', top: 0, width: '100%', zIndex: 100 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <img src="/swiftlink-icon.png" alt="S" style={{ height: '32px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
+                    <img src="/swiftlink-icon.png" alt="S" style={{ height: '40px' }} />
                     <span style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.8px' }}>wiftlink</span>
                 </div>
                 <div style={{ display: 'flex', gap: '32px', fontSize: '14px', fontWeight: 600 }}>
@@ -98,26 +98,26 @@ export default function SwiftlinkHomePage() {
                     </div>
                 </div>
 
-                <div style={{ width: '460px' }}>
-                    <div className="glass-card" style={{ padding: '32px', borderRadius: '32px', boxShadow: '0 24px 64px rgba(0,0,0,0.1)' }}>
+                <div style={{ width: '460px', maxWidth: '100%' }}>
+                    <div className="glass-card" style={{ padding: '32px', borderRadius: '32px', boxShadow: '0 24px 64px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
                         {!bookingStatus.success ? (
                             <>
                                 <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '24px' }}>Book a Transfer</h2>
                                 <form onSubmit={handleBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                        <input type="text" placeholder="Full name" required value={bookingForm.client_first_name} onChange={e => setBookingForm({ ...bookingForm, client_first_name: e.target.value })} style={{ padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)' }} />
-                                        <input type="email" placeholder="Corporate email" required value={bookingForm.client_corporate_email} onChange={e => setBookingForm({ ...bookingForm, client_corporate_email: e.target.value })} style={{ padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)' }} />
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+                                        <input type="text" placeholder="Full name" required value={bookingForm.client_first_name} onChange={e => setBookingForm({ ...bookingForm, client_first_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', minWidth: '0' }} />
+                                        <input type="email" placeholder="Corporate email" required value={bookingForm.client_corporate_email} onChange={e => setBookingForm({ ...bookingForm, client_corporate_email: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', minWidth: '0' }} />
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                        <input type="text" placeholder="Pickup location" required value={bookingForm.pickup_location} onChange={e => setBookingForm({ ...bookingForm, pickup_location: e.target.value })} style={{ padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)' }} />
-                                        <input type="text" placeholder="Destination" required value={bookingForm.destination} onChange={e => setBookingForm({ ...bookingForm, destination: e.target.value })} style={{ padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)' }} />
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+                                        <input type="text" placeholder="Pickup location" required value={bookingForm.pickup_location} onChange={e => setBookingForm({ ...bookingForm, pickup_location: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', minWidth: '0' }} />
+                                        <input type="text" placeholder="Destination" required value={bookingForm.destination} onChange={e => setBookingForm({ ...bookingForm, destination: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', minWidth: '0' }} />
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                        <input type="date" required value={bookingForm.date} onChange={e => setBookingForm({ ...bookingForm, date: e.target.value })} style={{ padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)' }} />
-                                        <input type="time" required value={bookingForm.time} onChange={e => setBookingForm({ ...bookingForm, time: e.target.value })} style={{ padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)' }} />
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
+                                        <input type="date" required value={bookingForm.date} onChange={e => setBookingForm({ ...bookingForm, date: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', minWidth: '0' }} />
+                                        <input type="time" required value={bookingForm.time} onChange={e => setBookingForm({ ...bookingForm, time: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', minWidth: '0' }} />
                                     </div>
-                                    <input type="text" placeholder="Flight number (Optional)" value={bookingForm.flight_number} onChange={e => setBookingForm({ ...bookingForm, flight_number: e.target.value })} style={{ padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)' }} />
-                                    <textarea placeholder="Special requirements (Optional)" rows={2} value={bookingForm.special_requirements} onChange={e => setBookingForm({ ...bookingForm, special_requirements: e.target.value })} style={{ padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', resize: 'none' }} />
+                                    <input type="text" placeholder="Flight number (Optional)" value={bookingForm.flight_number} onChange={e => setBookingForm({ ...bookingForm, flight_number: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', minWidth: '0' }} />
+                                    <textarea placeholder="Special requirements (Optional)" rows={2} value={bookingForm.special_requirements} onChange={e => setBookingForm({ ...bookingForm, special_requirements: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', resize: 'none', minWidth: '0' }} />
                                     <button type="submit" disabled={bookingStatus.loading} className="glass-button" style={{ padding: '14px', borderRadius: '12px', fontWeight: 700, marginTop: '8px' }}>
                                         {bookingStatus.loading ? 'Processing...' : 'Request Transfer →'}
                                     </button>

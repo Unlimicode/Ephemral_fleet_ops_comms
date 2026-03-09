@@ -10,6 +10,7 @@ export default function StatCard({ title, value, subtitle, icon, pulse, tint = '
         <div className={`glass-card ${pulse ? 'session-pulse' : ''}`} style={{
             padding: '28px 24px',
             position: 'relative',
+            borderRadius: '16px',
             overflow: 'hidden',
             transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
             cursor: 'default'

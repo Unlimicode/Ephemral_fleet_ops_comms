@@ -47,7 +47,7 @@ export default function DriverTripsPage() {
         }
     };
 
-    const upcomingTrips = trips.filter(t => t.status === 'assigned');
+    const upcomingTrips = trips.filter(t => t.status === 'assigned' || t.status === 'accepted');
     const activeTripsList = trips.filter(t => t.status === 'in_progress');
     const completedTrips = trips.filter(t => t.status === 'completed');
 

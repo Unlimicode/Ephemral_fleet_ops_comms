@@ -43,128 +43,87 @@ export default function LoginPage() {
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            minHeight: '100vh',
+            width: '100%',
+            background: 'var(--bg-base)',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
 
-            <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
-                {/* Large warm peach blob — bottom left, matches reference circle */}
-                <div className="glass-blob">
-                    <div style={{
-                        position: 'absolute',
-                        bottom: '-15%', left: '-10%',
-                        width: '650px', height: '650px',
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(240,180,140,0.75) 0%, rgba(230,160,110,0.75) 40%, transparent 70%)',
-                        filter: 'blur(20px)',
-                        mixBlendMode: 'multiply',
-                        animation: 'blobFloat1 14s ease-in-out infinite, blobPulse 7s ease-in-out infinite, glassShimmer 6s ease-in-out infinite'
-                    }} />
-                </div>
-                {/* Medium warm blob — top centre */}
-                <div className="glass-blob">
-                    <div style={{
-                        position: 'absolute',
-                        top: '-10%', left: '30%',
-                        width: '400px', height: '400px',
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(240,200,170,0.65) 0%, transparent 70%)',
-                        filter: 'blur(22px)',
-                        mixBlendMode: 'multiply',
-                        animation: 'blobFloat2 18s ease-in-out infinite, blobPulse 9s ease-in-out infinite, glassShimmer 8s ease-in-out infinite 1s'
-                    }} />
-                </div>
-                {/* Third warm blob — mid-right area */}
-                <div className="glass-blob">
-                    <div style={{
-                        position: 'absolute',
-                        top: '30%', right: '-5%',
-                        width: '350px', height: '350px',
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(230,150,100,0.6) 0%, transparent 70%)',
-                        filter: 'blur(20px)',
-                        mixBlendMode: 'multiply',
-                        animation: 'blobFloat2 16s ease-in-out infinite reverse, blobPulse 8s ease-in-out infinite, glassShimmer 7s ease-in-out infinite 0.5s'
-                    }} />
-                </div>
+            {/* Background Blobs — Fixed behind panels */}
+            <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+                {/* Large peach blob */}
+                <div style={{
+                    position: 'absolute',
+                    bottom: '-15%', left: '-10%',
+                    width: '650px', height: '650px',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(240,180,140,0.75) 0%, rgba(230,160,110,0.75) 40%, transparent 70%)',
+                    filter: 'blur(20px)',
+                    mixBlendMode: 'multiply',
+                    animation: 'blobFloat1 14s ease-in-out infinite, blobPulse 7s ease-in-out infinite, glassShimmer 6s ease-in-out infinite'
+                }} />
+                {/* Medium peach blob */}
+                <div style={{
+                    position: 'absolute',
+                    top: '-10%', left: '30%',
+                    width: '400px', height: '400px',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(240,200,170,0.65) 0%, transparent 70%)',
+                    filter: 'blur(22px)',
+                    mixBlendMode: 'multiply',
+                    animation: 'blobFloat2 18s ease-in-out infinite, blobPulse 9s ease-in-out infinite, glassShimmer 8s ease-in-out infinite 1s'
+                }} />
+                {/* Third peach blob */}
+                <div style={{
+                    position: 'absolute',
+                    top: '30%', right: '-5%',
+                    width: '350px', height: '350px',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(230,150,100,0.6) 0%, transparent 70%)',
+                    filter: 'blur(20px)',
+                    mixBlendMode: 'multiply',
+                    animation: 'blobFloat2 16s ease-in-out infinite reverse, blobPulse 8s ease-in-out infinite, glassShimmer 7s ease-in-out infinite 0.5s'
+                }} />
             </div>
 
-            {/* Navigation */}
-            <nav style={{
-                position: 'relative', zIndex: 20,
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: isMobile ? '20px 24px' : '28px 48px',
-            }}>
-                {/* Logo — icon as S + wiftlink outline text */}
-                <div className="animate-fade-in-up" style={{
-                    display: 'flex', alignItems: 'center',
-                    gap: '0px', animationDelay: '0s'
-                }}>
-                    <img
-                        src="/swiftlink-icon.png"
-                        alt="S"
-                        className="animate-icon-pop"
-                        style={{ height: isMobile ? '60px' : '99px', width: isMobile ? '60px' : '99px', objectFit: 'contain' }}
-                    />
-                    <span
-                        className="animate-text-slide"
-                        style={{
-                            fontSize: isMobile ? '2.4rem' : '3.9rem',
-                            fontWeight: 800,
-                            color: '#0D0D0D',
-                            letterSpacing: '-1px',
-                            lineHeight: 1,
-                            fontFamily: 'Inter, sans-serif',
-                            marginLeft: '2px'
-                        }}
-                    >wiftlink</span>
-                </div>
-
-                {/* Nav links */}
-                {!isMobile && (
-                    <div style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
-                        {['About', 'Services', 'Contact'].map((link, i) => (
-                            <a key={link} href="#" style={{
-                                color: 'var(--text-secondary)',
-                                textDecoration: 'none',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                transition: 'var(--transition-smooth)',
-                                opacity: 0,
-                                animation: `fadeInUp 0.5s ease forwards`,
-                                animationDelay: `${0.1 + i * 0.08}s`
-                            }}
-                                onMouseEnter={e => e.target.style.color = 'var(--text-dark)'}
-                                onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
-                            >{link}</a>
-                        ))}
-                    </div>
-                )}
-            </nav>
-
-            {/* Split content */}
+            {/* Left Panel — Brand Content */}
             <div style={{
                 flex: 1,
-                flexDirection: isMobile ? 'column-reverse' : 'row',
-                alignItems: isMobile ? 'stretch' : 'center',
-                padding: isMobile ? '0 24px 60px' : '0 48px 60px',
-                gap: isMobile ? '60px' : '40px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                padding: isMobile ? '40px 24px' : '60px 8%',
                 position: 'relative',
-                zIndex: 10
+                zIndex: 1
             }}>
+                <div className="animate-fade-in-up">
+                    {/* Brand Logo - Inline with text */}
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '40px', gap: '0px' }}>
+                        <img
+                            src="/swiftlink-icon.png"
+                            alt="S"
+                            style={{ height: isMobile ? '50px' : '80px', width: 'auto', objectFit: 'contain' }}
+                        />
+                        <span style={{
+                            fontSize: isMobile ? '2rem' : '3.2rem',
+                            fontWeight: 800,
+                            color: 'var(--text-dark)',
+                            fontFamily: 'Inter, sans-serif',
+                            letterSpacing: '-2px'
+                        }}>wiftlink</span>
+                    </div>
 
-                {/* Left — brand content, pushed toward centre */}
-                <div className="animate-fade-in-up" style={{
-                    flex: isMobile ? 'none' : '1.2',
-                    paddingLeft: isMobile ? '0' : '8%',
-                    animationDelay: '0.15s'
-                }}>
                     <p style={{
                         fontSize: '11px',
                         fontWeight: 700,
                         letterSpacing: '3px',
                         textTransform: 'uppercase',
                         color: 'var(--text-muted)',
-                        marginBottom: '28px',
+                        marginBottom: '20px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px'
@@ -173,9 +132,8 @@ export default function LoginPage() {
                         Corporate Fleet Dispatch
                     </p>
 
-                    {/* Mixed outline + solid headline like reference */}
                     <h1 style={{
-                        fontSize: 'clamp(3rem, 5vw, 4.5rem)',
+                        fontSize: 'clamp(2.5rem, 4vw, 4rem)',
                         fontWeight: 800,
                         color: 'transparent',
                         WebkitTextStroke: '1.5px #0D0D0D',
@@ -185,7 +143,7 @@ export default function LoginPage() {
                         fontFamily: 'Inter, sans-serif'
                     }}>Seamless<br />transfers.</h1>
                     <h1 style={{
-                        fontSize: 'clamp(3rem, 5vw, 4.5rem)',
+                        fontSize: 'clamp(2.5rem, 4vw, 4rem)',
                         fontWeight: 800,
                         color: '#0D0D0D',
                         letterSpacing: '-2px',
@@ -198,35 +156,16 @@ export default function LoginPage() {
                         fontSize: '16px',
                         color: 'var(--text-secondary)',
                         lineHeight: 1.8,
-                        maxWidth: '380px',
-                        marginBottom: '20px'
+                        maxWidth: '400px',
+                        marginBottom: '32px'
                     }}>
                         Built for Kenya's MICE sector. Corporate ground transport with privacy protected at the architecture level — not as a policy, as a technical guarantee.
                     </p>
-
-                    {/* Three feature points */}
-                    {[
-                        'Drivers never receive client contact details',
-                        'Communication records expire automatically',
-                        'Full audit trail for corporate compliance'
-                    ].map((point, i) => (
-                        <div key={i} style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            marginBottom: '10px'
-                        }}>
-                            <span style={{
-                                width: '6px', height: '6px', borderRadius: '50%',
-                                background: '#0D0D0D', flexShrink: 0
-                            }} />
-                            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{point}</span>
-                        </div>
-                    ))}
 
                     <button
                         onClick={() => navigate('/')}
                         className="glass-button"
                         style={{
-                            marginTop: '36px',
                             display: 'inline-flex', alignItems: 'center', gap: '12px',
                             padding: '16px 32px',
                             borderRadius: '50px',
@@ -239,15 +178,19 @@ export default function LoginPage() {
                         Book a Transfer <span>→</span>
                     </button>
                 </div>
+            </div>
 
-                {/* Right — login card, pulled toward centre */}
-                <div className="animate-slide-in-right" style={{
-                    width: isMobile ? '100%' : '400px',
-                    flexShrink: 0,
-                    marginRight: isMobile ? '0' : '20%',
-                    animationDelay: '0.2s',
-                    zIndex: 15
-                }}>
+            {/* Right Panel — Login Card */}
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '40px',
+                position: 'relative',
+                zIndex: 1
+            }}>
+                <div className="animate-slide-in-right" style={{ width: '100%', maxWidth: '400px' }}>
                     <div className="glass-card" style={{ padding: isMobile ? '32px 24px' : '44px 40px' }}>
                         <h2 style={{
                             fontSize: '22px', fontWeight: 700,
@@ -373,7 +316,6 @@ export default function LoginPage() {
                         </p>
                     </div>
                 </div>
-
             </div>
         </div>
     );

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../api/axios.js';
 import ManagerLayout from '../../components/layout/ManagerLayout.jsx';
 import GlassCard from '../../components/layout/GlassCard.jsx';
 import PageWrapper from '../../components/layout/PageWrapper.jsx';
@@ -16,6 +16,8 @@ const STATUSES = ['open', 'under_investigation', 'resolved', 'escalated'];
 
 export default function ManagerComplaintsPage() {
     const [complaints, setComplaints] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
     const [filter, setFilter] = useState('All');
     const [expandedComplaintId, setExpandedComplaintId] = useState(null);
     const [messages, setMessages] = useState({});
@@ -24,11 +26,15 @@ export default function ManagerComplaintsPage() {
 
     const fetchComplaints = useCallback(async () => {
         try {
-            const res = await axios.get('/api/complaints');
-            setComplaints(res.data);
+            const res = await api.get('/complaints');
+            setComplaints(Array.isArray(res.data) ? res.data : []);
+            setError(false);
         } catch (err) {
             console.error('Failed to fetch complaints:', err);
+            setError(true);
             addToast('error', 'Could not load complaints.');
+        } finally {
+            setLoading(false);
         }
     }, [addToast]);
 
@@ -38,7 +44,7 @@ export default function ManagerComplaintsPage() {
 
     async function handleStatusUpdate(complaintId, status) {
         try {
-            await axios.patch(`/api/complaints/${complaintId}/status`, { status });
+            await api.patch(`/complaints/${complaintId}/status`, { status });
             addToast('success', `Status updated to ${status.replace('_', ' ')}.`);
             fetchComplaints();
         } catch (err) {
@@ -49,7 +55,7 @@ export default function ManagerComplaintsPage() {
 
     async function handleSaveNotes(complaintId, notes) {
         try {
-            await axios.patch(`/api/complaints/${complaintId}/notes`, { notes });
+            await api.patch(`/complaints/${complaintId}/notes`, { notes });
             addToast('success', 'Investigation notes saved.');
         } catch (err) {
             console.error('Failed to save notes:', err);
@@ -59,7 +65,7 @@ export default function ManagerComplaintsPage() {
 
     async function handleNotifyDriver(complaintId) {
         try {
-            await axios.post(`/api/complaints/${complaintId}/notify-driver`);
+            await api.post(`/complaints/${complaintId}/notify-driver`);
             addToast('success', 'Driver has been notified of the review.');
         } catch (err) {
             console.error('Failed to notify driver:', err);
@@ -80,7 +86,7 @@ export default function ManagerComplaintsPage() {
 
         setLoadingMessages(prev => ({ ...prev, [complaintId]: true }));
         try {
-            const res = await axios.get(`/api/complaints/${complaintId}/messages`);
+            const res = await api.get(`/complaints/${complaintId}/messages`);
             setMessages(prev => ({ ...prev, [complaintId]: res.data.messages }));
         } catch (err) {
             addToast('error', err.response?.data?.error || 'Failed to fetch messages.');
@@ -89,7 +95,7 @@ export default function ManagerComplaintsPage() {
         }
     }
 
-    const filteredComplaints = complaints.filter(c => {
+    const filteredComplaints = (complaints || []).filter(c => {
         if (filter === 'All') return true;
         if (filter === 'Open') return c.status === 'open';
         if (filter === 'Under Investigation') return c.status === 'under_investigation';
@@ -98,68 +104,82 @@ export default function ManagerComplaintsPage() {
         return true;
     });
 
-    const openCount = complaints.filter(c => c.status === 'open').length;
+    const openCount = (complaints || []).filter(c => c.status === 'open').length;
 
-    return (
-        <ManagerLayout>
+    if (error && complaints.length === 0) {
+        return (
             <PageWrapper>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Complaints</h1>
-                    <span style={{
-                        background: '#EF4444', color: '#FFF',
-                        padding: '2px 10px', borderRadius: '50px',
-                        fontSize: '12px', fontWeight: 700
-                    }}>
-                        {openCount} Open
-                    </span>
-                </div>
-
-                {/* Filter Tabs */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-                    {['All', 'Open', 'Under Investigation', 'Resolved', 'Escalated'].map(t => (
-                        <button
-                            key={t}
-                            onClick={() => setFilter(t)}
-                            style={{
-                                padding: '8px 16px',
-                                borderRadius: '10px',
-                                border: 'none',
-                                background: filter === t ? '#0D0D0D' : 'rgba(255,255,255,0.5)',
-                                color: filter === t ? '#FFF' : '#6B6B6B',
-                                fontWeight: 600,
-                                fontSize: '13px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                whiteSpace: 'nowrap'
-                            }}
-                        >
-                            {t}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Complaint List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {filteredComplaints.length === 0 ? (
-                        <GlassCard style={{ textAlign: 'center', padding: '60px', opacity: 0.5 }}>
-                            No complaints found.
-                        </GlassCard>
-                    ) : filteredComplaints.map(c => (
-                        <ComplaintCard
-                            key={c.complaint_id}
-                            complaint={c}
-                            isExpanded={expandedComplaintId === c.complaint_id}
-                            onToggle={() => toggleMessages(c.complaint_id, c.status)}
-                            onStatusUpdate={status => handleStatusUpdate(c.complaint_id, status)}
-                            onSaveNotes={notes => handleSaveNotes(c.complaint_id, notes)}
-                            onNotify={() => handleNotifyDriver(c.complaint_id)}
-                            messages={messages[c.complaint_id]}
-                            isLoadingMessages={loadingMessages[c.complaint_id]}
-                        />
-                    ))}
+                <div style={{ textAlign: 'center', padding: '100px' }}>
+                    <h2 style={{ color: '#EF4444' }}>Failed to load complaints</h2>
+                    <button onClick={fetchComplaints} style={btnSecondaryStyle}>Retry</button>
                 </div>
             </PageWrapper>
-        </ManagerLayout>
+        );
+    }
+
+    return (
+        <PageWrapper>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Complaints</h1>
+                <span style={{
+                    background: '#EF4444', color: '#FFF',
+                    padding: '2px 10px', borderRadius: '50px',
+                    fontSize: '12px', fontWeight: 700
+                }}>
+                    {openCount} Open
+                </span>
+            </div>
+
+            {/* Filter Tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
+                {['All', 'Open', 'Under Investigation', 'Resolved', 'Escalated'].map(t => (
+                    <button
+                        key={t}
+                        onClick={() => setFilter(t)}
+                        style={{
+                            padding: '8px 16px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            background: filter === t ? '#0D0D0D' : 'rgba(255,255,255,0.5)',
+                            color: filter === t ? '#FFF' : '#6B6B6B',
+                            fontWeight: 600,
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        {t}
+                    </button>
+                ))}
+            </div>
+
+            {/* Complaint List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '60px', opacity: 0.5 }}>
+                        <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                        Loading complaints...
+                    </div>
+                ) : filteredComplaints.length === 0 ? (
+                    <GlassCard style={{ textAlign: 'center', padding: '60px', opacity: 0.5 }}>
+                        No complaints found.
+                    </GlassCard>
+                ) : filteredComplaints.map(c => (
+                    <ComplaintCard
+                        key={c.complaint_id}
+                        complaint={c}
+                        isExpanded={expandedComplaintId === c.complaint_id}
+                        onToggle={() => toggleMessages(c.complaint_id, c.status)}
+                        onStatusUpdate={status => handleStatusUpdate(c.complaint_id, status)}
+                        onSaveNotes={notes => handleSaveNotes(c.complaint_id, notes)}
+                        onNotify={() => handleNotifyDriver(c.complaint_id)}
+                        messages={messages[c.complaint_id]}
+                        isLoadingMessages={loadingMessages[c.complaint_id]}
+                    />
+                ))}
+            </div>
+        </PageWrapper>
     );
 }
 

@@ -30,6 +30,9 @@ export default function ManagerPrivacyDashboardPage() {
     const [sessions, setSessions] = useState([]);
     const [summary, setSummary] = useState(null);
     const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const socketRef = useRef(null);
 
     // --- Data Fetching ---
@@ -37,7 +40,7 @@ export default function ManagerPrivacyDashboardPage() {
     const fetchSessions = useCallback(async () => {
         try {
             const res = await api.get('/dashboard/sessions');
-            setSessions(res.data);
+            setSessions(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
             console.error('Failed to fetch sessions', err);
         }
@@ -65,9 +68,22 @@ export default function ManagerPrivacyDashboardPage() {
     }, []);
 
     useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
         const deferredFetch = async () => {
-            await fetchSessions();
-            await fetchSummary();
+            setLoading(true);
+            try {
+                await Promise.all([fetchSessions(), fetchSummary()]);
+                setError(false);
+            } catch {
+                setError(true);
+            } finally {
+                setLoading(false);
+            }
         };
         deferredFetch();
         const sessInterval = setInterval(fetchSessions, 5000);
@@ -102,109 +118,123 @@ export default function ManagerPrivacyDashboardPage() {
         }
     };
 
-    return (
-        <ManagerLayout>
+    if (loading && !summary && sessions.length === 0) {
+        return (
             <PageWrapper>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px' }}>Privacy Dashboard</h1>
-                    <button onClick={handleExport} className="glass-button" style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
-                        Export Compliance Report
-                    </button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-
-                    {/* Section 1: Live Session Monitor */}
-                    <GlassCard style={{ padding: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', animation: 'pulse 2s infinite' }} />
-                            <h2 style={{ fontSize: '18px', fontWeight: 800 }}>Live Sessions</h2>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {sessions.length > 0 ? sessions.map(s => (
-                                <SessionRow key={s.tripId} session={s} />
-                            )) : (
-                                <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
-                                    <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>🛡️</span>
-                                    <p style={{ fontSize: '14px' }}>No active sessions. All data has been expired.</p>
-                                </div>
-                            )}
-                        </div>
-                    </GlassCard>
-
-                    {/* Section 2: TTL Countdown Rings */}
-                    <GlassCard style={{ padding: '24px' }}>
-                        <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px' }}>Session Lifetimes</h2>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
-                            {sessions.filter(s => s.ttl > 0).slice(0, 6).map(s => (
-                                <TTLRing key={`${s.tripId}-${s.ttl}`} session={s} />
-                            ))}
-                            {sessions.filter(s => s.ttl > 0).length === 0 && (
-                                <p style={{ opacity: 0.5, fontSize: '14px', marginTop: '40px' }}>No active TTL counters.</p>
-                            )}
-                        </div>
-                    </GlassCard>
-
-                    {/* Section 3: Data Lifecycle Feed */}
-                    <GlassCard style={{ padding: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h2 style={{ fontSize: '18px', fontWeight: 800 }}>Data Lifecycle Events</h2>
-                            <span style={{ padding: '2px 8px', background: 'rgba(0,0,0,0.05)', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>{events.length}</span>
-                        </div>
-                        <div style={{ height: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '8px' }}>
-                            {events.length > 0 ? events.map(e => (
-                                <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.4)', borderRadius: '12px', borderLeft: `4px solid ${e.color}`, animation: 'fadeIn 0.3s ease-out' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>{e.timestamp}</div>
-                                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{e.message}</div>
-                                </div>
-                            )) : (
-                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                                    <p style={{ fontFamily: 'monospace', fontSize: '14px' }}>Waiting for events<span className="cursor-blink">_</span></p>
-                                </div>
-                            )}
-                        </div>
-                    </GlassCard>
-
-                    {/* Section 4: Data Minimization Status */}
-                    <GlassCard style={{ padding: '24px' }}>
-                        <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px' }}>Data Minimization Status</h2>
-                        {summary ? (
-                            <>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                                    <MetricTile label="Sessions Created" value={summary.sessions_created} color="#3b82f6" />
-                                    <MetricTile label="Credentials Expired" value={summary.credentials_expired} color="#10b981" />
-                                    <MetricTile label="Data Wiped" value={summary.data_wiped} color="#10b981" icon="🛡️" />
-                                    <MetricTile label="Conditionally Persisted" value={summary.conditionally_persisted} color="#f59e0b" />
-                                </div>
-                                <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: 700 }}>
-                                        <span>Data minimization rate</span>
-                                        <span style={{ color: 'var(--accent-success)' }}>{summary.minimization_rate}%</span>
-                                    </div>
-                                    <div style={{ height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                                        <div style={{ height: '100%', width: `${summary.minimization_rate}%`, background: 'var(--accent-success)', transition: 'width 1s ease-in-out' }} />
-                                    </div>
-                                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '12px' }}>
-                                        of completed trips left no permanent communication record.
-                                    </p>
-                                </div>
-                            </>
-                        ) : (
-                            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                                Loading metrics...
-                            </div>
-                        )}
-                    </GlassCard>
-
+                <div style={{ textAlign: 'center', padding: '100px', opacity: 0.5 }}>
+                    <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                    Loading dashboard...
                 </div>
             </PageWrapper>
-            <style>{`
-                @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-                .cursor-blink { animation: blink 1s infinite; }
-                @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-            `}</style>
-        </ManagerLayout>
+        );
+    }
+
+    if (error && !summary) {
+        return (
+            <PageWrapper>
+                <div style={{ textAlign: 'center', padding: '100px' }}>
+                    <h2 style={{ color: '#EF4444' }}>Failed to load dashboard data</h2>
+                    <button onClick={() => window.location.reload()} className="glass-button" style={{ padding: '10px 20px', borderRadius: '12px' }}>Retry</button>
+                </div>
+            </PageWrapper>
+        );
+    }
+
+    return (
+        <PageWrapper>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <h1 style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px' }}>Privacy Dashboard</h1>
+                <button onClick={handleExport} className="glass-button" style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
+                    Export Compliance Report
+                </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '24px' }}>
+
+                {/* Section 1: Live Session Monitor */}
+                <GlassCard style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', animation: 'pulse 2s infinite' }} />
+                        <h2 style={{ fontSize: '18px', fontWeight: 800 }}>Live Sessions</h2>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {sessions.length > 0 ? sessions.map(s => (
+                            <SessionRow key={s.tripId} session={s} />
+                        )) : (
+                            <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
+                                <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>🛡️</span>
+                                <p style={{ fontSize: '14px' }}>No active sessions. All data has been expired.</p>
+                            </div>
+                        )}
+                    </div>
+                </GlassCard>
+
+                {/* Section 2: TTL Countdown Rings */}
+                <GlassCard style={{ padding: '24px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px' }}>Session Lifetimes</h2>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
+                        {sessions.filter(s => s.ttl > 0).slice(0, 6).map(s => (
+                            <TTLRing key={`${s.tripId}-${s.ttl}`} session={s} />
+                        ))}
+                        {sessions.filter(s => s.ttl > 0).length === 0 && (
+                            <p style={{ opacity: 0.5, fontSize: '14px', marginTop: '40px' }}>No active TTL counters.</p>
+                        )}
+                    </div>
+                </GlassCard>
+
+                {/* Section 3: Data Lifecycle Feed */}
+                <GlassCard style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h2 style={{ fontSize: '18px', fontWeight: 800 }}>Data Lifecycle Events</h2>
+                        <span style={{ padding: '2px 8px', background: 'rgba(0,0,0,0.05)', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>{events.length}</span>
+                    </div>
+                    <div style={{ height: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '8px' }}>
+                        {events.length > 0 ? events.map(e => (
+                            <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.4)', borderRadius: '12px', borderLeft: `4px solid ${e.color}`, animation: 'fadeIn 0.3s ease-out' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>{e.timestamp}</div>
+                                <div style={{ fontSize: '13px', fontWeight: 600 }}>{e.message}</div>
+                            </div>
+                        )) : (
+                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                                <p style={{ fontFamily: 'monospace', fontSize: '14px' }}>Waiting for events<span className="cursor-blink">_</span></p>
+                            </div>
+                        )}
+                    </div>
+                </GlassCard>
+
+                {/* Section 4: Data Minimization Status */}
+                <GlassCard style={{ padding: '24px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px' }}>Data Minimization Status</h2>
+                    {summary ? (
+                        <>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                                <MetricTile label="Sessions Created" value={summary.sessions_created} color="#3b82f6" />
+                                <MetricTile label="Credentials Expired" value={summary.credentials_expired} color="#10b981" />
+                                <MetricTile label="Data Wiped" value={summary.data_wiped} color="#10b981" icon="🛡️" />
+                                <MetricTile label="Conditionally Persisted" value={summary.conditionally_persisted} color="#f59e0b" />
+                            </div>
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: 700 }}>
+                                    <span>Data minimization rate</span>
+                                    <span style={{ color: 'var(--accent-success)' }}>{summary.minimization_rate}%</span>
+                                </div>
+                                <div style={{ height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: `${summary.minimization_rate}%`, background: 'var(--accent-success)', transition: 'width 1s ease-in-out' }} />
+                                </div>
+                                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '12px' }}>
+                                    of completed trips left no permanent communication record.
+                                </p>
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                            Loading metrics...
+                        </div>
+                    )}
+                </GlassCard>
+
+            </div>
+        </PageWrapper>
     );
 }
 

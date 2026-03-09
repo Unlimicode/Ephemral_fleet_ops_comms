@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../api/axios.js';
 import ManagerLayout from '../../components/layout/ManagerLayout.jsx';
 import GlassCard from '../../components/layout/GlassCard.jsx';
 import PageWrapper from '../../components/layout/PageWrapper.jsx';
 import { useToast } from '../../components/Toast.jsx';
+import StatCard from '../../components/StatCard.jsx';
 
 export default function ManagerDriversPage() {
     const [drivers, setDrivers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showDeactivateModal, setShowDeactivateModal] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState(null);
@@ -17,18 +19,20 @@ export default function ManagerDriversPage() {
 
     const fetchDrivers = useCallback(async () => {
         try {
-            const res = await axios.get('/api/roster/drivers');
-            setDrivers(res.data);
-            setLoading(false);
+            const res = await api.get('/roster/drivers');
+            setDrivers(Array.isArray(res.data) ? res.data : []);
+            setError(false);
         } catch (err) {
             console.error('Failed to fetch drivers:', err);
+            setError(true);
             addToast('error', 'Could not load driver roster.');
+        } finally {
+            setLoading(false);
         }
     }, [addToast]);
 
     useEffect(() => {
-        const deferredFetch = async () => await fetchDrivers();
-        deferredFetch();
+        fetchDrivers();
         const interval = setInterval(fetchDrivers, 30000);
         return () => clearInterval(interval);
     }, [fetchDrivers]);
@@ -37,7 +41,7 @@ export default function ManagerDriversPage() {
         e.preventDefault();
         setFormError('');
         try {
-            await axios.post('/api/roster/drivers', newDriver);
+            await api.post('/roster/drivers', newDriver);
             addToast('success', 'Driver added successfully.');
             setShowAddModal(false);
             setNewDriver({ full_name: '', work_email: '', password: '', employee_id: '' });
@@ -50,7 +54,7 @@ export default function ManagerDriversPage() {
     async function handleDeactivate() {
         if (!selectedDriver) return;
         try {
-            await axios.patch(`/api/roster/drivers/${selectedDriver.driver_id}/deactivate`);
+            await api.patch(`/roster/drivers/${selectedDriver.driver_id}/deactivate`);
             addToast('success', 'Driver deactivated and sessions revoked.');
             setShowDeactivateModal(false);
             setSelectedDriver(null);
@@ -62,129 +66,135 @@ export default function ManagerDriversPage() {
     }
 
     const stats = {
-        total: drivers.length,
-        available: drivers.filter(d => d.availability_status === 'available').length,
-        onTrip: drivers.filter(d => d.availability_status === 'on_trip').length,
+        total: drivers?.length || 0,
+        available: drivers?.filter(d => d.availability_status === 'available').length || 0,
+        onTrip: drivers?.filter(d => d.current_trip_id).length || 0,
     };
 
-    return (
-        <ManagerLayout>
+    if (error && drivers.length === 0) {
+        return (
             <PageWrapper>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Driver Roster</h1>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        style={{
-                            padding: '12px 24px',
-                            background: 'rgba(13,13,13,0.9)',
-                            color: '#FFF',
-                            border: 'none',
-                            borderRadius: '12px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            backdropFilter: 'blur(10px)',
-                            transition: 'opacity 0.2s'
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.opacity = 0.8}
-                        onMouseLeave={e => e.currentTarget.style.opacity = 1}
-                    >
-                        + Add Driver
-                    </button>
+                <div style={{ textAlign: 'center', padding: '100px' }}>
+                    <h2 style={{ color: '#EF4444' }}>Failed to load drivers</h2>
+                    <button onClick={fetchDrivers} style={btnPrimaryStyle}>Retry</button>
                 </div>
-
-                {/* Stats Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                    <StatCard label="Total Drivers" value={stats.total} />
-                    <StatCard label="Available Now" value={stats.available} color="#10B981" />
-                    <StatCard label="On Trip" value={stats.onTrip} color="#3B82F6" />
-                </div>
-
-                {/* Driver Table */}
-                <GlassCard style={{ padding: '0', overflow: 'hidden' }}>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ background: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                                    <th style={thStyle}>Name</th>
-                                    <th style={thStyle}>Employee ID</th>
-                                    <th style={thStyle}>Email</th>
-                                    <th style={thStyle}>Status</th>
-                                    <th style={thStyle}>Current Trip</th>
-                                    <th style={thStyle}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr><td colSpan="6" style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>Loading roster...</td></tr>
-                                ) : drivers.map(driver => (
-                                    <tr key={driver.driver_id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
-                                        <td style={tdStyle}>{driver.full_name}</td>
-                                        <td style={{ ...tdStyle, fontFamily: 'monospace' }}>{driver.employee_id}</td>
-                                        <td style={tdStyle}>{driver.work_email}</td>
-                                        <td style={tdStyle}>
-                                            <StatusBadge status={driver.availability_status} />
-                                        </td>
-                                        <td style={{ ...tdStyle, fontFamily: 'monospace' }}>{driver.current_trip_id || '—'}</td>
-                                        <td style={tdStyle}>
-                                            {driver.active_status ? (
-                                                <button
-                                                    onClick={() => { setSelectedDriver(driver); setShowDeactivateModal(true); }}
-                                                    style={{ color: '#EF4444', background: 'transparent', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                                >
-                                                    Deactivate
-                                                </button>
-                                            ) : (
-                                                <span style={{ fontSize: '13px', opacity: 0.5 }}>Inactive</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </GlassCard>
-
-                {/* Add Driver Modal */}
-                {showAddModal && (
-                    <Modal onClose={() => setShowAddModal(false)} title="Add New Driver">
-                        <form onSubmit={handleAddDriver} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <Input label="Full Name" required value={newDriver.full_name} onChange={v => setNewDriver({ ...newDriver, full_name: v })} />
-                            <Input label="Work Email" type="email" required value={newDriver.work_email} onChange={v => setNewDriver({ ...newDriver, work_email: v })} />
-                            <Input label="Password" type="password" required value={newDriver.password} onChange={v => setNewDriver({ ...newDriver, password: v })} />
-                            <Input label="Employee ID" required value={newDriver.employee_id} onChange={v => setNewDriver({ ...newDriver, employee_id: v })} />
-
-                            {formError && <p style={{ color: '#EF4444', fontSize: '13px' }}>{formError}</p>}
-
-                            <button type="submit" style={btnPrimaryStyle}>Create Account</button>
-                        </form>
-                    </Modal>
-                )}
-
-                {/* Deactivate Confirmation Modal */}
-                {showDeactivateModal && (
-                    <Modal onClose={() => setShowDeactivateModal(false)} title="Confirm Deactivation">
-                        <p style={{ fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
-                            This will immediately revoke this driver's session and access. Are you sure?
-                        </p>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={handleDeactivate} style={{ ...btnPrimaryStyle, background: '#EF4444', flex: 1 }}>Confirm Deactivation</button>
-                            <button onClick={() => setShowDeactivateModal(false)} style={{ ...btnSecondaryStyle, flex: 1 }}>Cancel</button>
-                        </div>
-                    </Modal>
-                )}
             </PageWrapper>
-        </ManagerLayout>
+        );
+    }
+
+    return (
+        <PageWrapper>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Driver Roster</h1>
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    style={{
+                        padding: '12px 24px',
+                        background: 'rgba(13,13,13,0.9)',
+                        color: '#FFF',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'opacity 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = 0.8}
+                    onMouseLeave={e => e.currentTarget.style.opacity = 1}
+                >
+                    + Add Driver
+                </button>
+            </div>
+
+            {/* Stats Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                <StatCard title="Total Drivers" value={stats.total} icon="👥" tint="blue" />
+                <StatCard title="Available Now" value={stats.available} icon="✅" tint="green" />
+                <StatCard title="On Trip" value={stats.onTrip} icon="🚗" tint="amber" pulse={stats.onTrip > 0} />
+            </div>
+
+            {/* Driver Table */}
+            <GlassCard style={{ padding: '0', overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                            <tr style={{ background: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                <th style={thStyle}>Name</th>
+                                <th style={thStyle}>Employee ID</th>
+                                <th style={thStyle}>Email</th>
+                                <th style={thStyle}>Status</th>
+                                <th style={thStyle}>Current Trip</th>
+                                <th style={thStyle}>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan="6" style={{ padding: '40px', textAlign: 'center' }}>
+                                    <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                                    <span style={{ opacity: 0.5 }}>Loading roster...</span>
+                                </td></tr>
+                            ) : drivers.length === 0 ? (
+                                <tr><td colSpan="6" style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>No drivers found.</td></tr>
+                            ) : drivers.map(driver => (
+                                <tr key={driver.driver_id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
+                                    <td style={tdStyle}>{driver.full_name}</td>
+                                    <td style={{ ...tdStyle, fontFamily: 'monospace' }}>{driver.employee_id}</td>
+                                    <td style={tdStyle}>{driver.work_email}</td>
+                                    <td style={tdStyle}>
+                                        <StatusBadge status={driver.availability_status} />
+                                    </td>
+                                    <td style={{ ...tdStyle, fontFamily: 'monospace' }}>{driver.current_trip_id || '—'}</td>
+                                    <td style={tdStyle}>
+                                        {driver.active_status ? (
+                                            <button
+                                                onClick={() => { setSelectedDriver(driver); setShowDeactivateModal(true); }}
+                                                style={{ color: '#EF4444', background: 'transparent', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                            >
+                                                Deactivate
+                                            </button>
+                                        ) : (
+                                            <span style={{ fontSize: '13px', opacity: 0.5 }}>Inactive</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </GlassCard>
+
+            {/* Add Driver Modal */}
+            {showAddModal && (
+                <Modal onClose={() => setShowAddModal(false)} title="Add New Driver">
+                    <form onSubmit={handleAddDriver} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <Input label="Full Name" required value={newDriver.full_name} onChange={v => setNewDriver({ ...newDriver, full_name: v })} />
+                        <Input label="Work Email" type="email" required value={newDriver.work_email} onChange={v => setNewDriver({ ...newDriver, work_email: v })} />
+                        <Input label="Password" type="password" required value={newDriver.password} onChange={v => setNewDriver({ ...newDriver, password: v })} />
+                        <Input label="Employee ID" required value={newDriver.employee_id} onChange={v => setNewDriver({ ...newDriver, employee_id: v })} />
+
+                        {formError && <p style={{ color: '#EF4444', fontSize: '13px' }}>{formError}</p>}
+
+                        <button type="submit" style={btnPrimaryStyle}>Create Account</button>
+                    </form>
+                </Modal>
+            )}
+
+            {/* Deactivate Confirmation Modal */}
+            {showDeactivateModal && (
+                <Modal onClose={() => setShowDeactivateModal(false)} title="Confirm Deactivation">
+                    <p style={{ fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+                        This will immediately revoke this driver's session and access. Are you sure?
+                    </p>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button onClick={handleDeactivate} style={{ ...btnPrimaryStyle, background: '#EF4444', flex: 1 }}>Confirm Deactivation</button>
+                        <button onClick={() => setShowDeactivateModal(false)} style={{ ...btnSecondaryStyle, flex: 1 }}>Cancel</button>
+                    </div>
+                </Modal>
+            )}
+        </PageWrapper>
     );
 }
 
-function StatCard({ label, value, color = '#0D0D0D' }) {
-    return (
-        <GlassCard style={{ padding: '24px' }}>
-            <p style={{ fontSize: '13px', color: '#6B6B6B', marginBottom: '8px', fontWeight: 500 }}>{label}</p>
-            <p style={{ fontSize: '32px', fontWeight: 800, color }}>{value}</p>
-        </GlassCard>
-    );
-}
 
 function StatusBadge({ status }) {
     const config = {
