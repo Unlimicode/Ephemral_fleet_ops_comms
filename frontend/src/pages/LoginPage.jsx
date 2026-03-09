@@ -10,6 +10,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
@@ -19,6 +20,12 @@ export default function LoginPage() {
             navigate(role === 'fleet_manager' ? '/manager/dispatch' : '/driver/trips', { replace: true });
         }
     }, [isAuthenticated, navigate, role]);
+
+    React.useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const handleLogin = async () => {
         if (!email || !password) { setError('Please enter your email and password.'); return; }
@@ -65,20 +72,7 @@ export default function LoginPage() {
                         animation: 'blobFloat2 18s ease-in-out infinite, blobPulse 9s ease-in-out infinite, glassShimmer 8s ease-in-out infinite 1s'
                     }} />
                 </div>
-                {/* Small violet accent blob — top right, very subtle */}
-                <div className="glass-blob">
-                    <div style={{
-                        position: 'absolute',
-                        top: '10%', right: '5%',
-                        width: '300px', height: '300px',
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(108,99,255,0.5) 0%, transparent 70%)',
-                        filter: 'blur(25px)',
-                        mixBlendMode: 'multiply',
-                        animation: 'blobFloat3 22s ease-in-out infinite, blobPulse 11s ease-in-out infinite, glassShimmer 10s ease-in-out infinite 2s'
-                    }} />
-                </div>
-                {/* Mid-right area */}
+                {/* Third warm blob — mid-right area */}
                 <div className="glass-blob">
                     <div style={{
                         position: 'absolute',
@@ -98,7 +92,7 @@ export default function LoginPage() {
                 position: 'relative', zIndex: 20,
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '28px 48px',
+                padding: isMobile ? '20px 24px' : '28px 48px',
             }}>
                 {/* Logo — icon as S + wiftlink outline text */}
                 <div className="animate-fade-in-up" style={{
@@ -109,12 +103,12 @@ export default function LoginPage() {
                         src="/swiftlink-icon.png"
                         alt="S"
                         className="animate-icon-pop"
-                        style={{ height: '99px', width: '99px', objectFit: 'contain' }}
+                        style={{ height: isMobile ? '60px' : '99px', width: isMobile ? '60px' : '99px', objectFit: 'contain' }}
                     />
                     <span
                         className="animate-text-slide"
                         style={{
-                            fontSize: '3.9rem',
+                            fontSize: isMobile ? '2.4rem' : '3.9rem',
                             fontWeight: 800,
                             color: '#0D0D0D',
                             letterSpacing: '-1px',
@@ -126,40 +120,42 @@ export default function LoginPage() {
                 </div>
 
                 {/* Nav links */}
-                <div style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
-                    {['About', 'Services', 'Contact'].map((link, i) => (
-                        <a key={link} href="#" style={{
-                            color: 'var(--text-secondary)',
-                            textDecoration: 'none',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            transition: 'var(--transition-smooth)',
-                            opacity: 0,
-                            animation: `fadeInUp 0.5s ease forwards`,
-                            animationDelay: `${0.1 + i * 0.08}s`
-                        }}
-                            onMouseEnter={e => e.target.style.color = 'var(--text-dark)'}
-                            onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
-                        >{link}</a>
-                    ))}
-                </div>
+                {!isMobile && (
+                    <div style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
+                        {['About', 'Services', 'Contact'].map((link, i) => (
+                            <a key={link} href="#" style={{
+                                color: 'var(--text-secondary)',
+                                textDecoration: 'none',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                transition: 'var(--transition-smooth)',
+                                opacity: 0,
+                                animation: `fadeInUp 0.5s ease forwards`,
+                                animationDelay: `${0.1 + i * 0.08}s`
+                            }}
+                                onMouseEnter={e => e.target.style.color = 'var(--text-dark)'}
+                                onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
+                            >{link}</a>
+                        ))}
+                    </div>
+                )}
             </nav>
 
             {/* Split content */}
             <div style={{
                 flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                padding: '0 48px 60px',
-                gap: '40px',
+                flexDirection: isMobile ? 'column-reverse' : 'row',
+                alignItems: isMobile ? 'stretch' : 'center',
+                padding: isMobile ? '0 24px 60px' : '0 48px 60px',
+                gap: isMobile ? '60px' : '40px',
                 position: 'relative',
                 zIndex: 10
             }}>
 
                 {/* Left — brand content, pushed toward centre */}
                 <div className="animate-fade-in-up" style={{
-                    flex: '1.2',
-                    paddingLeft: '8%',
+                    flex: isMobile ? 'none' : '1.2',
+                    paddingLeft: isMobile ? '0' : '8%',
                     animationDelay: '0.15s'
                 }}>
                     <p style={{
@@ -226,29 +222,33 @@ export default function LoginPage() {
                         </div>
                     ))}
 
-                    <button className="glass-button" style={{
-                        marginTop: '36px',
-                        display: 'inline-flex', alignItems: 'center', gap: '12px',
-                        padding: '16px 32px',
-                        borderRadius: '50px',
-                        color: '#F5EDE3',
-                        cursor: 'pointer',
-                        fontSize: '15px', fontWeight: 600,
-                        fontFamily: 'Inter, sans-serif',
-                    }}>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="glass-button"
+                        style={{
+                            marginTop: '36px',
+                            display: 'inline-flex', alignItems: 'center', gap: '12px',
+                            padding: '16px 32px',
+                            borderRadius: '50px',
+                            color: '#F5EDE3',
+                            cursor: 'pointer',
+                            fontSize: '15px', fontWeight: 600,
+                            fontFamily: 'Inter, sans-serif',
+                        }}
+                    >
                         Book a Transfer <span>→</span>
                     </button>
                 </div>
 
                 {/* Right — login card, pulled toward centre */}
                 <div className="animate-slide-in-right" style={{
-                    width: '400px',
+                    width: isMobile ? '100%' : '400px',
                     flexShrink: 0,
-                    marginRight: '20%',
+                    marginRight: isMobile ? '0' : '20%',
                     animationDelay: '0.2s',
                     zIndex: 15
                 }}>
-                    <div className="glass-card" style={{ padding: '44px 40px' }}>
+                    <div className="glass-card" style={{ padding: isMobile ? '32px 24px' : '44px 40px' }}>
                         <h2 style={{
                             fontSize: '22px', fontWeight: 700,
                             color: 'var(--text-dark)', marginBottom: '6px'
@@ -288,7 +288,7 @@ export default function LoginPage() {
                         <div style={{ marginBottom: '14px' }}>
                             <input
                                 type="email" placeholder="Work email" value={email}
-                                onChange={e => setEmail(e.target.value)}
+                                onChange={e => { setEmail(e.target.value); setError(''); }}
                                 onFocus={() => setFocusedField('email')}
                                 onBlur={() => setFocusedField(null)}
                                 style={{
@@ -313,7 +313,7 @@ export default function LoginPage() {
                         <div style={{ marginBottom: '20px' }}>
                             <input
                                 type="password" placeholder="Password" value={password}
-                                onChange={e => setPassword(e.target.value)}
+                                onChange={e => { setPassword(e.target.value); setError(''); }}
                                 onFocus={() => setFocusedField('password')}
                                 onBlur={() => setFocusedField(null)}
                                 style={{

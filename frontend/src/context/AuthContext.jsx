@@ -2,40 +2,41 @@ import { createContext, useContext, useState, useCallback } from 'react';
 import api, { setAuthToken } from '../api/axios.js';
 
 // AuthContext manages authentication state for fleet manager and driver roles.
-// Token, role, and user are held in React state only — never persisted to
-// localStorage or sessionStorage — to prevent XSS exfiltration of credentials.
+// Token, role, and user are persisted to sessionStorage to maintain
+// session continuity on page refresh.
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-    const [auth, setAuth] = useState(() => {
-        const token = sessionStorage.getItem('swiftlink_token');
-        const role = sessionStorage.getItem('swiftlink_role');
-        let user = null;
+    const [token, setToken] = useState(() => sessionStorage.getItem('swiftlink_token') || null);
+    const [role, setRole] = useState(() => sessionStorage.getItem('swiftlink_role') || null);
+    const [user, setUser] = useState(() => {
         try {
-            const userStr = sessionStorage.getItem('swiftlink_user');
-            user = userStr && userStr !== 'undefined' ? JSON.parse(userStr) : null;
-        } catch {
-            user = null;
-        }
-        return { token, role, user };
+            const u = sessionStorage.getItem('swiftlink_user');
+            return u && u !== 'undefined' ? JSON.parse(u) : null;
+        } catch { return null; }
     });
 
+    const isAuthenticated = !!token;
+
     // login stores credentials in state, sessionStorage, and injects the token into the axios instance.
-    const login = useCallback((token, role, user) => {
-        sessionStorage.setItem('swiftlink_token', token);
-        sessionStorage.setItem('swiftlink_role', role);
-        sessionStorage.setItem('swiftlink_user', JSON.stringify(user));
-        setAuthToken(token);
-        setAuth({ token, role, user });
+    const login = useCallback((newToken, newRole, newUser) => {
+        sessionStorage.setItem('swiftlink_token', newToken);
+        sessionStorage.setItem('swiftlink_role', newRole);
+        sessionStorage.setItem('swiftlink_user', JSON.stringify(newUser));
+
+        setAuthToken(newToken);
+        setToken(newToken);
+        setRole(newRole);
+        setUser(newUser);
     }, []);
 
     // logout calls the correct backend endpoint based on role before clearing state.
     // The try/catch ensures state is always cleared even if the server request fails.
     const logout = useCallback(async () => {
         try {
-            if (auth.role === 'fleet_manager') {
+            if (role === 'fleet_manager') {
                 await api.post('/auth/logout');
-            } else if (auth.role === 'driver') {
+            } else if (role === 'driver') {
                 await api.post('/drivers/auth/logout');
             }
         } catch {
@@ -45,14 +46,15 @@ export function AuthProvider({ children }) {
         sessionStorage.removeItem('swiftlink_token');
         sessionStorage.removeItem('swiftlink_role');
         sessionStorage.removeItem('swiftlink_user');
-        setAuth({ token: null, role: null, user: null });
-    }, [auth.role]);
 
-    const isAuthenticated = !!auth.token;
+        setToken(null);
+        setRole(null);
+        setUser(null);
+    }, [role]);
 
     return (
         <AuthContext.Provider
-            value={{ token: auth.token, role: auth.role, user: auth.user, isAuthenticated, login, logout }}
+            value={{ token, role, user, isAuthenticated, login, logout }}
         >
             {children}
         </AuthContext.Provider>

@@ -6,9 +6,7 @@ import axios from 'axios';
 let _token = null;
 try {
     _token = sessionStorage.getItem('swiftlink_token') || null;
-} catch {
-    _token = null;
-}
+} catch { _token = null; }
 
 export function setAuthToken(token) {
     _token = token;
