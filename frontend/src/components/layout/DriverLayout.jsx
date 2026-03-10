@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../api/axios.js';
-import GeoBackground from '../GeoBackground.jsx';
 
 const TABS = [
     { to: '/driver/trips', label: 'Trips', icon: '🗂️' },
@@ -37,12 +36,37 @@ export default function DriverLayout() {
             minHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: 'var(--bg-base)',
+            background: 'var(--bg-base)',
             position: 'relative',
             overflow: 'hidden'
         }}>
-            <GeoBackground density="normal" fixed={true} />
-            {/* Removed inline blob background */}
+            {/* Background Blobs (z-index: 0) matching login page */}
+            <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+                <div className="glass-blob">
+                    <div style={{
+                        position: 'absolute', bottom: '-15%', left: '-10%', width: '650px', height: '650px',
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,180,140,0.75) 0%, rgba(230,160,110,0.75) 40%, transparent 70%)',
+                        filter: 'blur(20px)', mixBlendMode: 'multiply',
+                        animation: 'blobFloat1 14s ease-in-out infinite, blobPulse 7s ease-in-out infinite, glassShimmer 6s ease-in-out infinite'
+                    }} />
+                </div>
+                <div className="glass-blob">
+                    <div style={{
+                        position: 'absolute', top: '-10%', left: '30%', width: '400px', height: '400px',
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,200,170,0.65) 0%, transparent 70%)',
+                        filter: 'blur(22px)', mixBlendMode: 'multiply',
+                        animation: 'blobFloat2 18s ease-in-out infinite, blobPulse 9s ease-in-out infinite, glassShimmer 8s ease-in-out infinite 1s'
+                    }} />
+                </div>
+                <div className="glass-blob">
+                    <div style={{
+                        position: 'absolute', top: '10%', right: '5%', width: '300px', height: '300px',
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,99,255,0.5) 0%, transparent 70%)',
+                        filter: 'blur(25px)', mixBlendMode: 'multiply',
+                        animation: 'blobFloat3 22s ease-in-out infinite, blobPulse 11s ease-in-out infinite, glassShimmer 10s ease-in-out infinite 2s'
+                    }} />
+                </div>
+            </div>
 
             {/* Top Bar */}
             <header style={{
@@ -50,19 +74,18 @@ export default function DriverLayout() {
                 top: 0, left: 0, right: 0,
                 height: '64px',
                 padding: '0 20px',
-                background: 'var(--glass-bg)',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                borderBottom: '0.5px solid var(--glass-border)',
+                background: 'rgba(245,237,227,0.85)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                borderBottom: '1px solid rgba(255,255,255,0.6)',
                 zIndex: 20,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--bg-dark)', color: 'var(--text-cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontStyle: 'italic', fontSize: '1rem' }}>S</div>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-dark)', letterSpacing: '-0.05em', fontFamily: 'Inter, sans-serif' }}>
-                        swiftlink
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
+                    <img src="/swiftlink-icon.png" alt="S" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
+                    <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0D0D0D', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>
+                        wiftlink
                     </span>
                 </div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -86,10 +109,9 @@ export default function DriverLayout() {
                 position: 'fixed',
                 bottom: 0, left: 0, right: 0,
                 height: '72px',
-                background: 'var(--glass-bg)',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-                borderTop: '0.5px solid var(--glass-border)',
+                background: 'rgba(245,237,227,0.85)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                borderTop: '1px solid rgba(255,255,255,0.6)',
                 zIndex: 20,
                 display: 'flex',
                 alignItems: 'center',
@@ -107,7 +129,7 @@ export default function DriverLayout() {
                             justifyContent: 'center',
                             textDecoration: 'none',
                             transition: 'all 0.2s ease',
-                            color: isActive ? 'var(--accent-primary)' : 'rgba(13,13,13,0.35)',
+                            color: isActive ? '#0D0D0D' : 'var(--text-muted)',
                             position: 'relative',
                             flex: 1,
                             minWidth: 0,
@@ -138,7 +160,7 @@ export default function DriverLayout() {
                                         bottom: '8px',
                                         width: '6px', height: '6px',
                                         borderRadius: '50%',
-                                        background: 'var(--accent-primary)'
+                                        background: '#0D0D0D'
                                     }} />
                                 )}
                             </>

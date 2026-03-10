@@ -17,7 +17,7 @@ export default function DriverProfilePage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
                     <div style={{
                         width: '64px', height: '64px', borderRadius: '50%',
-                        background: 'var(--accent-primary)',
+                        background: 'var(--accent-gradient)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: '#FFF', fontSize: '24px', fontWeight: 800
                     }}>
@@ -50,10 +50,11 @@ export default function DriverProfilePage() {
                             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent-success)', textTransform: 'uppercase' }}>Active since login</span>
                         </div>
                     </div>
-                    <button className="btn-premium btn-dark" onClick={logout} style={{
+                    <button onClick={logout} style={{
                         width: '100%', padding: '16px', borderRadius: '16px',
+                        background: 'rgba(13,13,13,0.85)', backdropFilter: 'blur(20px)',
                         color: '#F5EDE3', fontSize: '15px', fontWeight: 700,
-                        border: 'none', cursor: 'pointer',
+                        border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
                         boxShadow: '0 4px 16px rgba(13,13,13,0.15)'
                     }}>
                         Logout Securely

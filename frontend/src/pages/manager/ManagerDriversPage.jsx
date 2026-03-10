@@ -88,8 +88,19 @@ export default function ManagerDriversPage() {
                 <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Driver Roster</h1>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="btn-premium btn-dark"
-                    style={{ padding: '12px 24px', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', width: 'auto' }}
+                    style={{
+                        padding: '12px 24px',
+                        background: 'rgba(13,13,13,0.9)',
+                        color: '#FFF',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'opacity 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = 0.8}
+                    onMouseLeave={e => e.currentTarget.style.opacity = 1}
                 >
                     + Add Driver
                 </button>
@@ -125,7 +136,7 @@ export default function ManagerDriversPage() {
                             ) : drivers.length === 0 ? (
                                 <tr><td colSpan="6" style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>No drivers found.</td></tr>
                             ) : drivers.map(driver => (
-                                <tr key={driver.driver_id} style={{ borderBottom: '1px solid var(--glass-border-dark)' }}>
+                                <tr key={driver.driver_id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
                                     <td style={tdStyle}>{driver.full_name}</td>
                                     <td style={{ ...tdStyle, fontFamily: 'monospace' }}>{driver.employee_id}</td>
                                     <td style={tdStyle}>{driver.work_email}</td>
@@ -163,7 +174,7 @@ export default function ManagerDriversPage() {
 
                         {formError && <p style={{ color: '#EF4444', fontSize: '13px' }}>{formError}</p>}
 
-                        <button type="submit" className="btn-premium btn-dark">Create Account</button>
+                        <button type="submit" style={btnPrimaryStyle}>Create Account</button>
                     </form>
                 </Modal>
             )}
@@ -175,8 +186,8 @@ export default function ManagerDriversPage() {
                         This will immediately revoke this driver's session and access. Are you sure?
                     </p>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={handleDeactivate} className="btn-premium" style={{ background: '#E05A5A', color: 'white', flex: 1, padding: '14px', borderRadius: '12px', border: 'none', fontWeight: 600 }}>Confirm Deactivation</button>
-                        <button onClick={() => setShowDeactivateModal(false)} className="btn-premium" style={{ background: 'transparent', flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.2)', color: 'var(--text-dark)', fontWeight: 600 }}>Cancel</button>
+                        <button onClick={handleDeactivate} style={{ ...btnPrimaryStyle, background: '#EF4444', flex: 1 }}>Confirm Deactivation</button>
+                        <button onClick={() => setShowDeactivateModal(false)} style={{ ...btnSecondaryStyle, flex: 1 }}>Cancel</button>
                     </div>
                 </Modal>
             )}
@@ -188,7 +199,7 @@ export default function ManagerDriversPage() {
 function StatusBadge({ status }) {
     const config = {
         available: { label: 'Available', color: '#10B981', bg: 'rgba(16,185,129,0.1)' },
-        on_trip: { label: 'On Trip', color: 'var(--accent-primary)', bg: 'rgba(108,99,255,0.1)', pulse: true },
+        on_trip: { label: 'On Trip', color: '#3B82F6', bg: 'rgba(59,130,246,0.1)', pulse: true },
         offline: { label: 'Offline', color: '#6B6B6B', bg: 'rgba(107,114,128,0.1)' }
     };
     const c = config[status] || config.offline;
@@ -204,9 +215,9 @@ function StatusBadge({ status }) {
             {c.label}
             <style>{`
                 @keyframes pulseRing {
-                    0% { box-shadow: 0 0 0 0 rgba(108,99,255,0.4); }
-                    70% { box-shadow: 0 0 0 10px rgba(108,99,255,0); }
-                    100% { box-shadow: 0 0 0 0 rgba(108,99,255,0); }
+                    0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(59,130,246,0); }
+                    100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
                 }
             `}</style>
         </span>
@@ -231,8 +242,12 @@ function Input({ label, type = 'text', ...props }) {
             <label style={{ fontSize: '13px', fontWeight: 600, color: '#4B5563' }}>{label}</label>
             <input
                 type={type}
-                className="glass-input"
-                style={{ padding: '12px' }}
+                style={{
+                    padding: '12px', borderRadius: '10px',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    background: 'rgba(255,255,255,0.5)',
+                    fontSize: '14px'
+                }}
                 onChange={e => props.onChange(e.target.value)}
                 {...props}
             />
@@ -243,3 +258,4 @@ function Input({ label, type = 'text', ...props }) {
 const thStyle = { padding: '16px', fontSize: '13px', fontWeight: 600, color: '#6B6B6B' };
 const tdStyle = { padding: '16px', fontSize: '14px', color: '#111827' };
 const btnPrimaryStyle = { padding: '14px', background: '#0D0D0D', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' };
+const btnSecondaryStyle = { padding: '14px', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' };

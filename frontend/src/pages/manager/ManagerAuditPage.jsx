@@ -229,7 +229,7 @@ function ActionBadge({ type }) {
     if (type.includes('ADDED') || type.includes('ACCEPTED')) color = '#10B981';
     if (type.includes('REMOVED') || type.includes('DEACTIVATED')) color = '#EF4444';
     if (type.includes('COMPLAINT') || type.includes('ACCESSED')) color = '#F59E0B';
-    if (type.includes('TRIP')) color = '#6C63FF';
+    if (type.includes('TRIP')) color = '#3B82F6';
     if (type.includes('EXPORTED')) color = '#8B5CF6';
 
     return (

@@ -1,0 +1,20 @@
+d4363be feat: propagate architectural design language across all pages and layouts
+406e841 fix: audit session 3  driver PWA full flow and responsive fixes
+1eb5664 fix: badge clipping and restore broken login after audit session 2
+9e845b1 fix(ui): resolve duplicate headers, polish branding, and fix layout overflows
+d6f3f5f fix: audit session 1  auth persistence, navigation, login page
+f56fc66 chore: extend seed script with rich test data for audit sessions
+30cf03e fix: add missing investigation_notes column to complaints table and cleanup logs
+c3d3d84 feat: implement Sprint 15 manager pages (Drivers, Vehicles, Complaints, Audit Trail) with backend API extensions
+532fb32 feat: add privacy dashboard UI with live session monitor and compliance export (Sprint 14)
+128a116 feat: add client booking website and magic link flow (Sprint 13)
+0edd7a3 feat: add WebSocket chat interface for driver and client (Sprint 12)
+e374593 chore: add master seed script (npm run seed)
+de80711 feat: add driver PWA interface (Sprint 11)
+1a52bd5 feat: add fleet manager dispatch view (Sprint 10)
+6a6d5dd feat: add frontend foundation and login page design (Sprint 9)
+aedbec8 chore: compress swiftlink logo PNG
+94f096f feat: add frontend foundation  routing, auth context, design system, layouts (Sprint 9)
+4413e7e test: add push notification lifecycle integration tests (Phase 8.4)
+add2c28 fix: declare service worker globals in eslint flat config (Phase 8.3 cleanup)
+59e0c63 fix: add eslint-env serviceworker to sw.js (Phase 8.3 cleanup)

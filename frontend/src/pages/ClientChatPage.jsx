@@ -1,6 +1,5 @@
-import ChatWindow from '../components/ChatWindow';
-import GeoBackground from '../components/GeoBackground';
 import { useParams, useSearchParams } from 'react-router-dom';
+import ChatWindow from '../components/ChatWindow';
 
 export default function ClientChatPage() {
     const { tripId } = useParams();
@@ -35,7 +34,33 @@ export default function ClientChatPage() {
             display: 'flex', flexDirection: 'column',
             position: 'relative', overflow: 'hidden'
         }}>
-            <GeoBackground density="normal" fixed={true} />
+            {/* Background Blobs matching login/driver page */}
+            <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+                <div className="glass-blob">
+                    <div style={{
+                        position: 'absolute', bottom: '-15%', left: '-10%', width: '650px', height: '650px',
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,180,140,0.75) 0%, rgba(230,160,110,0.75) 40%, transparent 70%)',
+                        filter: 'blur(20px)', mixBlendMode: 'multiply',
+                        animation: 'blobFloat1 14s ease-in-out infinite, blobPulse 7s ease-in-out infinite, glassShimmer 6s ease-in-out infinite'
+                    }} />
+                </div>
+                <div className="glass-blob">
+                    <div style={{
+                        position: 'absolute', top: '-10%', left: '30%', width: '400px', height: '400px',
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,200,170,0.65) 0%, transparent 70%)',
+                        filter: 'blur(22px)', mixBlendMode: 'multiply',
+                        animation: 'blobFloat2 18s ease-in-out infinite, blobPulse 9s ease-in-out infinite, glassShimmer 8s ease-in-out infinite 1s'
+                    }} />
+                </div>
+                <div className="glass-blob">
+                    <div style={{
+                        position: 'absolute', top: '10%', right: '5%', width: '300px', height: '300px',
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,99,255,0.5) 0%, transparent 70%)',
+                        filter: 'blur(25px)', mixBlendMode: 'multiply',
+                        animation: 'blobFloat3 22s ease-in-out infinite, blobPulse 11s ease-in-out infinite, glassShimmer 10s ease-in-out infinite 2s'
+                    }} />
+                </div>
+            </div>
 
             {/* Header */}
             <nav style={{

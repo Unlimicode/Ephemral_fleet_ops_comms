@@ -1,0 +1,50 @@
+d4363be feat: propagate architectural design language across all pages and layouts
+406e841 fix: audit session 3  driver PWA full flow and responsive fixes
+1eb5664 fix: badge clipping and restore broken login after audit session 2
+9e845b1 fix(ui): resolve duplicate headers, polish branding, and fix layout overflows
+d6f3f5f fix: audit session 1  auth persistence, navigation, login page
+f56fc66 chore: extend seed script with rich test data for audit sessions
+30cf03e fix: add missing investigation_notes column to complaints table and cleanup logs
+c3d3d84 feat: implement Sprint 15 manager pages (Drivers, Vehicles, Complaints, Audit Trail) with backend API extensions
+532fb32 feat: add privacy dashboard UI with live session monitor and compliance export (Sprint 14)
+128a116 feat: add client booking website and magic link flow (Sprint 13)
+0edd7a3 feat: add WebSocket chat interface for driver and client (Sprint 12)
+e374593 chore: add master seed script (npm run seed)
+de80711 feat: add driver PWA interface (Sprint 11)
+1a52bd5 feat: add fleet manager dispatch view (Sprint 10)
+6a6d5dd feat: add frontend foundation and login page design (Sprint 9)
+aedbec8 chore: compress swiftlink logo PNG
+94f096f feat: add frontend foundation  routing, auth context, design system, layouts (Sprint 9)
+4413e7e test: add push notification lifecycle integration tests (Phase 8.4)
+add2c28 fix: declare service worker globals in eslint flat config (Phase 8.3 cleanup)
+59e0c63 fix: add eslint-env serviceworker to sw.js (Phase 8.3 cleanup)
+f00024e feat: add service worker push handler and push notification hook (Phase 8.3)
+9ab6099 ci: retrigger after VAPID key refresh
+cb70e9e feat: add push notification delivery on trip assignment and complaint review (Phase 8.2)
+058bf84 ci: add VAPID secrets to backend test environment
+8a871ce feat: add VAPID configuration and push subscription endpoints (Phase 8.1)
+08607c8 docs: add implementation plan
+15325ed test: add privacy dashboard lifecycle validation tests (Phase 7.4)
+dc5b2f7 feat: add audit trail and compliance report endpoints (Phase 7.3)
+1413cdc feat: add dashboard Socket.IO namespace for real-time events (Phase 7.2)
+a4b42c2 fix: remove unauthorised dashboardNamespace import (Phase 7.1 cleanup)
+56c531f feat: add real-time dashboard Socket.IO namespace (Phase 7.2)
+47b5719 feat: add TTL helper and dashboard session state endpoints (Phase 7.1)
+977c876 feat: close MVP scope gaps  trip start, booking history, audit read, completion email (Phase 7.0)
+82245f6 test: add conditional persistence lifecycle validation scenarios (Phase 6.4)
+b04292f feat: add complaint investigation endpoints with audit-logged message access (Phase 6.3)
+eff624a feat: add conditional message encryption and persistence on complaint filing (Phase 6.2)
+36fae21 feat: add Redis message buffering during active trip relay (Phase 6.1)
+a3c5009 feat: add complaint lodgement system with ephemeral Redis window enforcement (Phase 5.8)
+f473edf feat: add driver roster and vehicle inventory management (Phase 5.7)
+5e74f84 feat: add driver trip routes with availability tracking and data minimisation (Phase 5.6)
+343661e fix: update test suites for role-based access control (Phase 5.5)
+8fe8ce6 feat: add driver authentication with role-aware middleware (Phase 5.5)
+46a2837 test: add client authentication integration tests (Phase 5.4)
+952777a feat: add client auth middleware and booking view endpoints (Phase 5.3)
+2ee6f6a feat: add booking token validation and HttpOnly cookie session (Phase 5.2)
+2943352 feat: add booking submission and secure access token delivery (Phase 5.1)
+3e37c36 test: add WebSocket relay integration tests (Phase 4.4)
+7e1330e feat: add explicit WebSocket channel closure on trip completion (Phase 4.3)
+7becbea feat: add WebSocket message relay (Phase 4.2)
+bf5bd5d feat: add WebSocket session validation and room management (Phase 4.1)

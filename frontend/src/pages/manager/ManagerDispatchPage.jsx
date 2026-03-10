@@ -123,7 +123,7 @@ export default function ManagerDispatchPage() {
                         <h2 style={{
                             fontSize: '22px', fontWeight: 800,
                             color: 'var(--text-dark)',
-                            letterSpacing: '-0.04em', lineHeight: 0.85,
+                            letterSpacing: '-0.5px',
                             fontFamily: 'Inter, sans-serif'
                         }}>Incoming Bookings</h2>
                         <span style={{
@@ -137,12 +137,16 @@ export default function ManagerDispatchPage() {
                     </div>
 
                     {pendingTrips.length === 0 ? (
-                        <div className="glass-card" style={{
+                        <div style={{
                             padding: '48px 24px',
                             display: 'flex', flexDirection: 'column',
                             alignItems: 'center', justifyContent: 'center',
                             gap: '12px',
-                            border: '1.5px dashed rgba(13,13,13,0.1)'
+                            border: '1.5px dashed rgba(13,13,13,0.1)',
+                            borderRadius: '20px',
+                            background: 'rgba(255,255,255,0.3)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)'
                         }}>
                             <span style={{ fontSize: '32px' }}>📋</span>
                             <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' }}>No pending bookings</p>
@@ -170,7 +174,7 @@ export default function ManagerDispatchPage() {
                         <h2 style={{
                             fontSize: '22px', fontWeight: 800,
                             color: 'var(--text-dark)',
-                            letterSpacing: '-0.04em', lineHeight: 0.85,
+                            letterSpacing: '-0.5px',
                             fontFamily: 'Inter, sans-serif'
                         }}>Active Trips</h2>
                         <span style={{
@@ -184,12 +188,16 @@ export default function ManagerDispatchPage() {
                     </div>
 
                     {activeTrips.length === 0 ? (
-                        <div className="glass-card" style={{
+                        <div style={{
                             padding: '48px 24px',
                             display: 'flex', flexDirection: 'column',
                             alignItems: 'center', justifyContent: 'center',
                             gap: '12px',
-                            border: '1.5px dashed rgba(13,13,13,0.1)'
+                            border: '1.5px dashed rgba(13,13,13,0.1)',
+                            borderRadius: '20px',
+                            background: 'rgba(255,255,255,0.3)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)'
                         }}>
                             <span style={{ fontSize: '32px' }}>🚗</span>
                             <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' }}>No active trips</p>
@@ -214,7 +222,7 @@ export default function ManagerDispatchPage() {
                         <h2 style={{
                             fontSize: '22px', fontWeight: 800,
                             color: 'var(--text-dark)',
-                            letterSpacing: '-0.04em', lineHeight: 0.85,
+                            letterSpacing: '-0.5px',
                             fontFamily: 'Inter, sans-serif'
                         }}>Awaiting Acceptance</h2>
                         <span style={{
@@ -228,12 +236,16 @@ export default function ManagerDispatchPage() {
                     </div>
 
                     {assignedTrips.length === 0 ? (
-                        <div className="glass-card" style={{
+                        <div style={{
                             padding: '48px 24px',
                             display: 'flex', flexDirection: 'column',
                             alignItems: 'center', justifyContent: 'center',
                             gap: '12px',
-                            border: '1.5px dashed rgba(13,13,13,0.1)'
+                            border: '1.5px dashed rgba(13,13,13,0.1)',
+                            borderRadius: '20px',
+                            background: 'rgba(255,255,255,0.3)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)'
                         }}>
                             <span style={{ fontSize: '32px' }}>⏳</span>
                             <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' }}>No trips awaiting acceptance</p>

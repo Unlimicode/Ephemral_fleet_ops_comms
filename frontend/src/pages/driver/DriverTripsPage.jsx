@@ -107,10 +107,11 @@ export default function DriverTripsPage({ defaultTab }) {
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
             ) : displayedTrips.length === 0 ? (
-                <div className="glass-card" style={{
+                <div style={{
                     padding: '48px 24px', display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center', gap: '12px',
-                    border: '1.5px dashed rgba(13,13,13,0.1)'
+                    border: '1.5px dashed rgba(13,13,13,0.1)', borderRadius: '20px',
+                    background: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(20px)'
                 }}>
                     <span style={{ fontSize: '32px' }}>{emptyState.icon}</span>
                     <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' }}>{emptyState.title}</p>
