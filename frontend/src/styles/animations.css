@@ -1,0 +1,338 @@
+/* ── Keyframes ── */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-50px) rotate(10deg);
+    }
+}
+
+@keyframes floatReverse {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(50px) rotate(-10deg);
+    }
+}
+
+@keyframes floatSide {
+
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateX(-40px) rotate(-6deg);
+    }
+}
+
+@keyframes morphGeo {
+
+    0%,
+    100% {
+        border-radius: 40% 60% 70% 30% / 40% 50% 60% 70%;
+    }
+
+    33% {
+        border-radius: 70% 30% 50% 50% / 30% 60% 40% 70%;
+    }
+
+    66% {
+        border-radius: 50% 50% 30% 70% / 60% 40% 70% 30%;
+    }
+}
+
+@keyframes spinSlow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spinReverse {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(108, 99, 255, 0.4);
+    }
+
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 0 8px rgba(108, 99, 255, 0);
+    }
+}
+
+@keyframes pulse-green {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 245, 160, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px rgba(0, 245, 160, 0);
+    }
+}
+
+@keyframes drift {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    25% {
+        transform: translate(30px, -20px) rotate(5deg);
+    }
+
+    50% {
+        transform: translate(-20px, -40px) rotate(-8deg);
+    }
+
+    75% {
+        transform: translate(10px, -10px) rotate(3deg);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+
+/* ── Animation classes ── */
+.animate-float {
+    animation: float 7s ease-in-out infinite;
+}
+
+.animate-float-slow {
+    animation: float 11s ease-in-out infinite;
+}
+
+.animate-float-fast {
+    animation: float 5s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+    animation: floatReverse 9s ease-in-out infinite;
+}
+
+.animate-float-side {
+    animation: floatSide 8s ease-in-out infinite;
+}
+
+.animate-morph {
+    animation: morphGeo 18s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+    animation: spinSlow 25s linear infinite;
+}
+
+.animate-spin-reverse {
+    animation: spinReverse 20s linear infinite;
+}
+
+.animate-drift {
+    animation: drift 14s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-pulse-green {
+    animation: pulse-green 2s ease-in-out infinite;
+}
+
+/* ── Reveal ── */
+.reveal-up {
+    opacity: 0;
+    transform: translateY(70px);
+    transition: opacity 1.3s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 1.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-up.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.stagger-1 {
+    transition-delay: 150ms;
+}
+
+.stagger-2 {
+    transition-delay: 300ms;
+}
+
+.stagger-3 {
+    transition-delay: 450ms;
+}
+
+.stagger-4 {
+    transition-delay: 600ms;
+}
+
+/* ── Sticky sections ── */
+.sticky-section {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    will-change: clip-path;
+}
+
+.mask-merge-down {
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
+}
+
+.mask-merge-up {
+    clip-path: polygon(0 15%, 50% 0, 100% 15%, 100% 100%, 0 100%);
+}
+
+/* ── Glass ── */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 0.5px solid var(--glass-border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    border-radius: 2rem;
+}
+
+.glass-card-dark {
+    background: var(--glass-bg-dark);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 0.5px solid var(--glass-border-dark);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 2rem;
+}
+
+.glass-input {
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(8px);
+    border: 0.5px solid rgba(255, 255, 255, 0.4);
+    border-radius: 1rem;
+    transition: var(--transition-smooth);
+}
+
+.glass-input:focus-within {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(108, 99, 255, 0.5);
+}
+
+/* ── Architectural grid ── */
+.arch-grid {
+    background-image:
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    background-size: 80px 80px;
+}
+
+.arch-grid-light {
+    background-image:
+        linear-gradient(to right, var(--grid-line-light) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line-light) 1px, transparent 1px);
+    background-size: 80px 80px;
+}
+
+/* ── Geo shapes ── */
+.geo-shape {
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.geo-triangle {
+    width: 0;
+    height: 0;
+    border-left: 150px solid transparent;
+    border-right: 150px solid transparent;
+    border-bottom: 220px solid currentColor;
+}
+
+.geo-triangle-sm {
+    width: 0;
+    height: 0;
+    border-left: 80px solid transparent;
+    border-right: 80px solid transparent;
+    border-bottom: 120px solid currentColor;
+}
+
+.geo-triangle-xs {
+    width: 0;
+    height: 0;
+    border-left: 40px solid transparent;
+    border-right: 40px solid transparent;
+    border-bottom: 60px solid currentColor;
+}
+
+/* ── Button premium ── */
+.btn-premium {
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition-smooth);
+    cursor: pointer;
+    border: none;
+}
+
+.btn-premium:hover {
+    box-shadow: 0 20px 40px rgba(45, 45, 45, 0.2);
+    transform: translateY(-3px);
+}
+
+.btn-dark {
+    background-color: var(--bg-dark);
+    color: var(--text-cream);
+    font-weight: 900;
+    font-size: 0.875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+}
+
+.btn-accent {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    font-weight: 900;
+    font-size: 0.875rem;
+    letter-spacing: 0.1em;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+}

@@ -21,7 +21,7 @@ const getEventColor = (type) => {
         case 'session_created': return '#10b981'; // green
         case 'session_destroyed': return '#ef4444'; // red
         case 'complaint_filed': return '#f59e0b'; // amber
-        case 'trip_assigned': return '#3b82f6'; // blue
+        case 'trip_assigned': return '#6C63FF'; // accent
         default: return 'var(--text-muted)';
     }
 };
@@ -208,7 +208,7 @@ export default function ManagerPrivacyDashboardPage() {
                     {summary ? (
                         <>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                                <MetricTile label="Sessions Created" value={summary.sessions_created} color="#3b82f6" />
+                                <MetricTile label="Sessions Created" value={summary.sessions_created} color="#6C63FF" />
                                 <MetricTile label="Credentials Expired" value={summary.credentials_expired} color="#10b981" />
                                 <MetricTile label="Data Wiped" value={summary.data_wiped} color="#10b981" icon="🛡️" />
                                 <MetricTile label="Conditionally Persisted" value={summary.conditionally_persisted} color="#f59e0b" />

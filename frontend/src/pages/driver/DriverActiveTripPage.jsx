@@ -112,18 +112,18 @@ export default function DriverActiveTripPage() {
             {/* Section 2: Action Buttons */}
             <section>
                 {trip.status === 'assigned' && (
-                    <button className="glass-button" onClick={handleStartTrip} style={{
+                    <button className="btn-premium btn-dark" onClick={handleStartTrip} style={{
                         width: '100%', padding: '18px', borderRadius: '20px',
                         color: '#F5EDE3', fontSize: '16px', fontWeight: 700,
-                        boxShadow: '0 8px 32px rgba(180,130,80,0.2)'
+                        boxShadow: '0 8px 32px rgba(13,13,13,0.2)'
                     }}>
                         Start Trip — Client Picked Up ✓
                     </button>
                 )}
                 {trip.status === 'in_progress' && (
-                    <button className="glass-button" onClick={handleCompleteTrip} style={{
+                    <button className="btn-premium btn-dark" onClick={handleCompleteTrip} style={{
                         width: '100%', padding: '18px', borderRadius: '20px',
-                        background: 'var(--text-dark)', color: '#F5EDE3', fontSize: '16px', fontWeight: 700,
+                        color: '#F5EDE3', fontSize: '16px', fontWeight: 700,
                         boxShadow: '0 8px 32px rgba(13,13,13,0.2)'
                     }}>
                         Complete Trip — Dropped Off ✓

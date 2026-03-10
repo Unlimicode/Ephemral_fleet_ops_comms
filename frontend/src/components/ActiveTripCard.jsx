@@ -28,7 +28,7 @@ export default function ActiveTripCard({ trip, onComplete }) {
             </div>
 
             <button
-                className="glass-button"
+                className="btn-premium btn-dark"
                 onClick={() => onComplete(trip.id)}
                 style={{
                     width: '100%', padding: '12px', borderRadius: '12px',

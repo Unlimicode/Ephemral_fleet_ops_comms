@@ -87,9 +87,8 @@ export default function ManagerVehiclesPage() {
                 <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Vehicle Inventory</h1>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    style={btnBlackStyle}
-                    onMouseEnter={e => e.currentTarget.style.opacity = 0.8}
-                    onMouseLeave={e => e.currentTarget.style.opacity = 1}
+                    className="btn-premium btn-dark"
+                    style={{ padding: '12px 24px', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', width: 'auto' }}
                 >
                     + Add Vehicle
                 </button>
@@ -152,7 +151,7 @@ export default function ManagerVehiclesPage() {
 
                         {formError && <p style={{ color: '#EF4444', fontSize: '13px' }}>{formError}</p>}
 
-                        <button type="submit" style={btnPrimaryStyle}>Add to Fleet</button>
+                        <button type="submit" className="btn-premium btn-dark">Add to Fleet</button>
                     </form>
                 </Modal>
             )}
@@ -164,8 +163,8 @@ export default function ManagerVehiclesPage() {
                         Are you sure you want to remove <strong>{selectedVehicle.registration_number}</strong>? This action cannot be undone.
                     </p>
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={handleDelete} style={{ ...btnPrimaryStyle, background: '#EF4444', flex: 1 }}>Remove Vehicle</button>
-                        <button onClick={() => setShowDeleteModal(false)} style={{ ...btnSecondaryStyle, flex: 1 }}>Cancel</button>
+                        <button onClick={handleDelete} className="btn-premium" style={{ background: '#E05A5A', color: 'white', flex: 1, padding: '14px', borderRadius: '12px', border: 'none', fontWeight: 600 }}>Remove Vehicle</button>
+                        <button onClick={() => setShowDeleteModal(false)} className="btn-premium" style={{ background: 'transparent', flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.2)', color: 'var(--text-dark)', fontWeight: 600 }}>Cancel</button>
                     </div>
                 </Modal>
             )}
@@ -249,12 +248,12 @@ function StatusBadge({ status }) {
             padding: '4px 12px', borderRadius: '50px',
             fontSize: '11px', fontWeight: 700,
             background: isAvailable ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)',
-            color: isAvailable ? '#10B981' : '#3B82F6',
+            color: isAvailable ? '#10B981' : '#6C63FF',
             textTransform: 'uppercase'
         }}>
             <span style={{
                 width: '6px', height: '6px', borderRadius: '50%',
-                background: isAvailable ? '#10B981' : '#3B82F6'
+                background: isAvailable ? '#10B981' : '#6C63FF'
             }} />
             {status}
         </span>
@@ -288,9 +287,7 @@ function Input({ label, type = 'text', ...props }) {
 }
 
 const inputStyle = { padding: '12px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', fontSize: '14px' };
-const btnBlackStyle = { padding: '12px 24px', background: 'rgba(13,13,13,0.9)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'opacity 0.2s' };
 const btnPrimaryStyle = { padding: '14px', background: '#0D0D0D', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' };
-const btnSecondaryStyle = { padding: '14px', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' };
 const detailRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const detailLabel = { fontSize: '13px', color: '#6B6B6B' };
 const detailValue = { fontSize: '13px', fontWeight: 600, color: '#111827' };

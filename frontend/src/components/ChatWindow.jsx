@@ -21,24 +21,19 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
     };
 
     return (
-        <div style={{
+        <div className="glass-card-dark" style={{
             display: 'flex', flexDirection: 'column',
             height: '100%', minHeight: '400px',
-            borderRadius: '20px', overflow: 'hidden',
-            background: 'rgba(255,255,255,0.4)',
-            backdropFilter: 'blur(40px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-            border: '1px solid rgba(255,255,255,0.7)',
-            boxShadow: '0 8px 32px rgba(180,130,80,0.1)'
+            overflow: 'hidden'
         }}>
 
             {/* Header */}
             <div style={{
                 padding: '16px 20px',
-                borderBottom: '1px solid rgba(255,255,255,0.5)',
+                borderBottom: '1px solid var(--glass-border-dark)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'space-between',
-                background: 'rgba(255,255,255,0.3)'
+                background: 'rgba(13,13,13,0.3)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{
@@ -47,7 +42,7 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                         boxShadow: connected ? '0 0 8px rgba(0,245,160,0.6)' : 'none',
                         animation: connected ? 'sessionPulse 2s infinite' : 'none'
                     }} />
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#F5EDE3' }}>
                         {connected ? `Secure channel · ${counterpartName}` : 'Connecting...'}
                     </span>
                 </div>
@@ -129,9 +124,9 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
             {/* Input area */}
             <div style={{
                 padding: '12px 16px',
-                borderTop: '1px solid rgba(255,255,255,0.5)',
+                borderTop: '1px solid var(--glass-border-dark)',
                 display: 'flex', gap: '10px', alignItems: 'flex-end',
-                background: 'rgba(255,255,255,0.3)'
+                background: 'rgba(13,13,13,0.3)'
             }}>
                 <textarea
                     placeholder={connected ? 'Type a message...' : 'Connecting to secure channel...'}
@@ -147,11 +142,11 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                     }}
                     style={{
                         flex: 1, padding: '10px 14px',
-                        borderRadius: '14px', border: '1px solid rgba(255,255,255,0.6)',
-                        background: 'rgba(255,255,255,0.5)',
+                        borderRadius: '14px', border: '1px solid var(--glass-border-dark)',
+                        background: 'rgba(255,255,255,0.05)',
                         backdropFilter: 'blur(10px)',
                         fontSize: '14px', fontFamily: 'Inter, sans-serif',
-                        color: 'var(--text-dark)', outline: 'none',
+                        color: '#F5EDE3', outline: 'none',
                         resize: 'none', lineHeight: 1.5,
                         transition: 'var(--transition-smooth)'
                     }}
@@ -159,9 +154,9 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                 <button
                     onClick={handleSend}
                     disabled={!connected || !inputValue.trim()}
-                    className="glass-button"
+                    className="btn-premium btn-dark"
                     style={{
-                        width: '44px', height: '44px',
+                        width: '44px', height: '44px', padding: 0,
                         borderRadius: '14px', border: 'none',
                         display: 'flex', alignItems: 'center',
                         justifyContent: 'center', fontSize: '18px',

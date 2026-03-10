@@ -6,7 +6,7 @@ import PageWrapper from '../../components/layout/PageWrapper.jsx';
 import { useToast } from '../../components/Toast.jsx';
 
 const CATEGORIES = {
-    service_quality: { label: 'Service Quality', color: '#3B82F6' },
+    service_quality: { label: 'Service Quality', color: '#6C63FF' },
     driver_behaviour: { label: 'Driver Behaviour', color: '#F59E0B' },
     privacy_concern: { label: 'Privacy Concern', color: '#EF4444' },
     other: { label: 'Other', color: '#6B6B6B' }
@@ -232,7 +232,7 @@ function ComplaintCard({ complaint, isExpanded, onToggle, onStatusUpdate, onSave
 
                 <button
                     onClick={onNotify}
-                    style={{ ...btnSecondaryStyle, color: '#3B82F6', borderColor: 'rgba(59,130,246,0.2)' }}
+                    style={{ ...btnSecondaryStyle, color: '#6C63FF', borderColor: 'rgba(108,99,255,0.2)' }}
                 >
                     Notify Driver
                 </button>
@@ -283,7 +283,7 @@ function ComplaintCard({ complaint, isExpanded, onToggle, onStatusUpdate, onSave
                                             alignSelf: m.role === 'driver' ? 'flex-start' : 'flex-end',
                                             padding: '8px 12px',
                                             borderRadius: '12px',
-                                            background: m.role === 'driver' ? '#FFF' : '#3B82F6',
+                                            background: m.role === 'driver' ? '#FFF' : '#6C63FF',
                                             color: m.role === 'driver' ? '#111827' : '#FFF',
                                             fontSize: '13px',
                                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
@@ -312,7 +312,7 @@ function ComplaintCard({ complaint, isExpanded, onToggle, onStatusUpdate, onSave
 function StatusBadge({ status }) {
     const colors = {
         open: { bg: 'rgba(239,68,68,0.1)', fg: '#EF4444' },
-        under_investigation: { bg: 'rgba(59,130,246,0.1)', fg: '#3B82F6' },
+        under_investigation: { bg: 'rgba(108,99,255,0.1)', fg: '#6C63FF' },
         resolved: { bg: 'rgba(16,185,129,0.1)', fg: '#10B981' },
         escalated: { bg: 'rgba(245,158,11,0.1)', fg: '#F59E0B' }
     };

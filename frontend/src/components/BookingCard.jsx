@@ -84,7 +84,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
             </div>
 
             <button
-                className="glass-button"
+                className="btn-premium btn-dark"
                 onClick={handleAssign}
                 disabled={!selectedDriver || !selectedVehicle}
                 style={{

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import api from '../../api/axios.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import GeoBackground from '../GeoBackground.jsx';
 
 const NAV_LINKS = [
     { to: '/manager/dispatch', label: 'Dispatch', icon: '⚡' },
@@ -44,7 +45,8 @@ export default function ManagerLayout({ children }) {
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-base)', position: 'relative', overflow: 'hidden' }}>
+            <GeoBackground density="sparse" fixed={true} />
             <style>{`
                 .manager-sidebar { width: 240px; transform: translateX(0); transition: transform 0.3s ease; }
                 .manager-main { margin-left: 240px; padding: 32px; }
@@ -62,60 +64,26 @@ export default function ManagerLayout({ children }) {
 
             <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
 
-            {/* Background Blobs (z-index: 0) matching login page */}
-            <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-                <div className="glass-blob">
-                    <div style={{
-                        position: 'absolute', bottom: '-15%', left: '-10%', width: '650px', height: '650px',
-                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,180,140,0.75) 0%, rgba(230,160,110,0.75) 40%, transparent 70%)',
-                        filter: 'blur(20px)', mixBlendMode: 'multiply',
-                        animation: 'blobFloat1 14s ease-in-out infinite, blobPulse 7s ease-in-out infinite, glassShimmer 6s ease-in-out infinite'
-                    }} />
-                </div>
-                <div className="glass-blob">
-                    <div style={{
-                        position: 'absolute', top: '-10%', left: '30%', width: '400px', height: '400px',
-                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,200,170,0.65) 0%, transparent 70%)',
-                        filter: 'blur(22px)', mixBlendMode: 'multiply',
-                        animation: 'blobFloat2 18s ease-in-out infinite, blobPulse 9s ease-in-out infinite, glassShimmer 8s ease-in-out infinite 1s'
-                    }} />
-                </div>
-                <div className="glass-blob">
-                    <div style={{
-                        position: 'absolute', top: '10%', right: '5%', width: '300px', height: '300px',
-                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,99,255,0.5) 0%, transparent 70%)',
-                        filter: 'blur(25px)', mixBlendMode: 'multiply',
-                        animation: 'blobFloat3 22s ease-in-out infinite, blobPulse 11s ease-in-out infinite, glassShimmer 10s ease-in-out infinite 2s'
-                    }} />
-                </div>
-                <div className="glass-blob">
-                    <div style={{
-                        position: 'absolute', top: '30%', right: '-5%', width: '350px', height: '350px',
-                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(230,150,100,0.6) 0%, transparent 70%)',
-                        filter: 'blur(20px)', mixBlendMode: 'multiply',
-                        animation: 'blobFloat2 16s ease-in-out infinite reverse, blobPulse 8s ease-in-out infinite, glassShimmer 7s ease-in-out infinite 0.5s'
-                    }} />
-                </div>
-            </div>
+            {/* Removed inline blob background */}
 
             {/* Left Sidebar */}
             <aside className={`manager-sidebar ${sidebarOpen ? 'open' : ''}`} style={{
                 position: 'fixed',
                 left: 0, top: 0, bottom: 0,
-                background: 'rgba(255, 255, 255, 0.35)',
-                backdropFilter: 'blur(60px) saturate(200%)',
-                WebkitBackdropFilter: 'blur(60px) saturate(200%)',
-                borderRight: '1px solid rgba(255,255,255,0.7)',
-                boxShadow: '4px 0 24px rgba(180,130,80,0.08), inset -1px 0 0 rgba(255,255,255,0.5)',
+                width: '260px',
+                background: 'var(--glass-bg)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                borderRight: '0.5px solid var(--glass-border)',
                 display: 'flex', flexDirection: 'column',
                 zIndex: 20,
                 padding: '28px 16px'
             }}>
                 {/* Logo Lockup */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '24px', padding: '0 8px' }}>
-                    <img src="/swiftlink-icon.png" alt="S" style={{ height: '40px', width: '40px', objectFit: 'contain' }} />
-                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0D0D0D', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>
-                        wiftlink
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '0 8px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--bg-dark)', color: 'var(--text-cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontStyle: 'italic', fontSize: '1.2rem' }}>S</div>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-dark)', letterSpacing: '-0.05em', fontFamily: 'Inter, sans-serif' }}>
+                        swiftlink
                     </span>
                 </div>
 
@@ -127,27 +95,29 @@ export default function ManagerLayout({ children }) {
                             to={to}
                             style={({ isActive }) => ({
                                 display: 'flex', alignItems: 'center', gap: '12px',
-                                padding: '12px 16px',
-                                borderRadius: '14px',
+                                padding: '10px 16px',
+                                borderRadius: '8px',
                                 marginBottom: '4px',
                                 textDecoration: 'none',
                                 cursor: 'pointer',
                                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                                 position: 'relative',
-                                background: isActive ? 'rgba(13,13,13,0.08)' : 'transparent',
-                                color: isActive ? '#0D0D0D' : '#6B6B6B',
-                                fontWeight: isActive ? 700 : 500,
+                                background: isActive ? 'rgba(108,99,255,0.1)' : 'transparent',
+                                color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                fontWeight: 600,
                                 fontSize: '14px',
                                 fontFamily: 'Inter, sans-serif'
                             })}
                             onMouseEnter={e => {
                                 if (e.currentTarget.style.backgroundColor === 'transparent' || e.currentTarget.style.backgroundColor === '') {
-                                    e.currentTarget.style.background = 'rgba(13,13,13,0.05)';
+                                    e.currentTarget.style.background = 'rgba(255,255,255,0.4)';
+                                    e.currentTarget.style.color = 'var(--text-dark)';
                                 }
                             }}
                             onMouseLeave={e => {
-                                if (e.currentTarget.style.fontWeight !== '700') {
+                                if (e.currentTarget.style.backgroundColor !== 'rgba(108, 99, 255, 0.1)') {
                                     e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
                                 }
                             }}
                         >
@@ -159,7 +129,7 @@ export default function ManagerLayout({ children }) {
                                             left: 0, top: '20%', bottom: '20%',
                                             width: '3px',
                                             borderRadius: '0 3px 3px 0',
-                                            background: '#0D0D0D'
+                                            background: 'var(--accent-primary)'
                                         }} />
                                     )}
                                     <span style={{ fontSize: '18px' }}>{icon}</span>
@@ -222,11 +192,17 @@ export default function ManagerLayout({ children }) {
             </aside>
 
             {/* Main Content Area */}
-            <main className="manager-main" style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+            <main className="manager-main" style={{ minHeight: '100vh', position: 'relative', zIndex: 1, background: 'transparent' }}>
                 <header className="manager-header-content" style={{
                     display: 'flex', alignItems: 'center',
                     justifyContent: 'space-between',
-                    marginBottom: '32px'
+                    marginBottom: '32px',
+                    height: '64px',
+                    background: 'var(--glass-bg)',
+                    backdropFilter: 'blur(24px)',
+                    borderBottom: '0.5px solid var(--glass-border)',
+                    margin: '-32px -32px 32px -32px',
+                    padding: '0 32px'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         <button className="mobile-toggle" onClick={() => setSidebarOpen(true)}>☰</button>
