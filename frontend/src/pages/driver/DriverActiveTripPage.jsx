@@ -16,7 +16,7 @@ export default function DriverActiveTripPage() {
     const fetchTrip = useCallback(async () => {
         try {
             const res = await api.get(`/driver/trips/${tripId}`);
-            setTrip(res.data.trip);
+            setTrip(res.data);
         } catch (err) {
             console.error('Failed to load active trip', err);
             showToast('Failed to load trip details.', 'error');

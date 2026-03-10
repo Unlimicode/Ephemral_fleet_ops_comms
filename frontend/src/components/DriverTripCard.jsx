@@ -25,14 +25,16 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
 
     return (
         <div className="glass-card" style={{
-            padding: '20px',
+            padding: '16px',
             borderRadius: '20px',
             marginBottom: '12px',
             animation: `fade-in-up 0.4s ease forwards`,
             animationDelay: `${index * 0.1}s`,
             opacity: 0,
             transform: 'translateY(10px)',
-            overflow: 'visible'
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box'
         }}>
             {/* Top row: Status and Time */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -61,28 +63,36 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-dark)', marginBottom: '8px', fontFamily: 'Inter, sans-serif' }}>
                     {trip.client_first_name || 'Passenger'}
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(255,255,255,0.4)', padding: '12px', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                        <span style={{ color: 'var(--text-muted)', marginRight: '6px' }}>↑</span>
-                        {trip.pickup_location}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(255,255,255,0.4)', padding: '12px', borderRadius: '12px', overflow: 'hidden' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>↑</span>
+                        <span style={{ wordBreak: 'break-word' }}>{trip.pickup_location}</span>
                     </div>
-                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                        <span style={{ color: 'var(--text-muted)', marginRight: '6px' }}>↓</span>
-                        {trip.destination}
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>↓</span>
+                        <span style={{ wordBreak: 'break-word' }}>{trip.destination}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Flight info if present */}
-            {trip.flight_number && (
-                <div style={{ marginBottom: '16px', display: 'inline-block', background: 'rgba(13,13,13,0.05)', padding: '4px 10px', borderRadius: '6px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>FLIGHT: </span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-dark)', fontWeight: 600 }}>{trip.flight_number}</span>
-                </div>
-            )}
+            {/* Vehicle & Flight info */}
+            <div style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {trip.registration_number && (
+                    <div style={{ background: 'rgba(13,13,13,0.05)', padding: '4px 10px', borderRadius: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>VEHICLE: </span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-dark)', fontWeight: 600 }}>{trip.registration_number} ({trip.model || 'Sedan'})</span>
+                    </div>
+                )}
+                {trip.flight_number && (
+                    <div style={{ background: 'rgba(13,13,13,0.05)', padding: '4px 10px', borderRadius: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>FLIGHT: </span>
+                        <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-dark)', fontWeight: 600 }}>{trip.flight_number}</span>
+                    </div>
+                )}
+            </div>
 
             {/* Actions based on role */}
-            {trip.status === 'assigned' && !isDeclining && (
+            {trip.status === 'accepted' && !isDeclining && (
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button onClick={() => setIsDeclining(true)} style={{
                         flex: 1, padding: '12px', borderRadius: '12px',

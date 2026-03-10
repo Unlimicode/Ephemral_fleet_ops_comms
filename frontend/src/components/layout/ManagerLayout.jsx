@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api/axios.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 const NAV_LINKS = [
@@ -21,7 +21,7 @@ export default function ManagerLayout({ children }) {
 
     const fetchCounts = async () => {
         try {
-            const res = await axios.get('/api/complaints');
+            const res = await api.get('/complaints');
             const open = res.data.filter(c => c.status === 'open').length;
             setComplaintCount(open);
         } catch (err) {

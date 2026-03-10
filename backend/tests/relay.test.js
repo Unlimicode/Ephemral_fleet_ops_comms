@@ -101,6 +101,7 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
 
     it('Test 1: Creates a trip and establishes a Valid Session Connection', async () => {
         // A. Setup the MEI Rest State
+        // A. Setup the MEI Rest State
         const createRes = await request(app).post('/api/trips')
             .set('Authorization', `Bearer ${authToken}`)
             .send({
@@ -162,13 +163,13 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
         // Wait for connection to settle
         await new Promise((resolve) => clientSocket.on('session_joined', resolve));
 
-        // Let the driver send a message
-        const testContent = "I'm arriving in 2 minutes.";
-        driverSocket.emit('send_message', { content: testContent });
-
         // Both sockets should receive the unified payload
         const driverPromise = new Promise((resolve) => driverSocket.once('receive_message', resolve));
         const clientPromise = new Promise((resolve) => clientSocket.once('receive_message', resolve));
+
+        // Let the driver send a message
+        const testContent = "I'm arriving in 2 minutes.";
+        driverSocket.emit('send_message', { content: testContent });
 
         const [driverMsg, clientMsg] = await Promise.all([driverPromise, clientPromise]);
 

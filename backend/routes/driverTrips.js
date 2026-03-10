@@ -26,6 +26,31 @@ router.get('/', requireAuth(['driver']), async (req, res) => {
     }
 });
 
+// ── GET /:tripId — Driver's Specific Trip Detail ───────────────────────────
+router.get('/:tripId', requireAuth(['driver']), async (req, res) => {
+    const { tripId } = req.params;
+    try {
+        const result = await query(
+            `SELECT t.id, t.status, t.pickup_location, t.destination, t.pickup_time, 
+                    t.flight_number, t.client_first_name, t.notes,
+                    v.registration_number, v.make, v.model
+             FROM trips t
+             LEFT JOIN vehicles v ON t.vehicle_id = v.id
+             WHERE t.id = $1 AND t.assigned_driver_id = $2`,
+            [tripId, req.user.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found or not assigned to you' });
+        }
+
+        return res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('[driverTrips] get trip detail error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ── PATCH /:tripId/accept — Accept Assignment ────────────────────────────────
 router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;

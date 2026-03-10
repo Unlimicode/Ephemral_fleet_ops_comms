@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../api/axios.js';
 
@@ -12,16 +12,15 @@ const TABS = [
 
 export default function DriverLayout() {
     const { user } = useAuth();
-    const navigate = useNavigate();
-    const [hasActiveTrip, setHasActiveTrip] = useState(false);
+    const [activeTripId, setActiveTripId] = useState(null);
 
     useEffect(() => {
         const checkActiveTrips = async () => {
             try {
                 const res = await api.get('/driver/trips');
-                const triplist = res.data.trips || [];
-                const active = triplist.some(t => t.status === 'in_progress');
-                setHasActiveTrip(active);
+                const triplist = res.data || [];
+                const active = triplist.find(t => t.status === 'in_progress');
+                setActiveTripId(active ? active.id : null);
             } catch (err) {
                 console.error('Failed to check active trips for indicator', err);
             }
@@ -123,10 +122,6 @@ export default function DriverLayout() {
                     <NavLink
                         key={to}
                         to={to}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            navigate(to);
-                        }}
                         style={({ isActive }) => ({
                             display: 'flex',
                             flexDirection: 'column',
@@ -136,15 +131,16 @@ export default function DriverLayout() {
                             transition: 'all 0.2s ease',
                             color: isActive ? '#0D0D0D' : 'var(--text-muted)',
                             position: 'relative',
-                            width: '64px',
-                            height: '100%'
+                            flex: 1,
+                            minWidth: 0,
+                            padding: '4px'
                         })}
                     >
                         {({ isActive }) => (
                             <>
                                 <span style={{ fontSize: '24px', marginBottom: '2px', filter: isActive ? 'none' : 'grayscale(1) opacity(0.6)' }}>
                                     {icon}
-                                    {label === 'Active' && hasActiveTrip && (
+                                    {label === 'Active' && activeTripId && (
                                         <div className="session-pulse" style={{
                                             position: 'absolute',
                                             top: '2px', right: '2px',

@@ -3,16 +3,22 @@ import api from '../../api/axios.js';
 import { useToast } from '../../components/Toast.jsx';
 import DriverTripCard from '../../components/DriverTripCard.jsx';
 
-export default function DriverTripsPage() {
+export default function DriverTripsPage({ defaultTab }) {
     const [trips, setTrips] = useState([]);
-    const [activeTab, setActiveTab] = useState('upcoming'); // upcoming, active, completed
+    const [activeTab, setActiveTab] = useState(defaultTab || 'upcoming'); // upcoming, active, completed
     const [loading, setLoading] = useState(true);
     const { showToast } = useToast();
 
+    useEffect(() => {
+        if (defaultTab) {
+            setActiveTab(defaultTab);
+        }
+    }, [defaultTab]);
+
     const fetchTrips = useCallback(async () => {
         try {
-            const res = await api.get('/drivers/trips');
-            setTrips(res.data.trips || []);
+            const res = await api.get('/driver/trips');
+            setTrips(res.data || []);
         } catch (err) {
             console.error('Failed to fetch driver trips', err);
             // Non-blocking failure, rely on polling
@@ -29,7 +35,7 @@ export default function DriverTripsPage() {
 
     const handleAccept = async (tripId) => {
         try {
-            await api.patch(`/drivers/trips/${tripId}/accept`, { response: 'accepted' });
+            await api.patch(`/driver/trips/${tripId}/accept`, { response: 'accepted' });
             showToast('Trip accepted successfully.', 'success');
             fetchTrips();
         } catch {
@@ -39,7 +45,7 @@ export default function DriverTripsPage() {
 
     const handleDecline = async (tripId, reason) => {
         try {
-            await api.patch(`/drivers/trips/${tripId}/accept`, { response: 'rejected', reason });
+            await api.patch(`/driver/trips/${tripId}/accept`, { response: 'rejected', reason });
             showToast('Trip declined and returned to dispatch.', 'success');
             fetchTrips();
         } catch {
@@ -47,7 +53,7 @@ export default function DriverTripsPage() {
         }
     };
 
-    const upcomingTrips = trips.filter(t => t.status === 'assigned' || t.status === 'accepted');
+    const upcomingTrips = trips.filter(t => t.status === 'accepted');
     const activeTripsList = trips.filter(t => t.status === 'in_progress');
     const completedTrips = trips.filter(t => t.status === 'completed');
 
