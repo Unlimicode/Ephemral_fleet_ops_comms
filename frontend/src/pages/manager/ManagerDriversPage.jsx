@@ -205,8 +205,8 @@ function StatusBadge({ status }) {
     const c = config[status] || config.offline;
     return (
         <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '4px 12px', borderRadius: '50px',
+            display: 'inline-block', alignItems: 'center', gap: '6px',
+            padding: '2px 8px', borderRadius: '50px',
             fontSize: '12px', fontWeight: 600,
             background: c.bg, color: c.color,
             animation: c.pulse ? 'pulseRing 2s infinite' : 'none'

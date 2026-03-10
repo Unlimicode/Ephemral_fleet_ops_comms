@@ -195,7 +195,7 @@ function ComplaintCard({ complaint, isExpanded, onToggle, onStatusUpdate, onSave
                         Trip: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{complaint.trip_id}</span> • {new Date(complaint.created_at).toLocaleDateString()}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: '4px', background: cat.color + '20', color: cat.color, fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: '4px', background: cat.color + '20', color: cat.color, fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', margin: '4px' }}>
                             {cat.label}
                         </span>
                         <StatusBadge status={complaint.status} />
@@ -322,7 +322,9 @@ function StatusBadge({ status }) {
             fontSize: '11px', fontWeight: 700,
             padding: '2px 8px', borderRadius: '50px',
             background: c.bg, color: c.fg,
-            textTransform: 'uppercase'
+            textTransform: 'uppercase',
+            margin: '4px',
+            display: 'inline-block'
         }}>
             {status.replace('_', ' ')}
         </span>

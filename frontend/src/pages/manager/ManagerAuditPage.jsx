@@ -235,9 +235,11 @@ function ActionBadge({ type }) {
     return (
         <span style={{
             fontSize: '10px', fontWeight: 800,
-            padding: '2px 8px', borderRadius: '4px',
+            padding: '3px 10px', borderRadius: '6px',
             background: color + '15', color: color,
-            border: `1px solid ${color}30`
+            border: `1px solid ${color}30`,
+            display: 'inline-block',
+            whiteSpace: 'nowrap'
         }}>
             {type}
         </span>

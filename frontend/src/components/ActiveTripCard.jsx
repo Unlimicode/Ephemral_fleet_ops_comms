@@ -1,7 +1,7 @@
 export default function ActiveTripCard({ trip, onComplete }) {
     return (
-        <div className="glass-card session-pulse" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+        <div className="glass-card session-pulse" style={{ padding: '24px', overflow: 'visible' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', margin: '12px 12px 0 0', position: 'relative' }}>
                 <span className="session-pulse" style={{
                     width: '10px', height: '10px', borderRadius: '50%',
                     background: 'var(--accent-success)', display: 'inline-block'

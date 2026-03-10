@@ -11,7 +11,7 @@ export default function StatCard({ title, value, subtitle, icon, pulse, tint = '
             padding: '28px 24px',
             position: 'relative',
             borderRadius: '16px',
-            overflow: 'hidden',
+            overflow: 'visible',
             transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
             cursor: 'default'
         }}
@@ -24,7 +24,8 @@ export default function StatCard({ title, value, subtitle, icon, pulse, tint = '
                 width: '100px', height: '100px',
                 borderRadius: '50%',
                 background: tints[tint]?.arc || tints['blue'].arc,
-                filter: 'blur(20px)'
+                filter: 'blur(20px)',
+                margin: '12px'
             }} />
 
             {/* Top row */}

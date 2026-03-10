@@ -24,13 +24,11 @@ router.post('/login', async (req, res) => {
 
     try {
         const result = await query(
-            'SELECT id, password_hash FROM fleet_managers WHERE work_email = $1',
+            'SELECT id, full_name, work_email, password_hash FROM fleet_managers WHERE work_email = $1',
             [email]
         );
 
         if (result.rows.length === 0) {
-            // Return the same message for both "not found" and "wrong password"
-            // to avoid leaking which emails are registered (user enumeration).
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
@@ -47,7 +45,14 @@ router.post('/login', async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
         );
 
-        return res.status(200).json({ token });
+        return res.status(200).json({
+            token,
+            user: {
+                id: manager.id,
+                full_name: manager.full_name,
+                email: manager.work_email
+            }
+        });
     } catch (err) {
         console.error('[auth] login error:', err);
         return res.status(500).json({ error: 'Internal server error' });

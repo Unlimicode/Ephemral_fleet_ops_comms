@@ -31,11 +31,12 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
             animation: `fade-in-up 0.4s ease forwards`,
             animationDelay: `${index * 0.1}s`,
             opacity: 0,
-            transform: 'translateY(10px)'
+            transform: 'translateY(10px)',
+            overflow: 'visible'
         }}>
             {/* Top row: Status and Time */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 8px 0 0', position: 'relative' }}>
                     {currentStatus.pulse && (
                         <span className="session-pulse" style={{
                             width: '8px', height: '8px', borderRadius: '50%',

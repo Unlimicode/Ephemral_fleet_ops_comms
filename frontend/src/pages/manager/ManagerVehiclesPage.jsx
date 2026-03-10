@@ -191,9 +191,10 @@ function VehicleCard({ vehicle, onRemove }) {
                     fontWeight: 700,
                     textTransform: 'uppercase',
                     padding: '2px 8px',
-                    borderRadius: '4px',
+                    borderRadius: '8px',
                     background: 'rgba(0,0,0,0.05)',
-                    color: '#6B6B6B'
+                    color: '#6B6B6B',
+                    margin: '12px 12px 0 0'
                 }}>
                     {vehicle.type}
                 </span>

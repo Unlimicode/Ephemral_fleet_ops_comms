@@ -15,7 +15,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
     };
 
     return (
-        <div className="glass-card animate-fade-in-up" style={{ padding: '24px', animationDelay: `${index * 0.1}s` }}>
+        <div className="glass-card animate-fade-in-up" style={{ padding: '24px', animationDelay: `${index * 0.1}s`, overflow: 'visible' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', margin: 0 }}>
                     {booking.client_first_name}
@@ -23,7 +23,8 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
                 <span style={{
                     background: statusColor, color: statusText,
                     padding: '4px 10px', borderRadius: '50px',
-                    fontSize: '11px', fontWeight: 700, textTransform: 'uppercase'
+                    fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+                    margin: '12px 12px 0 0', position: 'relative'
                 }}>
                     {booking.status}
                 </span>

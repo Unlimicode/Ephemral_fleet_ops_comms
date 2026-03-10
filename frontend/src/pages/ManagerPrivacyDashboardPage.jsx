@@ -252,10 +252,10 @@ function SessionRow({ session }) {
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Driver ↔ Client</div>
             </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: isRedis ? '#dbeafe' : '#fef3c7', color: isRedis ? '#1e40af' : '#92400e', fontWeight: 800 }}>
+                <span style={{ fontSize: '10px', padding: '3px 10px', borderRadius: '6px', background: isRedis ? '#dbeafe' : '#fef3c7', color: isRedis ? '#1e40af' : '#92400e', fontWeight: 800, display: 'inline-block', whiteSpace: 'nowrap' }}>
                     {isRedis ? '⚡ Redis' : '🔒 PostgreSQL'}
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: statusColor }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: statusColor, padding: '3px 10px', borderRadius: '6px', display: 'inline-block', whiteSpace: 'nowrap' }}>
                     {session.status.toUpperCase()}
                 </span>
             </div>
