@@ -311,3 +311,28 @@
         padding: 0 24px;
     }
 }
+
+/* ── TTL progress bar ── */
+.ttl-bar {
+    height: 4px;
+    background: var(--accent-primary);
+    border-radius: 2px;
+    transition: width 1s linear;
+}
+
+.ttl-bar-track {
+    height: 4px;
+    background: rgba(245, 237, 227, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+/* ── Lifecycle card transitions ── */
+.lifecycle-card {
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.lifecycle-ghost {
+    border: 1px dashed rgba(245, 237, 227, 0.15);
+    background: transparent;
+}
