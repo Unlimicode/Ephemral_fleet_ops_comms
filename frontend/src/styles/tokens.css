@@ -117,6 +117,10 @@
     border-color: rgba(108, 99, 255, 0.5);
 }
 
+.glass-input::placeholder {
+    color: rgba(13, 13, 13, 0.4);
+}
+
 /* ── Architectural grid ── */
 .arch-grid {
     background-image:
