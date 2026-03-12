@@ -8,11 +8,12 @@ export default function useChat({ tripId, token, role }) {
     const socketRef = useRef(null);
 
     useEffect(() => {
-        if (!tripId || !token) return;
+        if (!tripId) return;
 
         const socket = io(import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL.replace('/api', ''), {
             auth: { token, tripId, role },
-            transports: ['websocket']
+            transports: ['websocket'],
+            withCredentials: true
         });
 
         socketRef.current = socket;

@@ -13,7 +13,7 @@ import DriverTripsPage from './pages/driver/DriverTripsPage.jsx';
 import DriverActiveTripPage from './pages/driver/DriverActiveTripPage.jsx';
 import DriverProfilePage from './pages/driver/DriverProfilePage.jsx';
 import DriverNotificationsPage from './pages/driver/DriverNotificationsPage.jsx';
-import BookingLandingPage from './pages/booking/BookingLandingPage.jsx';
+import BookingLandingPage from './pages/BookingLandingPage.jsx';
 import ClientChatPage from './pages/ClientChatPage.jsx';
 import SwiftlinkHomePage from './pages/SwiftlinkHomePage.jsx';
 import BookingHistoryPage from './pages/BookingHistoryPage.jsx';

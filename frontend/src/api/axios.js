@@ -14,6 +14,7 @@ export function setAuthToken(token) {
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
+    withCredentials: true,
 });
 
 // Attach the bearer token to every outgoing request when a session is active.
@@ -29,7 +30,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const url = error.config?.url || '';
+        const isClientRoute = url.includes('/bookings') || url.includes('/complaints');
+        if (error.response?.status === 401 && !isClientRoute) {
             window.location.replace('/login');
         }
         return Promise.reject(error);

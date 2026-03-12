@@ -1,5 +1,0 @@
-﻿
-d4363be feat: propagate architectural 
-design language across all pages and layouts
-
-

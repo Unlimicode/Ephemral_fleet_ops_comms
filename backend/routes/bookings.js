@@ -248,9 +248,11 @@ router.get('/:tripId', requireClientAuth, async (req, res) => {
                 t.pickup_time, 
                 t.flight_number, 
                 t.assigned_driver_id,
-                d.full_name AS driver_name
+                d.full_name AS driver_name,
+                v.type AS vehicle_type
              FROM trips t
              LEFT JOIN drivers d ON t.assigned_driver_id = d.id
+             LEFT JOIN vehicles v ON t.vehicle_id = v.id
              WHERE t.id = $1`,
             [tripId]
         );

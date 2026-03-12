@@ -69,3 +69,15 @@ desktop.ini
 *.tsbuildinfo
 .eslintcache
 .stylelintcache
+
+# Dev logs and debug output
+_dev_logs/
+
+# Frontend build output
+frontend/dist/
+
+# Temporary debug files
+debug*.log
+*_test*.txt
+*_out.txt
+*_out.json
