@@ -139,6 +139,38 @@ body {
   }
 }
 
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(15deg) scale(2.5);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(20deg) scale(2.6);
+  }
+}
+
+@keyframes float-reverse {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-10deg) scale(3);
+  }
+
+  50% {
+    transform: translateY(20px) rotate(-15deg) scale(3.1);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 12s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 15s ease-in-out infinite;
+}
+
 .gradient-text {
   background: var(--accent-gradient);
   -webkit-background-clip: text;

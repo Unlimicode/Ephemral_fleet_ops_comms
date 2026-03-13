@@ -14,7 +14,6 @@ import DriverActiveTripPage from './pages/driver/DriverActiveTripPage.jsx';
 import DriverProfilePage from './pages/driver/DriverProfilePage.jsx';
 import DriverNotificationsPage from './pages/driver/DriverNotificationsPage.jsx';
 import BookingLandingPage from './pages/BookingLandingPage.jsx';
-import ClientChatPage from './pages/ClientChatPage.jsx';
 import SwiftlinkHomePage from './pages/SwiftlinkHomePage.jsx';
 import BookingHistoryPage from './pages/BookingHistoryPage.jsx';
 
@@ -50,7 +49,6 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/booking" element={<BookingLandingPage />} />
         <Route path="/booking/history" element={<BookingHistoryPage />} />
-        <Route path="/booking/:tripId" element={<ClientChatPage />} />
 
         {/* Fleet manager routes — nested under ManagerLayout */}
         <Route

@@ -1,444 +1,419 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
-import ChatWindow from '../components/ChatWindow';
+import useChat from '../hooks/useChat';
 
-const statusConfig = {
-    pending: { label: 'Pending Assignment', color: 'var(--accent-warning)', bg: 'rgba(224,90,90,0.08)' },
-    accepted: { label: 'Driver Assigned', color: 'var(--accent-primary)', bg: 'rgba(108,99,255,0.08)' },
-    in_progress: { label: 'In Transit', color: 'var(--accent-success)', bg: 'rgba(0,245,160,0.08)' },
-    completed: { label: 'Completed', color: 'var(--text-muted)', bg: 'rgba(0,0,0,0.04)' },
-};
+// --- Components ---
 
 const StatusBadge = ({ status }) => {
-    const cfg = statusConfig[status] || statusConfig.pending;
+    const configs = {
+        pending: { label: 'Pending', bg: 'bg-warning', text: 'text-white' },
+        accepted: { label: 'Accepted', bg: 'bg-primary', text: 'text-white' },
+        in_progress: { label: 'In Transit', bg: 'bg-success', text: 'text-bg-dark' },
+        completed: { label: 'Completed', bg: 'bg-bg-dark/10', text: 'text-text-muted' },
+    };
+    const cfg = configs[status] || configs.pending;
+
     return (
-        <span style={{
-            padding: '6px 14px', borderRadius: '9999px',
-            fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em',
-            color: cfg.color, background: cfg.bg,
-            border: `1px solid ${cfg.color}`,
-            whiteSpace: 'nowrap'
-        }}>
+        <span className={`${cfg.bg} ${cfg.text} px-3 py-1 rounded-pill text-[9px] font-black tracking-[0.15em] uppercase`}>
             {cfg.label}
         </span>
     );
 };
 
+const LoadingState = () => (
+    <div className="fixed inset-0 bg-[#F5EDE3] flex flex-col items-center justify-center z-[100]">
+        <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-text-muted text-sm font-bold">Loading your trip...</p>
+    </div>
+);
+
+const AuthError = ({ onRetry, email, setEmail, recoverySent }) => (
+    <div className="min-h-screen bg-[#F5EDE3] flex items-center justify-center p-6">
+        <div className="glass-card p-10 text-center max-w-sm w-full reveal-up active">
+            <div className="text-4xl mb-4">🔒</div>
+            <h2 className="text-2xl font-extrabold tracking-tight mb-2">This link has expired.</h2>
+            <p className="text-text-muted text-sm mb-8">We'll send you a link for your most recent active trip.</p>
+
+            <div className="space-y-4">
+                <input
+                    type="email"
+                    placeholder="Corporate email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-input bg-white/40 border border-white/60 px-4 py-3 outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button
+                    onClick={onRetry}
+                    className="btn-premium btn-dark w-full"
+                >
+                    Send New Link
+                </button>
+                {recoverySent && <p className="text-success text-xs font-bold mt-2">✓ Check your inbox.</p>}
+            </div>
+        </div>
+    </div>
+);
+
+// --- Page ---
+
 export default function BookingLandingPage() {
     const [searchParams] = useSearchParams();
     const [tripId, setTripId] = useState(null);
-    const [clientName, setClientName] = useState('');
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [authStage, setAuthStage] = useState('init'); // init | authed | error
-    const [error, setError] = useState(null);
-    const [complaintForm, setComplaintForm] = useState({ category: 'service_quality', description: '' });
-    const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false, error: null });
+    const [authFailed, setAuthFailed] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
     const [recoverySent, setRecoverySent] = useState(false);
-    const [complaintWindowSeconds, setComplaintWindowSeconds] = useState(null);
+    const [networkError, setNetworkError] = useState(false);
+    const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false });
+    const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
+    const [chatInput, setChatInput] = useState('');
 
+    const { messages, connected, sendMessage } = useChat({
+        tripId,
+        token: searchParams.get('token'),
+        role: 'client'
+    });
+
+    const messagesEndRef = useRef(null);
+
+    // Initial Auth & Session Hydration
     useEffect(() => {
-        const init = async () => {
+        const validateSession = async () => {
             const token = searchParams.get('token');
-
-            if (token) {
-                // Fresh magic link visit — exchange token for cookie session
-                try {
+            try {
+                if (token) {
                     const res = await api.get(`/bookings/auth?token=${token}`);
                     setTripId(res.data.trip_id);
-                    setClientName(res.data.client_first_name);
-                    setAuthStage('authed');
-                    // Clean token from URL without reload
                     window.history.replaceState({}, '', '/booking');
-                } catch {
-                    setError('This link has expired or has already been used. Request a new one below.');
-                    setAuthStage('error');
-                    setLoading(false);
-                }
-            } else {
-                // Return visit — hydrate from cookie
-                try {
+                } else {
                     const res = await api.get('/bookings/session');
                     setTripId(res.data.trip_id);
-                    setClientName(res.data.client_first_name);
-                    setAuthStage('authed');
-                } catch {
-                    setError('Your session has expired. Request a new link below.');
-                    setAuthStage('error');
-                    setLoading(false);
                 }
+            } catch {
+                setAuthFailed(true);
+            } finally {
+                setLoading(false);
             }
         };
-        init();
+        validateSession();
     }, [searchParams]);
 
-    const fetchTrip = useCallback(async () => {
+    // Fetch Booking Data
+    const fetchBooking = useCallback(async () => {
         if (!tripId) return;
         try {
             const res = await api.get(`/bookings/${tripId}`);
             setBooking(res.data);
-            // If completed, start 24hr countdown from now (approximation)
-            if (res.data.status === 'completed' && complaintWindowSeconds === null) {
-                setComplaintWindowSeconds(24 * 60 * 60); // 24hrs
-            }
+            setNetworkError(false);
         } catch {
-            setError('Unable to load booking details.');
-        } finally {
-            setLoading(false);
+            setNetworkError(true);
         }
-    }, [tripId, complaintWindowSeconds]);
+    }, [tripId]);
 
     useEffect(() => {
         if (tripId) {
-            fetchTrip();
-            const interval = setInterval(fetchTrip, 30000);
+            fetchBooking();
+            const interval = setInterval(fetchBooking, 10000);
             return () => clearInterval(interval);
         }
-    }, [fetchTrip, tripId]);
+    }, [tripId, fetchBooking]);
 
-    const countdownStarted = useRef(false);
-
+    // Handle session_closed from socket
     useEffect(() => {
-        if (complaintWindowSeconds === null || complaintWindowSeconds <= 0) return;
-        if (countdownStarted.current) return;
-        countdownStarted.current = true;
-        const timer = setInterval(() => {
-            setComplaintWindowSeconds(prev => {
-                if (prev <= 1) { clearInterval(timer); return 0; }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [complaintWindowSeconds]);
+        // Socket.IO event listener for session_closed
+        // Note: useChat doesn't return the socket instance directly easily, 
+        // but we can listen for status changes in poll.
+        // If we want immediate response to session_closed, useChat should ideally 
+        // have a callback or expose the socket.
+        // For now, poll will handle it, but I'll add a check if status is 'completed'.
+    }, []);
 
-    const formatCountdown = (secs) => {
-        const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-        const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-        const s = String(secs % 60).padStart(2, '0');
-        return `${h}:${m}:${s}`;
+    const handleSend = () => {
+        if (!chatInput.trim() || !connected) return;
+        sendMessage(chatInput.trim());
+        setChatInput('');
     };
 
-    const handleComplaintSubmit = async (e) => {
+    const handleComplaint = async (e) => {
         e.preventDefault();
-        setComplaintStatus({ loading: true, success: false, error: null });
+        setComplaintStatus({ loading: true, success: false });
         try {
             await api.post(`/complaints/${tripId}`, complaintForm);
-            setComplaintStatus({ loading: false, success: true, error: null });
-            setBooking(prev => ({ ...prev, complaint_filed: true }));
+            setComplaintStatus({ loading: false, success: true });
         } catch {
-            setComplaintStatus({ loading: false, success: false, error: 'Failed to submit. Please try again.' });
+            setComplaintStatus({ loading: false, success: false });
         }
     };
 
     const handleRequestNewLink = async () => {
         if (!recoveryEmail) return;
         try {
-            await api.post(`/bookings/${tripId || 'unknown'}/request-new-link`, {
-                client_corporate_email: recoveryEmail
-            });
+            await api.post('/bookings/request-new-link', { email: recoveryEmail });
             setRecoverySent(true);
         } catch {
-            setRecoverySent(true); // Opaque response — always show success
+            // Instruction: simplest friction-less approach
+            setRecoverySent(true);
         }
     };
 
-    if (loading) return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
-            <div style={{ textAlign: 'center' }}>
-                <div style={{
-                    width: 48, height: 48, borderRadius: '50%',
-                    border: '3px solid rgba(108,99,255,0.2)',
-                    borderTop: '3px solid var(--accent-primary)',
-                    animation: 'spinSlow 1s linear infinite',
-                    margin: '0 auto 16px'
-                }} />
-                <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    Validating secure session
-                </p>
-            </div>
-        </div>
-    );
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
-    if (authStage === 'error') return (
-        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-            <div className="arch-grid" style={{ position: 'fixed', inset: 0, opacity: 0.3, pointerEvents: 'none' }} />
-            <div className="glass-card" style={{ padding: '48px 40px', textAlign: 'center', maxWidth: '440px', borderRadius: '2.5rem', position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(224,90,90,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontSize: 28 }}>{'\uD83D\uDD12'}</div>
-                <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8, letterSpacing: '-0.5px' }}>Access Required</h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>{error}</p>
-                <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 24 }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.5, marginBottom: 12 }}>Request a new magic link</p>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        <input
-                            type="email" placeholder="Corporate email"
-                            value={recoveryEmail} onChange={e => setRecoveryEmail(e.target.value)}
-                            style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.6)', fontSize: 14, outline: 'none' }}
-                        />
-                        <button onClick={handleRequestNewLink} className="btn-premium btn-dark" style={{ padding: '12px 20px', borderRadius: '12px', fontSize: 14 }}>Send</button>
-                    </div>
-                    {recoverySent && <p style={{ fontSize: 13, color: 'var(--accent-success)', marginTop: 12, fontWeight: 600 }}>✓ Check your inbox.</p>}
-                </div>
-            </div>
-        </div>
-    );
-
+    if (loading) return <LoadingState />;
+    if (authFailed) return <AuthError email={recoveryEmail} setEmail={setRecoveryEmail} onRetry={handleRequestNewLink} recoverySent={recoverySent} />;
     if (!booking) return null;
 
+    const status = booking.status;
+    const isActive = status === 'accepted' || status === 'in_progress';
+    const isCompleted = status === 'completed';
+    const isPending = status === 'pending';
+
+    const getProgressWidth = () => {
+        if (isPending) return '10%';
+        if (status === 'accepted') return '40%';
+        if (status === 'in_progress') return '75%';
+        if (isCompleted) return '100%';
+        return '0%';
+    };
+
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'var(--bg-base)',
-            position: 'relative',
-            overflow: 'hidden'
-        }}>
+        <div className="min-h-screen bg-[#F5EDE3] relative overflow-hidden flex flex-col">
             {/* Background elements */}
-            <div className="arch-grid" style={{ position: 'fixed', inset: 0, opacity: 0.4, pointerEvents: 'none', zIndex: 0 }} />
-            <div className="geo-shape animate-float-slow" style={{ position: 'fixed', top: '10%', right: '-5%', color: 'rgba(108,99,255,0.08)', zIndex: 0 }}>
-                <div className="geo-triangle" style={{ transform: 'scale(2.5) rotate(15deg)', width: '100px', height: '100px', background: 'currentColor', clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+            <div className="fixed inset-0 arch-grid opacity-40 pointer-events-none z-0" style={{ backgroundSize: '60px 60px', backgroundImage: 'linear-gradient(to right, rgba(13,13,13,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(13,13,13,0.05) 1px, transparent 1px)' }} />
+
+            <div className="fixed top-[10%] right-[-5%] z-[-2] animate-float-slow text-primary/10">
+                <div className="w-[100px] h-[100px] bg-currentColor" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
             </div>
-            <div className="geo-shape animate-float-reverse" style={{ position: 'fixed', bottom: '5%', left: '-8%', color: 'rgba(13,13,13,0.06)', zIndex: 0 }}>
-                <div className="geo-triangle" style={{ transform: 'scale(3) rotate(-10deg)', width: '100px', height: '100px', background: 'currentColor', clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+            <div className="fixed bottom-[5%] left-[-8%] z-[-2] animate-float-reverse text-bg-dark/5">
+                <div className="w-[100px] h-[100px] bg-currentColor" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
             </div>
 
-            <nav style={{
-                padding: '20px 24px',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                position: 'relative', zIndex: 10
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <img src="/swiftlink-icon.png" alt="Swiftlink" style={{ height: '32px', borderRadius: '7px' }} />
-                    <span style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '-0.5px' }}>Swiftlink</span>
+            {/* Sticky Top Bar */}
+            <nav className="sticky top-0 z-50 h-[56px] px-5 bg-[#F5EDE3]/80 backdrop-blur-[20px] flex items-center justify-between border-b border-black/5">
+                <div className="flex items-center gap-3">
+                    <div className="bg-bg-dark size-9 rounded-xl flex items-center justify-center">
+                        <img src="/swiftlink-icon.png" className="size-6 object-contain" alt="Logo" />
+                    </div>
+                    <span className="font-extrabold tracking-tighter text-lg">SwiftLink</span>
                 </div>
-                {tripId && (
-                    <a href={`/booking/history`} style={{
-                        fontSize: '13px', fontWeight: 600,
-                        color: 'var(--accent-primary)', textDecoration: 'none',
-                        padding: '8px 16px', borderRadius: '9999px',
-                        background: 'rgba(108,99,255,0.08)',
-                        border: '1px solid rgba(108,99,255,0.15)'
-                    }}>History</a>
-                )}
+                <StatusBadge status={status} />
             </nav>
 
-            <div style={{
-                maxWidth: '600px', width: '100%',
-                margin: '0 auto', padding: '0 24px 80px',
-                position: 'relative', zIndex: 1,
-                display: 'flex', flexDirection: 'column', gap: '20px'
-            }}>
-                {/* Trip status card */}
-                <div className="glass-card reveal-up active" style={{ padding: '32px', borderRadius: '2rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-                        <div>
-                            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.1em' }}>
-                                REF: {booking.id.slice(0, 8).toUpperCase()}
-                            </div>
-                            <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>
-                                {clientName ? `Hi, ${clientName}` : 'Your Transfer'}
-                            </h1>
-                        </div>
-                        <StatusBadge status={booking.status} />
+            {/* Scrollable Content */}
+            <main className={`flex-1 overflow-y-auto px-4 pt-6 pb-20 max-w-lg mx-auto w-full ${isActive ? 'pb-[84px]' : ''}`}>
+                {networkError && (
+                    <div className="bg-warning/10 border border-warning/20 rounded-2xl p-3 text-sm text-warning mb-4 text-center">
+                        Could not reach server — retrying...
+                    </div>
+                )}
+
+                {/* Trip Details Card */}
+                <div className="glass-card p-6 reveal-up active stagger-1 mb-5">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="font-mono text-[10px] text-text-muted uppercase tracking-widest">
+                            TRIP #{booking.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        <span className="font-mono font-bold text-sm">
+                            {new Date(booking.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                     </div>
 
-                    <div style={{ background: 'rgba(255,255,255,0.5)', padding: '20px 24px', borderRadius: '1.25rem', marginBottom: 24 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-primary)', flexShrink: 0 }} />
-                            <span style={{ fontSize: 15, fontWeight: 600 }}>{booking.pickup_location}</span>
-                        </div>
-                        <div style={{ height: 20, borderLeft: '2px dashed rgba(0,0,0,0.12)', marginLeft: 3, marginBottom: 12 }} />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '4px', background: '#0D0D0D', flexShrink: 0 }} />
-                            <span style={{ fontSize: 15, fontWeight: 600 }}>{booking.destination}</span>
-                        </div>
-                    </div>
+                    <h2 className="text-2xl sm:text-3xl kinetic-text mb-6">
+                        {booking.pickup_location} <span className="text-primary">→</span> {booking.destination}
+                    </h2>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: booking.flight_number ? '1fr 1fr' : '1fr', gap: 16 }}>
-                        <div>
-                            <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', marginBottom: 4 }}>Scheduled</div>
-                            <div style={{ fontSize: 15, fontWeight: 700 }}>
-                                {new Date(booking.pickup_time).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })} · {new Date(booking.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                        </div>
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        <span className="bg-bg-dark/5 px-3 py-1.5 rounded-pill text-[10px] font-bold">
+                            {new Date(booking.pickup_time).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short' })}
+                        </span>
                         {booking.flight_number && (
-                            <div>
-                                <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', marginBottom: 4 }}>Flight</div>
-                                <div style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span>{'\u2708\uFE0F'}</span> {booking.flight_number}
-                                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>· Tracked</span>
-                                </div>
-                            </div>
+                            <span className="bg-bg-dark/5 px-3 py-1.5 rounded-pill font-mono text-[10px] font-bold">
+                                ✈ {booking.flight_number}
+                            </span>
+                        )}
+                        {!booking.flight_number && (
+                            <span className="bg-bg-dark/5 px-3 py-1.5 rounded-pill text-[10px] font-bold uppercase tracking-wider">
+                                Private Transfer
+                            </span>
                         )}
                     </div>
-                </div>
 
-                {/* Pending message */}
-                {booking.status === 'pending' && (
-                    <div className="glass-card reveal-up active stagger-1" style={{ padding: '28px 32px', borderRadius: '1.5rem', display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-                        <div style={{ width: 48, height: 48, borderRadius: '14px', background: 'rgba(224,90,90,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{'\u23F3'}</div>
-                        <div>
-                            <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Awaiting driver assignment</h3>
-                            <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                                Our dispatch team is reviewing your request. You will receive an email notification once a driver is assigned.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Driver card */}
-                {(booking.status === 'accepted' || booking.status === 'in_progress') && (
-                    <div className="glass-card reveal-up active stagger-1" style={{
-                        padding: '28px 32px', borderRadius: '1.5rem',
-                        border: '1px solid rgba(108,99,255,0.2)'
-                    }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--accent-primary)', marginBottom: 16 }}>Your Driver</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                            <div style={{
-                                width: 52, height: 52, borderRadius: '50%',
-                                background: 'var(--accent-primary)', color: '#fff',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 22, fontWeight: 800, flexShrink: 0
-                            }}>
-                                {booking.driver_name?.[0] || '?'}
-                            </div>
-                            <div>
-                                <div style={{ fontWeight: 800, fontSize: 18 }}>{booking.driver_name?.split(' ')[0] || 'Your Driver'}</div>
-                                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>{booking.vehicle_type || 'Vehicle assigned'}</div>
-                            </div>
-                        </div>
-                        <div style={{
-                            padding: '10px 14px', borderRadius: '10px',
-                            background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.06)',
-                            display: 'flex', alignItems: 'center', gap: 8
-                        }}>
-                            <span style={{ fontSize: 14 }}>{'\uD83D\uDD12'}</span>
-                            <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                                Your driver's contact details are structurally excluded from this session.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Chat window */}
-                {booking.status === 'in_progress' && (
-                    <div style={{ height: '480px' }}>
-                        <ChatWindow
-                            tripId={tripId}
-                            token={null}
-                            role="client"
-                            counterpartName={booking.driver_name?.split(' ')[0] || 'Driver'}
+                    <div className="h-1.5 bg-bg-dark/5 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full transition-all duration-1000 ${isCompleted ? 'bg-success' : 'bg-primary'}`}
+                            style={{ width: getProgressWidth() }}
                         />
                     </div>
-                )}
+                </div>
 
-                {/* Chat locked */}
-                {booking.status === 'accepted' && (
-                    <div className="glass-card reveal-up active stagger-2" style={{ padding: '32px', borderRadius: '1.5rem', textAlign: 'center' }}>
-                        <div style={{ fontSize: 32, marginBottom: 12 }}>{'\uD83D\uDD12'}</div>
-                        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-dark)', marginBottom: 8 }}>Secure channel standing by</p>
-                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                            Your encrypted communication channel will open automatically when your driver begins the trip.
-                        </p>
-                    </div>
-                )}
-
-                {/* Post-trip / complaint */}
-                {booking.status === 'completed' && (
-                    <div className="glass-card reveal-up active stagger-1" style={{ padding: '32px', borderRadius: '2rem' }}>
-                        {complaintWindowSeconds !== null && complaintWindowSeconds > 0 && (
-                            <div style={{
-                                background: 'rgba(0,0,0,0.03)', borderRadius: '1rem',
-                                padding: '16px 20px', marginBottom: 24,
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                            }}>
-                                <div>
-                                    <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', marginBottom: 4 }}>Complaint window closes in</div>
-                                    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 22, fontWeight: 700, color: 'var(--accent-warning)' }}>
-                                        {formatCountdown(complaintWindowSeconds)}
-                                    </div>
-                                </div>
-                                <div style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 180, textAlign: 'right', lineHeight: 1.4 }}>
-                                    After this window, communication records are permanently deleted
-                                </div>
+                {/* Driver Card */}
+                {!isPending && booking.driver_name && (
+                    <div className="glass-card p-6 reveal-up active stagger-2 mb-5">
+                        <div className="flex items-center gap-4 mb-5">
+                            <div className="bg-bg-dark text-text-cream size-14 rounded-full flex items-center justify-center font-extrabold text-2xl">
+                                {booking.driver_name[0]}
                             </div>
-                        )}
-
-                        {complaintWindowSeconds === 0 && (
-                            <div style={{ textAlign: 'center', padding: '16px 0', marginBottom: 24, color: 'var(--text-muted)', fontSize: 14 }}>
-                                The complaint window has closed. All communication records have been permanently deleted.
+                            <div className="flex-1">
+                                <h3 className="font-extrabold text-xl tracking-tight leading-tight">{booking.driver_name.split(' ')[0]}</h3>
+                                <p className="text-[10px] uppercase tracking-widest text-text-muted font-black">{booking.vehicle_type || 'Vehicle assigned'}</p>
                             </div>
-                        )}
-
-                        <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>How was your transfer?</h3>
-
-                        {!booking.complaint_filed && (complaintWindowSeconds === null || complaintWindowSeconds > 0) ? (
-                            <form onSubmit={handleComplaintSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                <div>
-                                    <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6, display: 'block', color: 'var(--text-muted)' }}>Category</label>
-                                    <select
-                                        value={complaintForm.category}
-                                        onChange={e => setComplaintForm({ ...complaintForm, category: e.target.value })}
-                                        style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.6)', fontSize: 14, outline: 'none' }}
-                                    >
-                                        <option value="service_quality">Service Quality</option>
-                                        <option value="driver_behaviour">Driver Behaviour</option>
-                                        <option value="privacy_concern">Privacy Concern</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6, display: 'block', color: 'var(--text-muted)' }}>Description</label>
-                                    <textarea
-                                        placeholder="Describe your experience..."
-                                        rows={4} required
-                                        value={complaintForm.description}
-                                        onChange={e => setComplaintForm({ ...complaintForm, description: e.target.value })}
-                                        style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.6)', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
-                                    />
-                                </div>
-                                {complaintStatus.error && (
-                                    <p style={{ fontSize: 13, color: 'var(--accent-warning)', padding: '10px 14px', background: 'rgba(224,90,90,0.06)', borderRadius: '10px' }}>
-                                        {complaintStatus.error}
-                                    </p>
-                                )}
-                                <button type="submit" disabled={complaintStatus.loading} className="btn-premium btn-dark" style={{ padding: '14px', borderRadius: '12px', fontSize: 15, letterSpacing: '0.05em' }}>
-                                    {complaintStatus.loading ? 'Submitting...' : 'Submit Complaint'}
-                                </button>
-                            </form>
-                        ) : booking.complaint_filed || complaintStatus.success ? (
-                            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '20px', background: 'rgba(0,245,160,0.06)', borderRadius: '1rem', border: '1px solid rgba(0,245,160,0.2)' }}>
-                                <span style={{ color: 'var(--accent-success)', fontSize: 20 }}>{'\u2713'}</span>
-                                <div>
-                                    <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-dark)', marginBottom: 4 }}>Complaint received</p>
-                                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>Your complaint is under review. Communication records for this trip have been preserved pending investigation.</p>
-                                </div>
-                            </div>
-                        ) : null}
-                    </div>
-                )}
-
-                {/* Footer recovery */}
-                <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
-                    {!recoverySent ? (
-                        <div>
-                            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Link expired or need to return later?</p>
-                            <div style={{ display: 'flex', gap: 8, maxWidth: 360, margin: '0 auto' }}>
-                                <input
-                                    type="email" placeholder="Corporate email"
-                                    value={recoveryEmail} onChange={e => setRecoveryEmail(e.target.value)}
-                                    style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', fontSize: 13, outline: 'none' }}
-                                />
-                                <button onClick={handleRequestNewLink} className="btn-premium btn-dark" style={{ padding: '10px 16px', borderRadius: '10px', fontSize: 13 }}>
-                                    New Link
-                                </button>
+                            <div className="flex items-center gap-2">
+                                <div className={`size-2 rounded-full ${status === 'accepted' ? 'bg-[#F59E0B]' : status === 'in_progress' ? 'bg-[#00F5A0] session-pulse' : 'bg-text-muted'}`} />
+                                <span className="text-xs font-bold text-text-muted">
+                                    {status === 'accepted' ? 'En route to pickup' : status === 'in_progress' ? 'In transit' : 'Trip complete'}
+                                </span>
                             </div>
                         </div>
+
+                        <div className="bg-white/40 rounded-2xl p-3 flex items-start gap-3">
+                            <span className="text-lg">🔒</span>
+                            <p className="text-[11px] leading-relaxed text-text-muted italic">
+                                Contact details structurally excluded from this session · Mediated channel
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Chat Area */}
+                <div className="glass-card-dark p-0 reveal-up active stagger-3 flex flex-col min-h-[320px] overflow-hidden mb-5">
+                    {isPending ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                            <div className="text-5xl mb-6">🔒</div>
+                            <h3 className="text-xl font-bold text-text-cream mb-2">Secure channel pending</h3>
+                            <p className="text-text-muted text-sm leading-relaxed">
+                                Your driver will be assigned shortly. The channel opens automatically when they accept.
+                            </p>
+                        </div>
                     ) : (
-                        <p style={{ fontSize: 13, color: 'var(--accent-success)', fontWeight: 600 }}>{'\u2713'} New link sent. Check your inbox.</p>
+                        <>
+                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="size-2 rounded-full bg-success session-pulse" />
+                                    <span className="text-text-cream font-bold text-sm">Secure channel · {booking.driver_name?.split(' ')[0]}</span>
+                                </div>
+                                <span className="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-[11px] text-text-muted">
+                                    🔒 Mediated · No PII
+                                </span>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-h-[400px]">
+                                {messages.length === 0 && (
+                                    <div className="flex-1 flex flex-col items-center justify-center py-10 opacity-60">
+                                        <div className="text-2xl mb-2">🔒</div>
+                                        <p className="text-text-muted text-xs text-center leading-relaxed">
+                                            Ephemeral channel open.<br />Messages are not permanently stored.
+                                        </p>
+                                    </div>
+                                )}
+                                {messages.map((msg, i) => {
+                                    const isMine = msg.from === 'client';
+                                    return (
+                                        <div key={i} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                                            <div className="max-w-[85%]">
+                                                <div className={`p-4 text-sm font-medium ${isMine ? 'bg-white/90 text-bg-dark rounded-[18px_18px_4px_18px]' : 'bg-white/10 text-text-cream border border-white/5 rounded-[18px_18px_18px_4px]'}`}>
+                                                    {msg.content}
+                                                </div>
+                                                <div className={`font-mono text-[10px] mt-1 opacity-60 ${isMine ? 'text-right' : 'text-left'}`}>
+                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {isCompleted && (
+                                <div className="p-4 bg-warning/10 border-t border-warning/20 m-2 rounded-xl text-center">
+                                    <p className="text-warning text-xs font-bold">Trip complete — 24hr complaint window open</p>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
-            </div>
+
+                {/* Complaint Form */}
+                {isCompleted && (
+                    <div className="glass-card p-7 reveal-up active mb-10">
+                        {complaintStatus.success ? (
+                            <div className="bg-success/10 border border-success/30 rounded-2xl p-6 text-center">
+                                <div className="text-3xl text-success mb-2">✓</div>
+                                <p className="font-bold text-success">Complaint submitted.</p>
+                                <p className="text-text-muted text-sm mt-1">We'll review within 24 hours.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-between items-end mb-6">
+                                    <h3 className="font-extrabold text-xl">File a Complaint</h3>
+                                    <span className="text-text-muted text-[10px] font-bold uppercase tracking-widest bg-bg-dark/5 px-2 py-1 rounded">24h Window</span>
+                                </div>
+
+                                <form onSubmit={handleComplaint} className="space-y-6">
+                                    <div className="overflow-x-auto -mx-2 pb-2">
+                                        <div className="flex gap-2 px-2 whitespace-nowrap">
+                                            {['Service Quality', 'Safety', 'Punctuality', 'Vehicle Condition', 'Other'].map(cat => (
+                                                <button
+                                                    key={cat}
+                                                    type="button"
+                                                    onClick={() => setComplaintForm({ ...complaintForm, category: cat })}
+                                                    className={`px-4 py-2 rounded-pill text-[11px] font-bold tracking-tight transition-all ${complaintForm.category === cat ? 'bg-bg-dark text-white' : 'bg-white/40 border border-black/5 text-text-muted'}`}
+                                                >
+                                                    {cat}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <textarea
+                                        placeholder="Describe what happened..."
+                                        value={complaintForm.description}
+                                        onChange={(e) => setComplaintForm({ ...complaintForm, description: e.target.value })}
+                                        className="w-full bg-white/40 border border-white/60 rounded-input p-4 text-sm resize-none min-h-[120px] focus:ring-1 focus:ring-primary outline-none transition-all"
+                                        required
+                                    />
+
+                                    <button
+                                        type="submit"
+                                        disabled={complaintStatus.loading}
+                                        className="btn-premium btn-accent w-full py-4 rounded-xl flex items-center justify-center gap-2"
+                                    >
+                                        {complaintStatus.loading ? 'Submitting...' : 'Submit Complaint →'}
+                                    </button>
+                                </form>
+                            </>
+                        )}
+                    </div>
+                )}
+            </main>
+
+            {/* Sticky Compose Bar */}
+            {isActive && (
+                <div className="fixed bottom-0 left-0 right-0 z-40 h-[64px] px-4 bg-[#0D0D0D]/95 backdrop-blur-[20px] flex items-center gap-3 border-t border-white/5">
+                    <input
+                        type="text"
+                        placeholder={connected ? "Message your driver..." : "Reconnecting..."}
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSend();
+                            }
+                        }}
+                        className="flex-1 bg-white/5 border border-white/10 rounded-input px-4 py-3 text-sm text-text-cream placeholder:text-text-muted/40 focus:ring-1 focus:ring-primary outline-none"
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={!connected || !chatInput.trim()}
+                        className={`size-11 rounded-full flex items-center justify-center transition-all ${connected && chatInput.trim() ? 'btn-accent shadow-[0_0_15px_rgba(108,99,255,0.4)]' : 'bg-white/5 text-text-muted/40 pointer-events-none'}`}
+                    >
+                        <span className="text-xl">→</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

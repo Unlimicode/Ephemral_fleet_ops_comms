@@ -31,7 +31,7 @@ export default function useChat({ tripId, token, role }) {
 
         socket.on('auth_error', (msg) => setError(msg));
 
-        socket.on('message', (msg) => {
+        socket.on('receive_message', (msg) => {
             setMessages(prev => [...prev, msg]);
         });
 
@@ -47,7 +47,7 @@ export default function useChat({ tripId, token, role }) {
 
     const sendMessage = useCallback((content) => {
         if (!socketRef.current || !connected) return;
-        socketRef.current.emit('message', { content });
+        socketRef.current.emit('send_message', { content });
     }, [connected]);
 
     return { messages, connected, error, sendMessage };

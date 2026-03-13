@@ -23,7 +23,7 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
     return (
         <div style={{
             display: 'flex', flexDirection: 'column',
-            height: '100%', minHeight: '400px',
+            flex: 1,
             borderRadius: '20px', overflow: 'hidden',
             background: 'rgba(255,255,255,0.4)',
             backdropFilter: 'blur(40px) saturate(180%)',
@@ -88,7 +88,7 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                 )}
 
                 {messages.map((msg, i) => {
-                    const isMine = msg.role === role;
+                    const isMine = msg.from === role;
                     return (
                         <div key={i} style={{
                             display: 'flex',
@@ -139,6 +139,10 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                     rows={1}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
+                    onInput={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
                     onKeyDown={e => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -153,10 +157,12 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                         fontSize: '14px', fontFamily: 'Inter, sans-serif',
                         color: 'var(--text-dark)', outline: 'none',
                         resize: 'none', lineHeight: 1.5,
+                        maxHeight: '120px', overflowY: 'auto',
                         transition: 'var(--transition-smooth)'
                     }}
                 />
                 <button
+                    type="button"
                     onClick={handleSend}
                     disabled={!connected || !inputValue.trim()}
                     className="glass-button"
