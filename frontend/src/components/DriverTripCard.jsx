@@ -7,6 +7,7 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
     const [declineReason, setDeclineReason] = useState('');
 
     const statusMap = {
+        accepted: { bg: 'rgba(255,180,0,0.15)', text: '#B8860B', label: 'Assigned', pulse: false },
         assigned: { bg: 'rgba(255,180,0,0.15)', text: '#B8860B', label: 'Assigned', pulse: false },
         in_progress: { bg: 'rgba(0,245,160,0.15)', text: '#00A86B', label: 'In Progress', pulse: true },
         completed: { bg: 'rgba(13,13,13,0.08)', text: 'var(--text-muted)', label: 'Completed', pulse: false }
@@ -141,13 +142,6 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                     View Active Trip →
                 </button>
             )}
-
-            <style>{`
-                @keyframes fade-in-up {
-                    0% { opacity: 0; transform: translateY(10px); }
-                    100% { opacity: 1; transform: translateY(0); }
-                }
-            `}</style>
         </div>
     );
 }

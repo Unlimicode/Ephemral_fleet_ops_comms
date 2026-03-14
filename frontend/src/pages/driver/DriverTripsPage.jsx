@@ -72,16 +72,13 @@ export default function DriverTripsPage({ defaultTab }) {
     }
 
     return (
-        <div style={{ padding: '20px' }}>
-            <h1 style={{
-                fontSize: '24px', fontWeight: 800, color: 'var(--text-dark)',
-                fontFamily: 'Inter, sans-serif', marginBottom: '20px', letterSpacing: '-0.5px'
-            }}>
+        <div className="reveal-up" style={{ padding: '20px' }}>
+            <h1 className="kinetic-text" style={{ fontSize: '28px', marginBottom: '24px' }}>
                 My Trips
             </h1>
 
             {/* Tab Switcher */}
-            <div style={{
+            <div className="reveal-up stagger-1" style={{
                 display: 'flex', gap: '8px', marginBottom: '24px',
                 background: 'rgba(255,255,255,0.4)', padding: '6px',
                 borderRadius: '50px', backdropFilter: 'blur(10px)'
@@ -107,7 +104,7 @@ export default function DriverTripsPage({ defaultTab }) {
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
             ) : displayedTrips.length === 0 ? (
-                <div style={{
+                <div className="reveal-up stagger-2" style={{
                     padding: '48px 24px', display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center', gap: '12px',
                     border: '1.5px dashed rgba(13,13,13,0.1)', borderRadius: '20px',
@@ -118,15 +115,16 @@ export default function DriverTripsPage({ defaultTab }) {
                     <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>{emptyState.subtitle}</p>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {displayedTrips.map((trip, idx) => (
-                        <DriverTripCard
-                            key={trip.id}
-                            trip={trip}
-                            index={idx}
-                            onAccept={handleAccept}
-                            onDecline={handleDecline}
-                        />
+                        <div key={trip.id} className={`reveal-up stagger-${Math.min(idx + 2, 4)}`}>
+                            <DriverTripCard
+                                trip={trip}
+                                index={idx}
+                                onAccept={handleAccept}
+                                onDecline={handleDecline}
+                            />
+                        </div>
                     ))}
                 </div>
             )}

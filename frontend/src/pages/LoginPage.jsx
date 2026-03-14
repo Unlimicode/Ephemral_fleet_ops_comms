@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -10,21 +10,27 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState(null);
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const width = (function useWindowWidth() {
+        const [w, setW] = useState(window.innerWidth);
+        useEffect(() => {
+            const handleResize = () => setW(window.innerWidth);
+            window.addEventListener('resize', handleResize);
+            return () => window.removeEventListener('resize', handleResize);
+        }, []);
+        return w;
+    })();
+
+    const isMobile = width < 768;
+    const isTablet = width >= 768 && width < 1024;
+
     const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (isAuthenticated) {
             navigate(role === 'fleet_manager' ? '/manager/dispatch' : '/driver/trips', { replace: true });
         }
     }, [isAuthenticated, navigate, role]);
-
-    React.useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     const handleLogin = async () => {
         if (!email || !password) { setError('Please enter your email and password.'); return; }
@@ -44,138 +50,83 @@ export default function LoginPage() {
     return (
         <div style={{
             display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
+            flexDirection: 'row',
             minHeight: '100vh',
             width: '100%',
             overflow: 'hidden',
-            position: 'relative'
+            position: 'relative',
+            background: isMobile ? 'var(--bg-base)' : '#0D0D0D'
         }}>
 
-            {/* Left Panel — Dark brand */}
-            <div style={{
-                flex: 1, position: 'relative', overflow: 'hidden',
-                background: '#0D0D0D', display: 'flex', flexDirection: 'column',
-                justifyContent: 'center', padding: isMobile ? '48px 24px' : '64px 8%'
-            }}>
-                {/* Background layers */}
-                <div className="arch-grid-light parallax-layer" style={{ opacity: 0.25 }} />
-                <div className="geo-shape animate-float-slow" style={{ top: '8%', right: '-5%', color: 'rgba(245,237,227,0.06)' }}>
-                    <div className="geo-triangle" style={{ transform: 'scale(2.5) rotate(15deg)' }} />
-                </div>
-                <div className="geo-shape animate-float-reverse" style={{ bottom: '-5%', left: '-8%', color: 'rgba(108,99,255,0.12)' }}>
-                    <div className="geo-triangle" style={{ transform: 'scale(3) rotate(-10deg)' }} />
-                </div>
-                <div className="geo-shape animate-spin-slow" style={{ top: '40%', left: '5%', color: 'rgba(245,237,227,0.04)' }}>
-                    <div className="geo-triangle-sm" style={{ transform: 'rotate(45deg)' }} />
-                </div>
-
-                {/* Content */}
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                    {/* Logo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 48 }}>
-                        <img
-                            src="/swiftlink-icon.png"
-                            alt="Swiftlink"
-                            style={{ height: isMobile ? '44px' : '56px', width: 'auto', borderRadius: 10 }}
-                        />
-                        <span style={{
-                            fontWeight: 800, fontSize: isMobile ? '1.6rem' : '2rem',
-                            letterSpacing: '-0.8px', color: '#F5EDE3', marginLeft: 10
-                        }}>Swiftlink</span>
-                    </div>
-
-                    {/* Eyebrow */}
-                    <div className="reveal-up active" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-primary)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.3em', color: 'rgba(245,237,227,0.4)' }}>Corporate Fleet Dispatch</span>
-                    </div>
-
-                    {/* Headline */}
-                    <h1 className="kinetic-text reveal-up active" style={{ fontSize: 'clamp(2.8rem, 5vw, 5rem)', marginBottom: 32, color: '#F5EDE3' }}>
-                        <span className="outline-text-light" style={{ display: 'block' }}>Seamless</span>
-                        <span style={{ display: 'block' }}>transfers.</span>
-                        <span style={{ display: 'block', color: 'var(--accent-primary)' }}>Zero trace.</span>
-                    </h1>
-
-                    {/* Subtext */}
-                    <p className="reveal-up active stagger-1" style={{ fontSize: 16, color: 'rgba(245,237,227,0.55)', lineHeight: 1.8, maxWidth: 380, marginBottom: 48 }}>
-                        Built for Kenya&apos;s MICE sector. Corporate ground transport with privacy protected at the architecture level — not as a policy, as a technical guarantee.
-                    </p>
-
-                    {/* CTA */}
-                    <div className="reveal-up active stagger-2">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="btn-premium"
-                            style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 12,
-                                padding: '14px 28px', borderRadius: 9999,
-                                background: 'transparent', border: '1px solid rgba(245,237,227,0.25)',
-                                color: '#F5EDE3', fontSize: 14, fontWeight: 600,
-                                cursor: 'pointer', backdropFilter: 'blur(8px)'
-                            }}
-                        >
-                            Book a Transfer
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                <path d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Compliance note */}
-                <div style={{ position: 'absolute', bottom: 32, left: isMobile ? 24 : '8%', zIndex: 1 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(245,237,227,0.2)' }}>
-                        Kenya Data Protection Act 2019 · Section 25 Compliant
-                    </span>
-                </div>
-            </div>
-
-            {/* Animated triangle divider — desktop only */}
+            {/* Left Panel — Dark brand (Hidden on mobile) */}
             {!isMobile && (
                 <div style={{
-                    position: 'absolute', left: '50%', top: 0, height: '100%',
+                    width: isTablet ? '45%' : '50%',
+                    position: 'relative', overflow: 'hidden',
+                    background: '#0D0D0D', display: 'flex', flexDirection: 'column',
+                    justifyContent: 'center', padding: isTablet ? '48px 6%' : '64px 8%'
+                }}>
+                    {/* Background layers */}
+                    <div className="arch-grid-light parallax-layer" style={{ opacity: 0.25 }} />
+                    <div className="geo-shape animate-float-slow" style={{ top: '8%', right: '-5%', color: 'rgba(245,237,227,0.06)' }}>
+                        <div className="geo-triangle" style={{ transform: 'scale(2.5) rotate(15deg)' }} />
+                    </div>
+                    <div className="geo-shape animate-float-reverse" style={{ bottom: '-5%', left: '-8%', color: 'rgba(108,99,255,0.12)' }}>
+                        <div className="geo-triangle" style={{ transform: 'scale(3) rotate(-10deg)' }} />
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        {/* Logo */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: isTablet ? 32 : 48 }}>
+                            <img
+                                src="/swiftlink-icon.png"
+                                alt="Swiftlink"
+                                style={{ height: isTablet ? '44px' : '56px', width: 'auto', borderRadius: 10 }}
+                            />
+                            <span style={{
+                                fontWeight: 800, fontSize: isTablet ? '1.5rem' : '2rem',
+                                letterSpacing: '-0.8px', color: '#F5EDE3', marginLeft: 10
+                            }}>Swiftlink</span>
+                        </div>
+
+                        {/* Eyebrow */}
+                        <div className="reveal-up active" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-primary)', flexShrink: 0 }} />
+                            <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.3em', color: 'rgba(245,237,227,0.4)' }}>Corporate Fleet Dispatch</span>
+                        </div>
+
+                        {/* Headline */}
+                        <h1 className="kinetic-text reveal-up active" style={{ fontSize: 'clamp(2.4rem, 4vw, 5rem)', marginBottom: 32, color: '#F5EDE3' }}>
+                            <span className="outline-text-light" style={{ display: 'block' }}>Seamless</span>
+                            <span style={{ display: 'block' }}>transfers.</span>
+                            <span style={{ display: 'block', color: 'var(--accent-primary)' }}>Zero trace.</span>
+                        </h1>
+
+                        {/* Subtext */}
+                        <p className="reveal-up active stagger-1" style={{ fontSize: isTablet ? 14 : 16, color: 'rgba(245,237,227,0.55)', lineHeight: 1.8, maxWidth: 380, marginBottom: 48 }}>
+                            Built for Kenya&apos;s MICE sector. Corporate ground transport with privacy protected at the architecture level.
+                        </p>
+                    </div>
+
+                    {/* Compliance note */}
+                    <div style={{ position: 'absolute', bottom: 32, left: '8%', zIndex: 1 }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(245,237,227,0.2)' }}>
+                            Kenya DP Act 2019 · Section 25 Compliant
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {/* Animated triangle divider — desktop/tablet overlaying the split */}
+            {!isMobile && (
+                <div style={{
+                    position: 'absolute', left: isTablet ? '45%' : '50%', top: 0, height: '100%',
                     width: 200, transform: 'translateX(-50%)',
                     pointerEvents: 'none', zIndex: 10, overflow: 'visible'
                 }}>
-                    {/* Large triangle — top, pointing right into light panel */}
-                    <div className="geo-shape animate-float-slow" style={{
-                        top: '5%', left: '50%', transform: 'translateX(-30%)',
-                        color: 'rgba(13,13,13,0.18)'
-                    }}>
-                        <div className="geo-triangle" style={{ transform: 'scale(1.8) rotate(90deg)' }} />
-                    </div>
-
-                    {/* Medium triangle — center, pointing left into dark panel */}
-                    <div className="geo-shape animate-float" style={{
-                        top: '35%', left: '50%', transform: 'translateX(-70%)',
-                        color: 'rgba(245,237,227,0.12)'
-                    }}>
-                        <div className="geo-triangle" style={{ transform: 'scale(1.3) rotate(-90deg)' }} />
-                    </div>
-
-                    {/* Small triangle — center-lower, pointing right, accent colour */}
-                    <div className="geo-shape animate-float-reverse" style={{
-                        top: '52%', left: '50%', transform: 'translateX(-20%)',
-                        color: 'rgba(108,99,255,0.2)'
-                    }}>
+                    <div className="geo-shape animate-float-slow" style={{ top: '15%', left: '50%', color: 'rgba(245,237,227,0.1)' }}>
                         <div className="geo-triangle-sm" style={{ transform: 'rotate(90deg)' }} />
-                    </div>
-
-                    {/* Large triangle — bottom, pointing left */}
-                    <div className="geo-shape animate-float-slow" style={{
-                        bottom: '8%', left: '50%', transform: 'translateX(-80%)',
-                        color: 'rgba(13,13,13,0.1)'
-                    }}>
-                        <div className="geo-triangle" style={{ transform: 'scale(2) rotate(-90deg)' }} />
-                    </div>
-
-                    {/* Extra small — mid-upper, spinning accent */}
-                    <div className="geo-shape animate-spin-slow" style={{
-                        top: '20%', left: '50%', transform: 'translateX(-50%)',
-                        color: 'rgba(108,99,255,0.15)'
-                    }}>
-                        <div className="geo-triangle-xs" style={{ transform: 'rotate(45deg)' }} />
                     </div>
                 </div>
             )}
