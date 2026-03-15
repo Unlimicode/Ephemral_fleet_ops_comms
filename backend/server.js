@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { connect as connectDb } from './config/db.js';
 import { connect as connectRedis } from './config/redis.js';
 import router from './routes/index.js';
+import transporter from './config/mailer.js';
 const PORT = process.env.PORT || 3001;
 
 const app = express();
@@ -32,6 +33,16 @@ registerDashboardNamespace(getIo());
 (async () => {
   await connectDb();
   await connectRedis();
+
+  // Verify SMTP configuration on startup — fails loudly if MAIL_* vars are missing or wrong
+  transporter.verify((error) => {
+    if (error) {
+      console.error('[mailer] SMTP configuration error — emails will not deliver:', error.message);
+    } else {
+      console.log('[mailer] SMTP connection verified — ready to send');
+    }
+  });
+
   httpServer.listen(PORT, () =>
     console.log(`[server] listening on http://localhost:${PORT}`)
   );

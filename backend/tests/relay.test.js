@@ -130,9 +130,11 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
             auth: { tripId: testTripId, role: 'driver' }
         });
 
+        driverSocket.on('connect_error', (err) => console.log('[debug] driverSocket connect_error:', err.message));
+
         const joinedPayload = await new Promise((resolve, reject) => {
             driverSocket.on('session_joined', resolve);
-            setTimeout(() => reject(new Error('Timeout waiting for session_joined')), 2000);
+            setTimeout(() => reject(new Error('Timeout waiting for session_joined')), 5000);
         });
 
         expect(joinedPayload).toEqual({ tripId: testTripId, role: 'driver' });

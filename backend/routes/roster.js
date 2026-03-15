@@ -3,27 +3,11 @@ import { requireAuth } from '../middleware/auth.js';
 import pool from '../config/db.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import nodemailer from 'nodemailer';
+import transporter from '../config/mailer.js';
 import { getSession, setSession } from '../config/redisHelpers.js';
 
 const router = express.Router();
 
-// Configure strictly local ethereal NodeMailer mapping test environments 
-// natively bypassing physical SMTP buffer locks.
-let transporter;
-if (process.env.NODE_ENV === 'test') {
-    transporter = nodemailer.createTransport({ streamTransport: true });
-} else {
-    // Standard connection
-    transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-        port: process.env.SMTP_PORT || 587,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-        }
-    });
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /drivers - Provision a new physical Driver identity out-of-bounds.

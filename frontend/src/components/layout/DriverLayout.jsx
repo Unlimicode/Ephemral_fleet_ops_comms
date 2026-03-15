@@ -165,10 +165,13 @@ export default function DriverLayout() {
             <main style={{
                 maxWidth: isMobile ? '100%' : '1200px',
                 margin: '0 auto',
-                padding: isMobile ? '16px' : isTablet ? '20px 24px' : '24px 32px',
+                padding: isMobile ? '0' : isTablet ? '20px 24px' : '24px 32px',
                 paddingBottom: isMobile ? '80px' : '32px',
                 position: 'relative',
-                zIndex: 1
+                zIndex: 1,
+                boxSizing: 'border-box',
+                overflowX: 'hidden',
+                width: '100%'
             }}>
                 <Outlet />
             </main>

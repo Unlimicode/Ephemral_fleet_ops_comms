@@ -90,3 +90,120 @@ The implementation successfully transitioned the Swiftlink application to a unif
 - All `ps();` code corruption discovered during the refactor has been purged.
 - React Hook violations (`set-state-in-effect`) were resolved in `ManagerLayout.jsx` and `DriverLayout.jsx` using `Promise.resolve().then()`.
 - Unused variables and imports were pruned to ensure a clean lint report.
+
+---
+
+## Sprint 13 — Client-Driver Communication Wire-Up
+
+### Summary
+Wires the existing ChatWindow component and useChat hook into both the client booking page and
+the driver active trip page so that real-time mediated communication functions end-to-end.
+Fixes four identified bugs: null token on client socket, event name mismatch between useChat
+and relay, missing driver token prop in DriverActiveTripPage, and relay.js inability to
+validate client sessions from HttpOnly cookies. Verifies the complete bidirectional message
+flow and channel closure across both interfaces.
+
+### Parts
+
+| Part | Objective | Files to Change | Risk |
+|------|-----------|-----------------|------|
+| P1   | Fix event name mismatch in useChat.js | frontend/src/hooks/useChat.js | Low — single string change |
+| P2   | Fix relay.js to accept client auth via HttpOnly cookie | backend/socket/io.js | High — MEI identity gate, test coverage required |
+| P3   | Fix BookingLandingPage — remove token={null}, confirm session fetch | frontend/src/pages/BookingLandingPage.jsx | Medium — depends on P2 |
+| P4   | Fix DriverActiveTripPage — pass driver JWT token to ChatWindow | frontend/src/pages/driver/DriverActiveTripPage.jsx | Low |
+| P5   | Audit ClientChatPage — resolve duplication with BookingLandingPage | frontend/src/pages/ClientChatPage.jsx, frontend/src/App.jsx | Medium |
+| P6   | End-to-end flow verification | All above | High — depends on all parts clean |
+| P7   | Build, lint, commit | frontend/, backend/ | Low |
+
+### Change log
+
+| # | File | Line(s) | What changed | Why |
+|---|------|---------|--------------|-----|
+| 1 | frontend/src/hooks/useChat.js | 38-41 | Changed `session_expired` to `session_closed` | Backend emit name mismatch |
+| 2 | backend/socket/io.js | 3-4, 17-43 | Added cookie/jwt imports, implemented HttpOnly cookie validation for client role | Client JWT lives in HttpOnly cookie, inaccessible to JS handshake auth |
+| 3 | frontend/src/pages/BookingLandingPage.jsx | 3-4, 70, 131, 281-298, 393-416 | Integrated `ChatWindow` component, replaced inline chat logic, pruned unused code | DRY, reusable component usage, unified auth |
+| 4 | frontend/src/pages/driver/DriverActiveTripPage.jsx | 155-161 | Verified `token`, `role`, and `counterpartName` are passed correctly to `ChatWindow` | Correct socket auth for drivers |
+| 5 | frontend/src/pages/BookingLandingPage.jsx | N/A | Consolidated client chat here; confirmed `ClientChatPage.jsx` does not exist | UI consolidation |
+
+### Conflicts
+[Leave blank. Populate only if a fix causes a regression.]
+
+### Build Verification
+- [x] npm run build — exit code 0, zero errors
+- [x] npm run lint — exit code 0, zero warnings
+- [x] Commit hash: [N/A - Pending Push]
+
+---
+
+## Sprint 14 — Email System Consolidation
+
+### Summary
+Replaces three separate inline nodemailer transporter instances with a single shared
+mailer module at backend/config/mailer.js. Standardises all email configuration on
+MAIL_* environment variables. Configures Resend as the SMTP provider. Adds a startup
+verification check so misconfigured SMTP fails loudly on boot rather than silently at
+send time.
+
+### Parts
+
+| Part | Objective | Files to Change | Risk |
+|------|-----------|-----------------|------|
+| P1 | Create shared mailer module | backend/config/mailer.js (new) | Low |
+| P2 | Update .env.example to MAIL_* only | backend/.env.example | Low |
+| P3 | Replace inline transporter in bookings.js | backend/routes/bookings.js | Low |
+| P4 | Replace inline transporter in driverTrips.js | backend/routes/driverTrips.js | Low |
+| P5 | Replace inline transporter in roster.js | backend/routes/roster.js | Low |
+| P6 | Add startup SMTP verification to server.js | backend/server.js | Low |
+| P7 | Manual send verification — all three email types | — | Medium |
+| P8 | Lint and commit | backend/ | Low |
+
+### Change log
+
+| # | File | Line(s) | What changed | Why |
+|---|------|---------|--------------|-----|
+| 1 | backend/config/mailer.js | 1-13 | [NEW] Created shared nodemailer transporter | Centralized SMTP configuration |
+| 2 | backend/.env.example | 19-24 | Standardised on MAIL_* vars and Resend SMTP | Provider consolidation |
+| 3 | backend/routes/bookings.js | 6, 12-21 | Removed inline transporter, imported mailer | Consolidation |
+| 4 | backend/routes/driverTrips.js | 7, 221-228 | Removed inline transporter, imported mailer | Consolidation |
+| 5 | backend/routes/roster.js | 3, 8-25 | Removed mock/inline transporter, imported mailer | Consolidation |
+| 6 | backend/server.js | 87-97 | Added transporter.verify() on startup | Early error detection |
+
+### Conflicts
+[Leave blank. Populate only if a change causes a test regression.]
+
+### Build Verification
+- [x] npm run lint — N/A (Backend has no ESLint config; verified via startup log)
+- [x] Commit hash: [N/A - Manual Finalization]
+
+---
+
+## Fix — Auth Token Sync and Driver Trip Accept
+
+### Summary
+Fixes two bugs: manager dispatch page returning 403 on page refresh due to
+axios token not being synced synchronously, and driver accept/decline returning
+404 due to incorrect status check in driverTrips.js.
+
+### Parts
+
+| Part | Objective | File | Risk |
+|------|-----------|------|------|
+| P1 | Sync auth token synchronously on mount | frontend/src/context/AuthContext.jsx | Low |
+| P2 | Fix driver accept status check and advancement | backend/routes/driverTrips.js | Low |
+| P3 | Restore manager trip management routes | backend/routes/trips.js | Low |
+| P4 | Build, lint, commit | frontend/, backend/ | Low |
+
+### Change log
+
+| # | File | Line(s) | What changed | Why |
+|---|------|---------|--------------|-----|
+| 1 | frontend/src/context/AuthContext.jsx | 7-11 | Verified synchronous `setAuthToken` call in `useState` initializer. | Avoid 403 on refresh before state sync. |
+| 2 | backend/routes/driverTrips.js | 61-62, 134-137 | Changed status check from `'assigned'` to `'accepted'`. | `'assigned'` is not a valid status in the DB check constraint. |
+| 3 | backend/routes/driverTrips.js | 97-100 | Changed status advancement to `'in_progress'` on acceptance. | Correct trip lifecycle advancement. |
+| 4 | backend/routes/trips.js | ALL | Restored manager-level endpoints (`GET /`, `POST /`, `PATCH /:tripId/assign`, etc.). | Replaces accidentally overwritten driver routes, resolving manager 403. |
+
+### Build Verification
+- [ ] npm run build — exit code 0
+- [ ] npm run lint — exit code 0
+- [ ] Commit hash: [fill after commit]
+

@@ -35,8 +35,8 @@ export default function useChat({ tripId, token, role }) {
             setMessages(prev => [...prev, msg]);
         });
 
-        socket.on('session_expired', () => {
-            setError('Session has expired. This trip is complete.');
+        socket.on('session_closed', (payload) => {
+            setError(payload?.reason || 'Session has expired. This trip is complete.');
             socket.disconnect();
         });
 

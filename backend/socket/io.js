@@ -1,6 +1,8 @@
 import { Server } from 'socket.io';
 import { getSession } from '../config/redisHelpers.js';
 import redisClient from '../config/redis.js';
+import cookie from 'cookie';
+import jwt from 'jsonwebtoken';
 
 let io;
 
@@ -14,7 +16,7 @@ export function initIo(httpServer) {
     });
 
     io.on('connection', async (socket) => {
-        const { tripId, role } = socket.handshake.auth || {};
+        let { tripId, role, token } = socket.handshake.auth || {};
 
         if (!tripId) {
             socket.emit('auth_error', 'Missing tripId');
@@ -29,6 +31,31 @@ export function initIo(httpServer) {
         // ─────────────────────────────────────────────────────────────────
         // IDENTITY GATE - Mediated Ephemeral Identity (MEI) Framework
         // ─────────────────────────────────────────────────────────────────
+
+        // If role is client, validate the session from the HttpOnly cookie
+        if (role === 'client') {
+            const cookies = cookie.parse(socket.handshake.headers.cookie || '');
+            const clientSessionToken = cookies.client_session;
+
+            if (!clientSessionToken) {
+                console.warn(`[socket] Auth failed for client on trip ${tripId}: No client_session cookie`);
+                socket.emit('auth_error', 'No active session for this trip');
+                return socket.disconnect(true);
+            }
+
+            try {
+                const decoded = jwt.verify(clientSessionToken, process.env.JWT_SECRET);
+                if (decoded.trip_id !== tripId) {
+                    socket.emit('auth_error', 'Session does not match this trip');
+                    return socket.disconnect(true);
+                }
+            } catch (err) {
+                console.warn(`[socket] Auth failed for client on trip ${tripId}: Invalid JWT`);
+                socket.emit('auth_error', 'Invalid or expired session');
+                return socket.disconnect(true);
+            }
+        }
+        // If role is driver, we use the token from handshake auth as before
         const sessionKey = `session:trip:${tripId}:${role}`;
         const sessionData = await getSession(sessionKey);
 

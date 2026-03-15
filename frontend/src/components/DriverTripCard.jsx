@@ -25,16 +25,12 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
     };
 
     return (
-        <div className="glass-card" style={{
+        <div className="glass-card reveal-up" style={{
             padding: '16px',
             borderRadius: '20px',
             marginBottom: '12px',
-            animation: `fade-in-up 0.4s ease forwards`,
             animationDelay: `${index * 0.1}s`,
-            opacity: 0,
-            transform: 'translateY(10px)',
             width: '100%',
-            maxWidth: '100%',
             boxSizing: 'border-box'
         }}>
             {/* Top row: Status and Time */}
@@ -92,7 +88,7 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                 )}
             </div>
 
-            {/* Actions based on role */}
+            {/* Actions based on status */}
             {trip.status === 'accepted' && !isDeclining && (
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button onClick={() => setIsDeclining(true)} style={{
@@ -114,7 +110,7 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
             )}
 
             {isDeclining && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fade-in-up 0.2s ease forwards' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <input
                         type="text"
                         placeholder="Reason for declining"
@@ -123,7 +119,8 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                         style={{
                             width: '100%', padding: '12px', borderRadius: '12px',
                             border: '1px solid rgba(13,13,13,0.2)', background: 'var(--bg-input)',
-                            color: 'var(--text-dark)', fontSize: '14px', fontFamily: 'Inter, sans-serif'
+                            color: 'var(--text-dark)', fontSize: '14px', fontFamily: 'Inter, sans-serif',
+                            boxSizing: 'border-box'
                         }}
                     />
                     <div style={{ display: 'flex', gap: '12px' }}>

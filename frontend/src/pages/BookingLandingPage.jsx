@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
-import useChat from '../hooks/useChat';
+import ChatWindow from '../components/ChatWindow';
 
 // --- Components ---
 
@@ -68,15 +68,7 @@ export default function BookingLandingPage() {
     const [networkError, setNetworkError] = useState(false);
     const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false });
     const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
-    const [chatInput, setChatInput] = useState('');
 
-    const { messages, connected, sendMessage } = useChat({
-        tripId,
-        token: searchParams.get('token'),
-        role: 'client'
-    });
-
-    const messagesEndRef = useRef(null);
 
     // Initial Auth & Session Hydration
     useEffect(() => {
@@ -130,12 +122,6 @@ export default function BookingLandingPage() {
         // For now, poll will handle it, but I'll add a check if status is 'completed'.
     }, []);
 
-    const handleSend = () => {
-        if (!chatInput.trim() || !connected) return;
-        sendMessage(chatInput.trim());
-        setChatInput('');
-    };
-
     const handleComplaint = async (e) => {
         e.preventDefault();
         setComplaintStatus({ loading: true, success: false });
@@ -159,8 +145,8 @@ export default function BookingLandingPage() {
     };
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        // Handled by ChatWindow
+    }, []);
 
     if (loading) return <LoadingState />;
     if (authFailed) return <AuthError email={recoveryEmail} setEmail={setRecoveryEmail} onRetry={handleRequestNewLink} recoverySent={recoverySent} />;
@@ -278,9 +264,9 @@ export default function BookingLandingPage() {
                 )}
 
                 {/* Chat Area */}
-                <div className="glass-card-dark p-0 reveal-up active stagger-3 flex flex-col min-h-[320px] overflow-hidden mb-5">
+                <div className="reveal-up active stagger-3 flex flex-col min-h-[450px] mb-5">
                     {isPending ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                        <div className="glass-card-dark flex-1 flex flex-col items-center justify-center p-8 text-center rounded-[24px]">
                             <div className="text-5xl mb-6">🔒</div>
                             <h3 className="text-xl font-bold text-text-cream mb-2">Secure channel pending</h3>
                             <p className="text-text-muted text-sm leading-relaxed">
@@ -288,50 +274,12 @@ export default function BookingLandingPage() {
                             </p>
                         </div>
                     ) : (
-                        <>
-                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="size-2 rounded-full bg-success session-pulse" />
-                                    <span className="text-text-cream font-bold text-sm">Secure channel · {booking.driver_name?.split(' ')[0]}</span>
-                                </div>
-                                <span className="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-[11px] text-text-muted">
-                                    🔒 Mediated · No PII
-                                </span>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-h-[400px]">
-                                {messages.length === 0 && (
-                                    <div className="flex-1 flex flex-col items-center justify-center py-10 opacity-60">
-                                        <div className="text-2xl mb-2">🔒</div>
-                                        <p className="text-text-muted text-xs text-center leading-relaxed">
-                                            Ephemeral channel open.<br />Messages are not permanently stored.
-                                        </p>
-                                    </div>
-                                )}
-                                {messages.map((msg, i) => {
-                                    const isMine = msg.from === 'client';
-                                    return (
-                                        <div key={i} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                                            <div className="max-w-[85%]">
-                                                <div className={`p-4 text-sm font-medium ${isMine ? 'bg-white/90 text-bg-dark rounded-[18px_18px_4px_18px]' : 'bg-white/10 text-text-cream border border-white/5 rounded-[18px_18px_18px_4px]'}`}>
-                                                    {msg.content}
-                                                </div>
-                                                <div className={`font-mono text-[10px] mt-1 opacity-60 ${isMine ? 'text-right' : 'text-left'}`}>
-                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                <div ref={messagesEndRef} />
-                            </div>
-
-                            {isCompleted && (
-                                <div className="p-4 bg-warning/10 border-t border-warning/20 m-2 rounded-xl text-center">
-                                    <p className="text-warning text-xs font-bold">Trip complete — 24hr complaint window open</p>
-                                </div>
-                            )}
-                        </>
+                        <ChatWindow
+                            tripId={tripId}
+                            token={undefined}
+                            role="client"
+                            counterpartName={booking.driver_name?.split(' ')[0] || 'Driver'}
+                        />
                     )}
                 </div>
 
@@ -388,32 +336,6 @@ export default function BookingLandingPage() {
                     </div>
                 )}
             </main>
-
-            {/* Sticky Compose Bar */}
-            {isActive && (
-                <div className="fixed bottom-0 left-0 right-0 z-40 h-[64px] px-4 bg-[#0D0D0D]/95 backdrop-blur-[20px] flex items-center gap-3 border-t border-white/5">
-                    <input
-                        type="text"
-                        placeholder={connected ? "Message your driver..." : "Reconnecting..."}
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSend();
-                            }
-                        }}
-                        className="flex-1 bg-white/5 border border-white/10 rounded-input px-4 py-3 text-sm text-text-cream placeholder:text-text-muted/40 focus:ring-1 focus:ring-primary outline-none"
-                    />
-                    <button
-                        onClick={handleSend}
-                        disabled={!connected || !chatInput.trim()}
-                        className={`size-11 rounded-full flex items-center justify-center transition-all ${connected && chatInput.trim() ? 'btn-accent shadow-[0_0_15px_rgba(108,99,255,0.4)]' : 'bg-white/5 text-text-muted/40 pointer-events-none'}`}
-                    >
-                        <span className="text-xl">→</span>
-                    </button>
-                </div>
-            )}
         </div>
     );
 }

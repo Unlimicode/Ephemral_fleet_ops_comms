@@ -158,7 +158,7 @@ describe('Privacy Dashboard Lifecycle Validation', () => {
             .set('Authorization', `Bearer ${managerToken}`)
             .expect(200);
 
-        expect(res.body.status).toBe('accepted');
+        expect(res.body.status).toBe('in_progress');
         expect(res.body.sessions.driver.active).toBe(true);
         expect(res.body.sessions.client.active).toBe(true);
         expect(res.body.sessions.driver.ttl_seconds).toBeGreaterThan(80000);
@@ -166,11 +166,6 @@ describe('Privacy Dashboard Lifecycle Validation', () => {
     });
 
     it('Stage 3 — After trip completion (Sessions Destroyed, Complaint Window Active)', async () => {
-        // Transition: driver must start the trip before they can complete it
-        await request(app)
-            .patch(`${API_DRIVER}/trips/${testTripId}/start`)
-            .set('Authorization', `Bearer ${driverToken}`)
-            .expect(200);
 
         // Transition: driver completes the trip
         await request(app)

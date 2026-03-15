@@ -157,10 +157,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
             .set('Authorization', `Bearer ${driverToken}`);
 
         expect(acceptRes.status).toBe(200);
-        expect(acceptRes.body.status).toBe('accepted');
-
-        // Force transition to in_progress seamlessly simulating driverTrips.js
-        await pool.query("UPDATE trips SET status = 'in_progress' WHERE id = $1", [currentTripId]);
+        expect(acceptRes.body.status).toBe('in_progress');
 
         // Verify Redis channels were created
         const postStatusRes = await request(app)

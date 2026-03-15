@@ -141,7 +141,7 @@ describe('Driver Trips & Availability API', () => {
             .set('Authorization', `Bearer ${driverA_Token}`);
 
         expect(acceptRes.status).toBe(200);
-        expect(acceptRes.body.status).toBe('accepted');
+        expect(acceptRes.body.status).toBe('in_progress');
 
         // Verify Redis Session Data
         const driverSession = await getSession(`session:trip:${tripA_Id}:driver`);
@@ -152,17 +152,6 @@ describe('Driver Trips & Availability API', () => {
         expect(avail.status).toBe('on_trip');
     });
 
-    it('Test 4b: Driver marks trip as in progress', async () => {
-        const startRes = await request(app)
-            .patch(`/api/driver/trips/${tripA_Id}/start`)
-            .set('Authorization', `Bearer ${driverA_Token}`);
-
-        expect(startRes.status).toBe(200);
-        expect(startRes.body.status).toBe('in_progress');
-
-        const auditRes = await pool.query("SELECT * FROM audit_log WHERE target_id = $1 AND action_type = 'TRIP_STARTED'", [tripA_Id]);
-        expect(auditRes.rows.length).toBe(1);
-    });
 
     it('Test 5: Driver rejects trip & tracking updates', async () => {
         // Driver B rejects their trip

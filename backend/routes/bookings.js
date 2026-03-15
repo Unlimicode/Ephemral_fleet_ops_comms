@@ -3,22 +3,12 @@ import { query } from '../config/db.js';
 import { setSession, getSession, deleteSession } from '../config/redisHelpers.js';
 import client from '../config/redis.js';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import transporter from '../config/mailer.js';
 import jwt from 'jsonwebtoken';
 import { requireClientAuth } from '../middleware/clientAuth.js';
 
 const router = Router();
 
-// Configure the SMTP transporter using environment variables
-const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: process.env.MAIL_PORT,
-    secure: process.env.MAIL_PORT === '465', // true for 465, false for other ports
-    auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-    },
-});
 
 // ── POST / — Client submits a new booking ────────────────────────────────────
 // Public endpoint. No authentication required.
@@ -77,13 +67,6 @@ router.post('/', async (req, res) => {
                 to: client_corporate_email,
                 subject: 'Fleet Ops: Your Booking Confirmation & Access Link',
                 text: `Hello ${firstName},\n\nYour trip has been successfully requested and is pending driver assignment.\n\nYou can track and manage your trip securely using this one-time access link:\n${magicLink}\n\nThis link acts as your secure key. Do not share it with anyone.`,
-                html: `
-                    <h3>Hello ${firstName},</h3>
-                    <p>Your trip has been successfully requested and is pending driver assignment.</p>
-                    <p>You can track and manage your trip securely using this access link:</p>
-                    <p><a href="${magicLink}" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track My Trip</a></p>
-                    <p><em>This link acts as your secure key. Do not share it with anyone.</em></p>
-                `
             });
         }
 
@@ -284,8 +267,6 @@ router.post('/:tripId/request-new-link', async (req, res) => {
     try {
         // 1. Rate Limiting verification (Max 3 / hr)
         const rateLimitKey = `ratelimit:recovery:${tripId}`;
-        // Note: Using raw redis client directly via the default import from redisHelpers since 
-        // increment isn't natively wrapped.
         const currentCount = await client.incr(rateLimitKey);
         if (currentCount === 1) {
             await client.expire(rateLimitKey, 3600); // 1 hour TTL
@@ -301,7 +282,6 @@ router.post('/:tripId/request-new-link', async (req, res) => {
         );
 
         if (tripResult.rows.length === 0) {
-            // Explicitly opaque response protecting enumeration
             return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
         }
 
@@ -324,11 +304,6 @@ router.post('/:tripId/request-new-link', async (req, res) => {
                 to: client_corporate_email,
                 subject: 'Fleet Ops: New Booking Access Link',
                 text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,
-                html: `
-                    <h3>Hello ${firstName},</h3>
-                    <p>A new secure access link has been requested for your trip.</p>
-                    <p><a href="${magicLink}" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Track My Trip</a></p>
-                `
             });
         }
 
@@ -355,9 +330,6 @@ router.get('/status', async (req, res) => {
         const sessionKey = `booking_access_token:${token}`;
         const sessionData = await getSession(sessionKey);
 
-        // Check for active trip session if one-time token is gone
-        // or just validate the token if it's the first visit.
-        // Actually, the requirement says "Validate the client session token against Redis key session:trip:{tripId}:client"
         const activeSessionKey = `session:trip:${tripId}:client`;
         const activeSession = await getSession(activeSessionKey);
 
