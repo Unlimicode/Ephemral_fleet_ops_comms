@@ -201,9 +201,13 @@ axios token not being synced synchronously, and driver accept/decline returning
 | 2 | backend/routes/driverTrips.js | 61-62, 134-137 | Changed status check from `'assigned'` to `'accepted'`. | `'assigned'` is not a valid status in the DB check constraint. |
 | 3 | backend/routes/driverTrips.js | 97-100 | Changed status advancement to `'in_progress'` on acceptance. | Correct trip lifecycle advancement. |
 | 4 | backend/routes/trips.js | ALL | Restored manager-level endpoints (`GET /`, `POST /`, `PATCH /:tripId/assign`, etc.). | Replaces accidentally overwritten driver routes, resolving manager 403. |
+| 5 | backend/routes/bookings.js | 103-108 | Used `extendSession(60)` for magic links. | Prevent immediate expiration by scanners/Strict Mode. |
+| 6 | frontend/src/pages/BookingLandingPage.jsx | 72-92 | Added `useRef` guard to authentication. | Prevent double-fetching in React Strict Mode. |
+| 7 | backend/routes/driverTrips.js | 33 | Removed invalid `t.notes` column. | Column does not exist in schema. |
+| 8 | frontend/src/pages/BookingLandingPage.jsx | 272 | Delayed `ChatWindow` mount until `status === 'in_progress'`. | Avoid socket auth failure before Redis keys are created. |
 
 ### Build Verification
-- [ ] npm run build — exit code 0
-- [ ] npm run lint — exit code 0
-- [ ] Commit hash: [fill after commit]
+- [x] npm run build — exit code 0
+- [x] npm run lint — exit code 0
+- [x] Commit hash: b7a1f2e
 

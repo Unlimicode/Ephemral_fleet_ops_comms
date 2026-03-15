@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import ChatWindow from '../components/ChatWindow';
@@ -70,8 +70,12 @@ export default function BookingLandingPage() {
     const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
 
 
+    const authStarted = useRef(false);
     // Initial Auth & Session Hydration
     useEffect(() => {
+        if (authStarted.current) return;
+        authStarted.current = true;
+
         const validateSession = async () => {
             const token = searchParams.get('token');
             try {
@@ -265,12 +269,12 @@ export default function BookingLandingPage() {
 
                 {/* Chat Area */}
                 <div className="reveal-up active stagger-3 flex flex-col min-h-[450px] mb-5">
-                    {isPending ? (
+                    {status !== 'in_progress' ? (
                         <div className="glass-card-dark flex-1 flex flex-col items-center justify-center p-8 text-center rounded-[24px]">
                             <div className="text-5xl mb-6">🔒</div>
                             <h3 className="text-xl font-bold text-text-cream mb-2">Secure channel pending</h3>
                             <p className="text-text-muted text-sm leading-relaxed">
-                                Your driver will be assigned shortly. The channel opens automatically when they accept.
+                                {status === 'accepted' ? 'Connecting secure channel...' : 'Your driver will be assigned shortly. The channel opens automatically when they accept.'}
                             </p>
                         </div>
                     ) : (

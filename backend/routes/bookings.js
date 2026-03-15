@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
-import { setSession, getSession, deleteSession } from '../config/redisHelpers.js';
+import { setSession, getSession, deleteSession, extendSession } from '../config/redisHelpers.js';
 import client from '../config/redis.js';
 import crypto from 'crypto';
 import transporter from '../config/mailer.js';
@@ -104,8 +104,12 @@ router.get('/auth', async (req, res) => {
             return res.status(401).json({ error: 'Invalid or expired access link' });
         }
 
-        // 1. Single-use constraint
-        await deleteSession(sessionKey);
+        // 1. Single-use constraint (Graceful)
+        // Instead of immediate deletion, we set a very short TTL (e.g. 60s).
+        // This allows React StrictMode (double-firing effects) or email 
+        // scanner/previewers to hit the link without "stealing" the 
+        // legitimate user session immediately.
+        await extendSession(sessionKey, 60);
 
         // 2. Retrieve supplementary info
         const tripResult = await query(

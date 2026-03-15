@@ -10,8 +10,8 @@ import router from './routes/index.js';
 import transporter from './config/mailer.js';
 const PORT = process.env.PORT || 3001;
 
-const app = express();
-const httpServer = createServer(app);
+export const app = express();
+export const httpServer = createServer(app);
 
 import { initIo, getIo } from './socket/io.js';
 import { registerDashboardNamespace } from './socket/dashboardNamespace.js';
