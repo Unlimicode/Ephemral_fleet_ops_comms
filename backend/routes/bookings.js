@@ -109,7 +109,7 @@ router.get('/auth', async (req, res) => {
         // This allows React StrictMode (double-firing effects) or email 
         // scanner/previewers to hit the link without "stealing" the 
         // legitimate user session immediately.
-        await extendSession(sessionKey, 60);
+        await extendSession(sessionKey, 300);
 
         // 2. Retrieve supplementary info
         const tripResult = await query(
@@ -344,11 +344,11 @@ router.get('/status', async (req, res) => {
         const tripResult = await query(
             `SELECT 
                 t.id, t.status, t.pickup_location, t.destination, t.pickup_time, t.flight_number,
-                d.first_name as driver_first_name,
-                v.model as vehicle_model
+                d.full_name as driver_name,
+                v.type as vehicle_type
              FROM trips t
              LEFT JOIN drivers d ON t.assigned_driver_id = d.id
-             LEFT JOIN vehicles v ON t.assigned_vehicle_id = v.id
+             LEFT JOIN vehicles v ON t.vehicle_id = v.id
              WHERE t.id = $1`,
             [tripId]
         );

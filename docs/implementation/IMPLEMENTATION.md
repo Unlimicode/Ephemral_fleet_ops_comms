@@ -201,13 +201,15 @@ axios token not being synced synchronously, and driver accept/decline returning
 | 2 | backend/routes/driverTrips.js | 61-62, 134-137 | Changed status check from `'assigned'` to `'accepted'`. | `'assigned'` is not a valid status in the DB check constraint. |
 | 3 | backend/routes/driverTrips.js | 97-100 | Changed status advancement to `'in_progress'` on acceptance. | Correct trip lifecycle advancement. |
 | 4 | backend/routes/trips.js | ALL | Restored manager-level endpoints (`GET /`, `POST /`, `PATCH /:tripId/assign`, etc.). | Replaces accidentally overwritten driver routes, resolving manager 403. |
-| 5 | backend/routes/bookings.js | 103-108 | Used `extendSession(60)` for magic links. | Prevent immediate expiration by scanners/Strict Mode. |
+| 5 | backend/routes/bookings.js | 112 | Increased `extendSession` to 300s. | Prevent expiration from aggressive scanners/human delay. |
 | 6 | frontend/src/pages/BookingLandingPage.jsx | 72-92 | Added `useRef` guard to authentication. | Prevent double-fetching in React Strict Mode. |
 | 7 | backend/routes/driverTrips.js | 33 | Removed invalid `t.notes` column. | Column does not exist in schema. |
 | 8 | frontend/src/pages/BookingLandingPage.jsx | 272 | Delayed `ChatWindow` mount until `status === 'in_progress'`. | Avoid socket auth failure before Redis keys are created. |
+| 9 | backend/routes/driverTrips.js | 34 | Removed `v.make` and `v.model`, added `v.type`. | Columns do not exist in the `vehicles` table schema. |
+| 10 | frontend/src/components/DriverTripCard.jsx | 80 | Updated to use `trip.type` instead of `trip.model`. | Align frontend display with updated backend response. |
 
 ### Build Verification
 - [x] npm run build — exit code 0
 - [x] npm run lint — exit code 0
-- [x] Commit hash: b7a1f2e
+- [x] Commit hash: efb7349
 
