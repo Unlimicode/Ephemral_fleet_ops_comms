@@ -31,7 +31,7 @@ router.get('/:tripId', requireAuth(['driver']), async (req, res) => {
         const result = await query(
             `SELECT t.id, t.status, t.pickup_location, t.destination, t.pickup_time, 
                     t.flight_number, t.client_first_name,
-                    v.registration_number, v.make, v.model
+                    v.registration_number, v.type
              FROM trips t
              LEFT JOIN vehicles v ON t.vehicle_id = v.id
              WHERE t.id = $1 AND t.assigned_driver_id = $2`,

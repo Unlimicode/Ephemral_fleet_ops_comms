@@ -77,7 +77,7 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                 {trip.registration_number && (
                     <div style={{ background: 'rgba(13,13,13,0.05)', padding: '4px 10px', borderRadius: '6px' }}>
                         <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>VEHICLE: </span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-dark)', fontWeight: 600 }}>{trip.registration_number} ({trip.model || 'Sedan'})</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-dark)', fontWeight: 600 }}>{trip.registration_number} ({trip.type || 'Standard'})</span>
                     </div>
                 )}
                 {trip.flight_number && (
