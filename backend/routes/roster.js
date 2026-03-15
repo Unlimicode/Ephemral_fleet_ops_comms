@@ -50,12 +50,14 @@ router.post('/drivers', requireAuth(['fleet_manager']), async (req, res) => {
         );
 
         // Physically transport credentials out-of-bands masking payload evaluation from REST API outputs natively.
-        await transporter.sendMail({
-            from: '"Fleet Ops Comms" <noreply@fleetops.dev>',
-            to: work_email,
-            subject: 'Your Fleet Ops Driver Account',
-            text: `Hello ${full_name},\n\nYour driver account has been provisioned.\nLogin Email: ${work_email}\nTemporary Password: ${temporaryPassword}`
-        });
+        if (process.env.NODE_ENV !== 'test') {
+            await transporter.sendMail({
+                from: '"Fleet Ops Comms" <noreply@fleetops.dev>',
+                to: work_email,
+                subject: 'Your Fleet Ops Driver Account',
+                text: `Hello ${full_name},\n\nYour driver account has been provisioned.\nLogin Email: ${work_email}\nTemporary Password: ${temporaryPassword}`
+            });
+        }
 
         // 201 Created: Return explicit payload STRIPPED of `password` arrays.
         return res.status(201).json({

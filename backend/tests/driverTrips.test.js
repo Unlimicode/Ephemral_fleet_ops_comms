@@ -12,6 +12,16 @@ import tripsRouter from '../routes/trips.js';
 import { initIo, getIo } from '../socket/io.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
+const authPath = path.resolve('middleware/auth.js');
+console.log(`[DIAG] Test process reading auth.js from: ${authPath}`);
+try {
+    const content = fs.readFileSync(authPath, 'utf8');
+    console.log(`[DIAG] auth.js first 100 chars at test start: ${content.substring(0, 100).replace(/\n/g, '\\n')}`);
+} catch (e) {
+    console.log(`[DIAG] auth.js read failed at test start: ${e.message}`);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROOF OF ARCHITECTURE: Driver Dispatch Security & Data Minimisation

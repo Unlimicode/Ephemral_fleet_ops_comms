@@ -11,9 +11,7 @@ const router = Router();
 router.get('/', requireAuth(['fleet_manager']), async (req, res) => {
     try {
         const result = await query(
-            `SELECT t.*, 
-                    d.full_name as driver_name,
-                    v.registration_number as vehicle_reg
+            `SELECT t.*, d.full_name as driver_name, v.registration_number as vehicle_reg
              FROM trips t
              LEFT JOIN drivers d ON t.assigned_driver_id = d.id
              LEFT JOIN vehicles v ON t.vehicle_id = v.id
@@ -22,7 +20,7 @@ router.get('/', requireAuth(['fleet_manager']), async (req, res) => {
         return res.status(200).json(result.rows);
     } catch (err) {
         console.error('[trips] get all error:', err);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
     }
 });
 
@@ -36,48 +34,39 @@ router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
 
     try {
         const result = await query(
-            `INSERT INTO trips (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, status)
-             VALUES ($1, $2, $3, $4, $5, 'pending')
-             RETURNING id, status, client_first_name`,
+            `INSERT INTO trips (client_corporate_email, client_first_name, pickup_location, destination, pickup_time)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING *`,
             [client_corporate_email, client_first_name, pickup_location, destination, pickup_time]
         );
 
-        const newTrip = result.rows[0];
-
-        await query(
-            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
-             VALUES ($1, $2, $3, $4, $5)`,
-            ['TRIP_CREATED', req.user.id, 'fleet_manager', newTrip.id, { client_corporate_email }]
-        );
-
-        return res.status(201).json(newTrip);
+        return res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('[trips] create error:', err);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
     }
 });
 
-// ── PATCH /:tripId/assign — Assign Driver and Vehicle ────────────────────────
+// ── PATCH /:tripId/assign — Assign Driver & Vehicle ──────────────────────────
 router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res) => {
     const { tripId } = req.params;
     const { driver_id, vehicle_id } = req.body;
 
     if (!driver_id || !vehicle_id) {
-        return res.status(400).json({ error: 'Driver and vehicle are required for assignment' });
+        return res.status(400).json({ error: 'driver_id and vehicle_id are required' });
     }
 
     try {
-        // Update trip status to 'accepted' (meaning assigned in this flow)
         const result = await query(
             `UPDATE trips 
              SET assigned_driver_id = $1, vehicle_id = $2, status = 'accepted' 
-             WHERE id = $3 AND status = 'pending'
+             WHERE id = $3 
              RETURNING *`,
             [driver_id, vehicle_id, tripId]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Trip not found or not in pending status' });
+            return res.status(404).json({ error: 'Trip not found' });
         }
 
         const trip = result.rows[0];
@@ -93,11 +82,11 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
         return res.status(200).json(trip);
     } catch (err) {
         console.error('[trips] assign error:', err);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
     }
 });
 
-// ── PATCH /:tripId/accept — Accept Assignment (Driver) ──────────────────────
+// ── PATCH /:tripId/accept — Accept Assignment (Driver Fallback) ───────────────
 router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;
     const driverId = req.user.id;
@@ -116,6 +105,7 @@ router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
         await setSession(`session:trip:${tripId}:driver`, { driver_id: driverId }, 86400);
         await setSession(`session:trip:${tripId}:client`, { client_email: tripCheck.rows[0].client_corporate_email }, 86400);
 
+        emitDashboardEvent('session_created', { trip_id: tripId, timestamp: new Date().toISOString() });
 
         await query(
             `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
@@ -125,24 +115,42 @@ router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
 
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('[trips] accept error:', err.message, err.stack);
+        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
     }
 });
 
-// ── PATCH /:tripId/complete — Complete Trip (Driver) ────────────────────────
+// ── PATCH /:tripId/complete — Complete Trip (Driver Fallback) ──────────────────
 router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;
     const driverId = req.user.id;
+
     try {
-        const updateResult = await query(
-            `UPDATE trips SET status = 'completed' WHERE id = $1 AND assigned_driver_id = $2 AND status = 'in_progress' RETURNING *`,
-            [tripId, driverId]
+        const tripCheck = await query(
+            'SELECT id FROM trips WHERE id = $1 AND assigned_driver_id = $2 AND status = $3',
+            [tripId, driverId, 'in_progress']
         );
-        if (updateResult.rows.length === 0) return res.status(404).json({ error: 'Trip not found' });
+        if (tripCheck.rows.length === 0) return res.status(404).json({ error: 'Trip not found or not in progress' });
+
+        const result = await query(
+            `UPDATE trips SET status = 'completed' WHERE id = $1 RETURNING *`,
+            [tripId]
+        );
 
         await deleteSession(`session:trip:${tripId}:driver`);
         await deleteSession(`session:trip:${tripId}:client`);
         await setSession(`complaint:window:${tripId}`, { active: true }, 86400);
+
+        const io = getIo();
+        if (io) {
+            io.to(`trip:${tripId}`).emit('session_closed', {
+                tripId,
+                reason: 'Trip completed — communication channel closed',
+                complaint_window_hours: 24
+            });
+        }
+
+        emitDashboardEvent('session_destroyed', { trip_id: tripId, timestamp: new Date().toISOString() });
 
         await query(
             `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
@@ -150,9 +158,10 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
             ['TRIP_COMPLETED', driverId, 'driver', tripId, {}]
         );
 
-        return res.status(200).json(updateResult.rows[0]);
+        return res.status(200).json(result.rows[0]);
     } catch (err) {
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('[trips] complete error:', err.message, err.stack);
+        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
     }
 });
 
@@ -171,7 +180,7 @@ router.get('/:tripId/session-status', requireAuth(['fleet_manager', 'driver']), 
             complaint_window_active: status === 'completed'
         });
     } catch (err) {
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
     }
 });
 

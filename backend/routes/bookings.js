@@ -104,12 +104,11 @@ router.get('/auth', async (req, res) => {
             return res.status(401).json({ error: 'Invalid or expired access link' });
         }
 
-        // 1. Single-use constraint (Graceful)
-        // Instead of immediate deletion, we set a very short TTL (e.g. 60s).
-        // This allows React StrictMode (double-firing effects) or email 
-        // scanner/previewers to hit the link without "stealing" the 
-        // legitimate user session immediately.
-        await extendSession(sessionKey, 300);
+        // 1. Single-use constraint
+        // Immediately delete the token to prevent replay attacks.
+        // Frontend uses a useRef guard (BookingLandingPage.jsx) to prevent 
+        // issues with React Strict Mode double-firing.
+        await deleteSession(sessionKey);
 
         // 2. Retrieve supplementary info
         const tripResult = await query(
