@@ -25,7 +25,7 @@ router.post('/:tripId', requireClientAuth, async (req, res) => {
     const { category, description } = req.body;
 
     // 1. Verify cross-client access boundaries
-    if (req.client.tripId !== tripId) {
+    if (req.client.trip_id !== tripId) {
         return res.status(403).json({ error: 'Access denied' });
     }
 

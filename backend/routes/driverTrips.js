@@ -168,7 +168,7 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
                     from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
                     to: tripCheck.rows[0].client_corporate_email,
                     subject: 'Your trip is complete — you have 24 hours to submit feedback',
-                    text: `Your trip has been completed.\n\nYou have a 24-hour window to file a complaint if needed. After this window, all communication records will no longer be accessible.\n\nLink: ${process.env.CLIENT_ORIGIN}/booking/${tripId}`
+                    text: `Your trip has been completed.\n\nYou have a 24-hour window to file a complaint if needed. After this window, all communication records will no longer be accessible.\n\nLink: ${process.env.CLIENT_ORIGIN}/booking`
                 });
             } catch (emailErr) {
                 console.error('[driverTrips] send completion email error:', emailErr);

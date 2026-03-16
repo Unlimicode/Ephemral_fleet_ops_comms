@@ -79,10 +79,10 @@ describe('Complaint Lodgment API', () => {
         tripB_Id = tripBRes.rows[0].id;
 
         // 5. Generate Client Cookies
-        const tokenA = jwt.sign({ tripId: tripA_Id, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const tokenA = jwt.sign({ trip_id: tripA_Id, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
         clientA_Cookie = `client_session=${tokenA}`;
 
-        const tokenB = jwt.sign({ tripId: tripB_Id, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const tokenB = jwt.sign({ trip_id: tripB_Id, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
         clientB_Cookie = `client_session=${tokenB}`;
 
         // 6. Instantiate Redis Bounds
@@ -173,7 +173,7 @@ describe('Complaint Lodgment API', () => {
         const tripC_Id = tripCRes.rows[0].id;
 
         await setSession(`complaint:window:${tripC_Id}`, { active: true }, 86400);
-        const tokenC = jwt.sign({ tripId: tripC_Id, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const tokenC = jwt.sign({ trip_id: tripC_Id, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
         const clientC_Cookie = `client_session=${tokenC}`;
 
         // Seed the Redis message buffer directly natively mimicking the relay

@@ -252,3 +252,35 @@ Fixes 12 failing tests across 5 suites. Root causes:
 - [x] npm test — 14/14 suites passed, 76/76 tests passed.
 - [x] Commit hash: [N/A - Manual Finalization]
 
+
+---
+
+## Audit — Client Complaint Filing Flow
+
+### Summary
+Full audit of the complaint filing flow from the client booking page through
+to the backend complaint endpoint. Reads every file in the chain, tests each
+step, and fixes any issue found.
+
+### Parts
+
+| Part | Objective | Files to Read | Risk |
+|------|-----------|---------------|------|
+| P1 | Audit BookingLandingPage complaint form | frontend/src/pages/BookingLandingPage.jsx | Low |
+| P2 | Audit complaint API call and cookie auth | frontend/src/pages/BookingLandingPage.jsx, backend/routes/complaints.js | Medium |
+| P3 | Audit backend complaint endpoint | backend/routes/complaints.js, backend/middleware/clientAuth.js | Medium |
+| P4 | Fix every issue found | All above | Medium |
+| P5 | End-to-end manual verification | — | Medium |
+| P6 | Build, lint, commit | frontend/, backend/ | Low |
+
+### Change log
+| # | File | Line(s) | What changed | Why |
+|---|------|---------|--------------|-----|
+| 6 | backend/routes/bookings.js | 247-256 | Added `complaint_window_seconds` to trip response. | Frontend needs TTL to display countdown. |
+| 7 | backend/tests/*.test.js | Various | Standardized JWT payload to use `trip_id` (snake_case). | Align tests with backend/DB naming convention & fix 403s. |
+
+### Build Verification
+- [x] npm run build — exit code 0
+- [x] npm run lint — exit code 0
+- [x] npm test — 14/14 suites passed, 76/76 tests passed.
+- [x] Commit hash: [N/A - Pending Push]

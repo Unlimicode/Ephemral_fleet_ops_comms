@@ -68,6 +68,7 @@ export default function BookingLandingPage() {
     const [networkError, setNetworkError] = useState(false);
     const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false });
     const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
+    const [complaintWindow, setComplaintWindow] = useState(null); // Redis TTL in seconds
 
 
     const authStarted = useRef(false);
@@ -102,6 +103,9 @@ export default function BookingLandingPage() {
         try {
             const res = await api.get(`/bookings/${tripId}`);
             setBooking(res.data);
+            if (res.data.complaint_window_seconds !== undefined) {
+                setComplaintWindow(res.data.complaint_window_seconds);
+            }
             setNetworkError(false);
         } catch {
             setNetworkError(true);
@@ -296,11 +300,19 @@ export default function BookingLandingPage() {
                                 <p className="font-bold text-success">Complaint submitted.</p>
                                 <p className="text-text-muted text-sm mt-1">We'll review within 24 hours.</p>
                             </div>
+                        ) : complaintWindow !== null && complaintWindow <= 0 ? (
+                            <div className="bg-bg-dark/5 border border-black/5 rounded-2xl p-6 text-center">
+                                <div className="text-3xl mb-2">⏰</div>
+                                <p className="font-bold text-text-muted text-sm uppercase tracking-wider">Complaint Window Closed</p>
+                                <p className="text-text-muted text-xs mt-1">Privacy policy: Communication archives purged.</p>
+                            </div>
                         ) : (
                             <>
                                 <div className="flex justify-between items-end mb-6">
                                     <h3 className="font-extrabold text-xl">File a Complaint</h3>
-                                    <span className="text-text-muted text-[10px] font-bold uppercase tracking-widest bg-bg-dark/5 px-2 py-1 rounded">24h Window</span>
+                                    <span className="text-text-muted text-[10px] font-bold uppercase tracking-widest bg-bg-dark/5 px-2 py-1 rounded">
+                                        {complaintWindow ? `${Math.ceil(complaintWindow / 3600)}h Window` : '24h Window'}
+                                    </span>
                                 </div>
 
                                 <form onSubmit={handleComplaint} className="space-y-6">

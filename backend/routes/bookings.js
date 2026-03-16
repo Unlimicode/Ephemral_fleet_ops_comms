@@ -247,7 +247,20 @@ router.get('/:tripId', requireClientAuth, async (req, res) => {
             return res.status(404).json({ error: 'Booking not found' });
         }
 
-        return res.status(200).json(tripResult.rows[0]);
+        const trip = tripResult.rows[0];
+
+        // 3. Conditionally inject Redis TTL for the complaint window if completed
+        if (trip.status === 'completed') {
+            try {
+                const ttl = await client.ttl(`complaint:window:${tripId}`);
+                trip.complaint_window_seconds = ttl > 0 ? ttl : 0;
+            } catch (redisErr) {
+                console.error('[bookings] Redis TTL fetch failed:', redisErr.message);
+                trip.complaint_window_seconds = 0;
+            }
+        }
+
+        return res.status(200).json(trip);
 
     } catch (err) {
         console.error('[bookings] get booking error:', err);

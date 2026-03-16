@@ -180,7 +180,7 @@ describe('Push Notification Lifecycle', () => {
     it('Test 4: Complaint review triggers push attempt without blocking status update', async () => {
         // Build a client session JWT — requireClientAuth reads the 'client_session' cookie.
         const clientToken = jwt.sign(
-            { tripId: completedTripId, role: 'client' },
+            { trip_id: completedTripId, role: 'client' },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );

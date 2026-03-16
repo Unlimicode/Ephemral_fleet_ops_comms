@@ -145,7 +145,7 @@ describe('Conditional Persistence Lifecycle Validation', () => {
         await client.rPush(bufferKey, JSON.stringify({ from: 'driver', content: 'I know a shortcut.' }));
 
         // 2. Synchronous File Configuration 
-        const token = jwt.sign({ tripId, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ trip_id: tripId, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
         const res = await request(app)
             .post(`/api/complaints/${tripId}`)
             .set('Cookie', `client_session=${token}`)
@@ -211,7 +211,7 @@ describe('Conditional Persistence Lifecycle Validation', () => {
         await client.del(windowKey);
 
         // 3. Reject Attempted Filing
-        const token = jwt.sign({ tripId, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ trip_id: tripId, role: 'client' }, process.env.JWT_SECRET, { expiresIn: '24h' });
         const res = await request(app)
             .post(`/api/complaints/${tripId}`)
             .set('Cookie', `client_session=${token}`)
