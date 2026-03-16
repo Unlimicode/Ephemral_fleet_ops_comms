@@ -284,3 +284,32 @@ step, and fixes any issue found.
 - [x] npm run lint — exit code 0
 - [x] npm test — 14/14 suites passed, 76/76 tests passed.
 - [x] Commit hash: [N/A - Pending Push]
+
+---
+
+## Setup — ngrok Dev Startup Script
+
+### Summary
+Creates a root-level start-dev.js script that launches ngrok, writes the tunnel
+URL into frontend/.env.local, and starts both servers in a single command.
+Adds a root package.json with a dev script. Updates gitignore files to exclude
+the auto-generated .env.local file.
+
+### Parts
+
+| Part | Objective | File | Risk |
+|------|-----------|------|------|
+| P1 | Create start-dev.js at repo root | start-dev.js (new) | Low |
+| P2 | Create root package.json | package.json (new) | Low |
+| P3 | Update gitignore files | .gitignore, frontend/.gitignore | Low |
+| P4 | Verify the script runs end to end | — | Low |
+| P5 | Commit | — | Low |
+
+### Change log
+| # | File | Line(s) | What changed | Why |
+|---|------|---------|--------------|-----|
+| 1 | .gitignore | 84-86 | Added `frontend/.env.local`. | Keep auto-generated env out of git. |
+| 2 | frontend/.gitignore | 13 | Verified `.env.local` is gitignored. | Security. |
+| 3 | start-dev.js | ALL | [NEW] Created startup script. | Automation. |
+| 4 | package.json | ALL | [NEW] Created root package.json with `dev` script. | Entry point. |
+| 5 | start-dev.js | 18 | Added `.trim()` to authtoken. | Fix `ERR_NGROK_334` caused by hidden chars in `.env`. |

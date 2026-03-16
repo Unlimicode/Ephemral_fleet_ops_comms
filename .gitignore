@@ -81,3 +81,6 @@ debug*.log
 *_test*.txt
 *_out.txt
 *_out.json
+
+# Auto-generated ngrok env
+frontend/.env.local
