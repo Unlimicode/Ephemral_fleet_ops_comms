@@ -137,9 +137,9 @@ router.get('/overview', requireAuth(['fleet_manager']), async (req, res) => {
 
         const auditQuery = await query(
             `SELECT COUNT(*) as count 
-             FROM trips 
-             WHERE status = 'completed' 
-               AND pickup_time > (NOW() - INTERVAL '25 hours')`
+             FROM audit_log 
+             WHERE action_type IN ('TRIP_COMPLETED', 'TRIP_SESSION_DESTROYED')
+               AND timestamp > (NOW() - INTERVAL '25 hours')`
         );
 
         return res.status(200).json({

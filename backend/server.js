@@ -17,7 +17,22 @@ import { initIo, getIo } from './socket/io.js';
 import { registerDashboardNamespace } from './socket/dashboardNamespace.js';
 
 // ── Middleware ────────────────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173', credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const isLocalNetwork = /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin) ||
+      /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/.test(origin) ||
+      /^http:\/\/172\.(1[6-9]|2\d|3[01])\.\d+\.\d+:\d+$/.test(origin);
+    const isAllowed = origin === process.env.CLIENT_ORIGIN;
+    if (isLocalhost || isLocalNetwork || isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(router);

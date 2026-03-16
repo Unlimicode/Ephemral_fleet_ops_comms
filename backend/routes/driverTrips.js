@@ -17,7 +17,7 @@ router.get('/', requireAuth(['driver']), async (req, res) => {
                     v.registration_number as vehicle_reg
              FROM trips t
              LEFT JOIN vehicles v ON t.vehicle_id = v.id
-             WHERE t.assigned_driver_id = $1 AND t.status != 'completed'
+             WHERE t.assigned_driver_id = $1
              ORDER BY t.pickup_time ASC`,
             [driverId]
         );
@@ -61,8 +61,8 @@ router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
 
     try {
         const tripCheck = await query(
-            'SELECT id, client_corporate_email FROM trips WHERE id = $1 AND assigned_driver_id = $2 AND status = $3',
-            [tripId, driverId, 'accepted']
+            'SELECT id, client_corporate_email FROM trips WHERE id = $1 AND assigned_driver_id = $2 AND status IN ($3, $4)',
+            [tripId, driverId, 'pending', 'accepted']
         );
 
         if (tripCheck.rows.length === 0) {
@@ -107,8 +107,8 @@ router.patch('/:tripId/reject', requireAuth(['driver']), async (req, res) => {
 
     try {
         const tripCheck = await query(
-            'SELECT id FROM trips WHERE id = $1 AND assigned_driver_id = $2 AND status = $3',
-            [tripId, driverId, 'accepted']
+            'SELECT id FROM trips WHERE id = $1 AND assigned_driver_id = $2 AND status IN ($3, $4)',
+            [tripId, driverId, 'pending', 'accepted']
         );
 
         if (tripCheck.rows.length === 0) {

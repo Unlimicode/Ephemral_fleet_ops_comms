@@ -1,12 +1,20 @@
 import { config } from 'dotenv';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { networkInterfaces } from 'os';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, 'backend/.env') });
 
 import ngrok from '@ngrok/ngrok';
 import { spawn } from 'child_process';
 import { writeFileSync } from 'fs';
+
+// Detect local WiFi IP automatically
+const nets = networkInterfaces();
+const localIP = Object.values(nets)
+    .flat()
+    .find(n => n.family === 'IPv4' && !n.internal)?.address || 'localhost';
 
 console.log('🚀 Starting SwiftLink dev environment...\n');
 
@@ -18,14 +26,14 @@ const listener = await ngrok.forward({
 
 const tunnelUrl = listener.url();
 console.log(`🌐 ngrok tunnel: ${tunnelUrl}`);
-console.log(`📱 On your phone open: http://YOUR_PC_IP:5173\n`);
+console.log(`📱 On your phone open: http://${localIP}:5173\n`);
 
-// Write the tunnel URL into frontend/.env.local
-// Vite reads .env.local automatically and it overrides .env
-// This file is gitignored so it is never committed
-const envLocalContent = `VITE_API_URL=${tunnelUrl}/api\nVITE_WS_URL=${tunnelUrl}\n`;
+// Write the local IP directly into frontend/.env.local
+// All API calls go directly to the backend over the local network
+// bypassing ngrok which strips CORS headers for credentialed requests
+const envLocalContent = `VITE_API_URL=http://${localIP}:3001/api\nVITE_WS_URL=http://${localIP}:3001\n`;
 writeFileSync(resolve(__dirname, 'frontend/.env.local'), envLocalContent);
-console.log('✅ frontend/.env.local updated with tunnel URL\n');
+console.log('✅ frontend/.env.local updated with local IP\n');
 
 // Start the backend server
 const backend = spawn('npm', ['run', 'dev'], {
@@ -34,7 +42,7 @@ const backend = spawn('npm', ['run', 'dev'], {
     shell: true,
     env: {
         ...process.env,
-        CLIENT_ORIGIN: 'http://localhost:5173',
+        CLIENT_ORIGIN: `http://${localIP}:5173`,
     },
 });
 
@@ -43,7 +51,6 @@ backend.on('error', (err) => {
 });
 
 // Start the frontend dev server with --host
-// --host exposes it on the local network so phones can connect
 const frontend = spawn('npm', ['run', 'dev', '--', '--host'], {
     cwd: resolve(__dirname, 'frontend'),
     stdio: 'inherit',
