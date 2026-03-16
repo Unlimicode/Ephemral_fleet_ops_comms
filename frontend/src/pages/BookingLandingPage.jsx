@@ -68,7 +68,7 @@ export default function BookingLandingPage() {
     const [networkError, setNetworkError] = useState(false);
     const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false });
     const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
-    const [complaintWindow, setComplaintWindow] = useState(null); // Redis TTL in seconds
+    const [complaintWindowSeconds, setComplaintWindowSeconds] = useState(null); // Redis TTL in seconds
 
 
     const authStarted = useRef(false);
@@ -104,7 +104,7 @@ export default function BookingLandingPage() {
             const res = await api.get(`/bookings/${tripId}`);
             setBooking(res.data);
             if (res.data.complaint_window_seconds !== undefined) {
-                setComplaintWindow(res.data.complaint_window_seconds);
+                setComplaintWindowSeconds(res.data.complaint_window_seconds);
             }
             setNetworkError(false);
         } catch {
@@ -127,10 +127,18 @@ export default function BookingLandingPage() {
         // but we can listen for status changes in poll.
         // If we want immediate response to session_closed, useChat should ideally 
         // have a callback or expose the socket.
-        // For now, poll will handle it, but I'll add a check if status is 'completed'.
     }, []);
 
-    const handleComplaint = async (e) => {
+    // Live Countdown for Complaint Window
+    useEffect(() => {
+        if (complaintWindowSeconds === null || complaintWindowSeconds <= 0) return;
+        const timer = setInterval(() => {
+            setComplaintWindowSeconds(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [complaintWindowSeconds]);
+
+    const handleComplaintSubmit = async (e) => {
         e.preventDefault();
         setComplaintStatus({ loading: true, success: false });
         try {
@@ -300,7 +308,7 @@ export default function BookingLandingPage() {
                                 <p className="font-bold text-success">Complaint submitted.</p>
                                 <p className="text-text-muted text-sm mt-1">We'll review within 24 hours.</p>
                             </div>
-                        ) : complaintWindow !== null && complaintWindow <= 0 ? (
+                        ) : complaintWindowSeconds !== null && complaintWindowSeconds <= 0 ? (
                             <div className="bg-bg-dark/5 border border-black/5 rounded-2xl p-6 text-center">
                                 <div className="text-3xl mb-2">⏰</div>
                                 <p className="font-bold text-text-muted text-sm uppercase tracking-wider">Complaint Window Closed</p>
@@ -311,11 +319,16 @@ export default function BookingLandingPage() {
                                 <div className="flex justify-between items-end mb-6">
                                     <h3 className="font-extrabold text-xl">File a Complaint</h3>
                                     <span className="text-text-muted text-[10px] font-bold uppercase tracking-widest bg-bg-dark/5 px-2 py-1 rounded">
-                                        {complaintWindow ? `${Math.ceil(complaintWindow / 3600)}h Window` : '24h Window'}
+                                        {complaintWindowSeconds ? (() => {
+                                            const h = Math.floor(complaintWindowSeconds / 3600);
+                                            const m = Math.floor((complaintWindowSeconds % 3600) / 60);
+                                            const s = complaintWindowSeconds % 60;
+                                            return `${h}h ${m}m ${s}s left`;
+                                        })() : '24h Window'}
                                     </span>
                                 </div>
 
-                                <form onSubmit={handleComplaint} className="space-y-6">
+                                <form onSubmit={handleComplaintSubmit} className="space-y-6">
                                     <div className="overflow-x-auto -mx-2 pb-2">
                                         <div className="flex gap-2 px-2 whitespace-nowrap">
                                             {['Service Quality', 'Safety', 'Punctuality', 'Vehicle Condition', 'Other'].map(cat => (

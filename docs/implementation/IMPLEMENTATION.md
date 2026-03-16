@@ -313,3 +313,67 @@ the auto-generated .env.local file.
 | 3 | start-dev.js | ALL | [NEW] Created startup script. | Automation. |
 | 4 | package.json | ALL | [NEW] Created root package.json with `dev` script. | Entry point. |
 | 5 | start-dev.js | 18 | Added `.trim()` to authtoken. | Fix `ERR_NGROK_334` caused by hidden chars in `.env`. |
+
+---
+
+## Audit — Client Complaint Filing Flow (Verification)
+
+### Summary
+Detailed verification of the complaint filing flow based on the latest audit checklist. Confirmed that core functionality is implemented but identified minor naming and UI inconsistencies.
+
+### Audit Checklist Analysis
+
+| ID | Check | Status | Evidence/Action |
+|----|-------|--------|-----------------|
+| P1.1 | Form renders on 'completed' | Pass | `isCompleted` check at line 295 of `BookingLandingPage.jsx`. |
+| P1.2 | `complaintWindowSeconds` state | Pass* | State exists as `complaintWindow`. Will rename to match prompt. |
+| P1.3 | Fetches TTL from backend | Pass | Fetched in `fetchBooking` and stored in state. |
+| P1.4 | Hidden if window closed | Pass | Conditional rendering covers `complaintWindow <= 0`. |
+| P1.5 | `handleComplaintSubmit` wiring | Pass* | Exists as `handleComplaint`. Will rename to match prompt. |
+| P1.6 | Correct POST endpoint | Pass | Calls `POST /api/complaints/:tripId`. |
+| P1.7 | tripId is UUID | Pass | Set from `res.data.trip_id` during auth/session hydration. |
+| P1.8 | axios withCredentials used | Pass | Uses `api` instance which has `withCredentials: true`. |
+| P2.1 | axios withCredentials: true | Pass | Verified in `frontend/src/api/axios.js`. |
+| P2.2 | Correct base URL | Pass | Uses `VITE_API_URL`. |
+| P2.3 | Backend route exists | Pass | Verified in `backend/routes/complaints.js`. |
+| P2.4 | Route mounted correctly | Pass | Verified in `backend/routes/index.js`. |
+| P2.5 | use `requireClientAuth` | Pass | Verified in `backend/routes/complaints.js`. |
+| P3.1 | Cross-client check | Pass | `req.client.trip_id === tripId` check present in backend. |
+| P3.2 | Redis window check | Pass | `getSession(\`complaint:window:\${tripId}\`)` check present. |
+| P3.3 | Return 403 on window closed | Pass | Verified in `complaints.js`. |
+| P3.4 | Insert status = 'open' | Pass | Verified in `complaints.js`. |
+| P3.5 | Message archive creation | Pass | Redis buffer archival logic verified in backend. |
+| P3.8 | `cookie-parser` registered | Pass | Verified in `backend/server.js`. |
+
+### Proposed Changes
+
+#### [MODIFY] [BookingLandingPage.jsx](file:///d:/Programming/Development/Ephemral_fleet_ops_comms/frontend/src/pages/BookingLandingPage.jsx)
+- Rename state `complaintWindow` to `complaintWindowSeconds`.
+- Rename submit handler `handleComplaint` to `handleComplaintSubmit`.
+- Implement a local `useEffect` interval to decrement `complaintWindowSeconds` every second for a live countdown experience.
+
+### Verification Plan
+
+#### Automated Tests
+- `cd frontend && npm run lint`
+- `cd frontend && npm run build`
+
+#### Manual Verification
+1.  Mark a trip as complete using a driver account.
+2.  Open the client booking link.
+3.  Verify the "Complaint Window" shows a live countdown in hours/minutes.
+4.  Submit a complaint and verify the success state (check-mark).
+5.  Log in as manager and verify the complaint appears at `/manager/complaints`.
+
+### Change log
+| # | File | Line(s) | What changed | Why |
+|---|------|---------|--------------|-----|
+| 1 | BookingLandingPage.jsx | 71, 107 | Renamed `complaintWindow` to `complaintWindowSeconds`. | Match audit checklist. |
+| 2 | BookingLandingPage.jsx | 134, 349 | Renamed `handleComplaint` to `handleComplaintSubmit`. | Match audit checklist. |
+| 3 | BookingLandingPage.jsx | 129-136 | Added `useEffect` for live countdown timer. | UI polish for 24h window visibility. |
+| 4 | BookingLandingPage.jsx | 337-342 | Updated countdown display to `h m s` format. | Better UX. |
+
+### Build Verification
+- [x] npm run build — exit code 0
+- [x] npm run lint — exit code 0
+- [x] npm test — exit code 0
