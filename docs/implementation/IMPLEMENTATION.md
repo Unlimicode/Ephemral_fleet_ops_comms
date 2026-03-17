@@ -411,3 +411,36 @@ Fixes 6 failing tests across 2 suites. Root causes:
 ### Test Verification
 - [x] npm test — 0 failing suites, 0 failing tests
 - [ ] Commit hash: d77de8a
+
+---
+
+## Sprint 18 — Compliance Report and Trip Summary Export (PDF + CSV)
+
+### Summary
+Adds PDF export of the compliance report and CSV export of trip summaries
+and audit trail entries. All exports are generated client-side. No new
+backend endpoints are required. Exports are triggered from buttons on the
+Privacy Dashboard page and the Audit Trail page.
+
+### Parts
+
+| Part | Objective | Files to Change | Risk |
+|------|-----------|-----------------|------|
+| P1 | Install jsPDF | frontend/package.json | Low |
+| P2 | PDF export — compliance report | frontend/src/pages/ManagerPrivacyDashboardPage.jsx | Low |
+| P3 | CSV export — trip summary | frontend/src/pages/ManagerPrivacyDashboardPage.jsx | Low |
+| P4 | CSV export — audit trail | frontend/src/pages/manager/ManagerAuditPage.jsx | Low |
+| P5 | UI — export buttons on both pages | Both pages above | Low |
+| P6 | Build, lint, manual verification, commit | frontend/ | Low |
+
+### Change log
+| # | File | Line(s) | What changed | Why |
+|---|------|---------|--------------|-----|
+| 1 | frontend/package.json | 26 | Added `jspdf` dependency | Required for PDF export |
+| 2 | frontend/src/pages/ManagerPrivacyDashboardPage.jsx | 1, 106-258 | Replaced JSON export with PDF and Trip CSV exports | Implemented PDF and CSV exports for dashboard data |
+| 3 | frontend/src/pages/manager/ManagerAuditPage.jsx | 68-100, 110-112 | Replaced placeholder export with real CSV export string generation | Implemented CSV export for audit trail |
+
+### Build Verification
+- [x] npm run build — exit code 0, zero errors
+- [x] npm run lint — exit code 0, zero warnings
+- [x] Commit hash: 9ccf90f

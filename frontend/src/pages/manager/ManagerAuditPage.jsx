@@ -67,42 +67,52 @@ export default function ManagerAuditPage() {
         };
     }, [filters.search, filters.action_type, filters.from, filters.to, fetchAudit]);
 
-    async function handleExport() {
+    const handleExportAuditCSV = async () => {
         try {
-            addToast('info', 'Preparing export...');
-            const response = await api({
-                url: '/roster/audit/export',
-                method: 'GET',
-                responseType: 'blob',
+            const res = await api.get('/roster/audit', {
+                params: { limit: 10000, offset: 0 }
             });
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `audit_trail_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            addToast('success', 'Export successful.');
+            const entries = res.data.entries || [];
+
+            const headers = ['Timestamp', 'Action Type', 'Actor Role', 'Actor ID', 'Target ID', 'Details'];
+            const rows = entries.map(e => [
+                new Date(e.timestamp).toLocaleString(),
+                e.action_type,
+                e.actor_role,
+                e.actor_id,
+                e.target_id || '—',
+                JSON.stringify(e.details || {})
+            ]);
+
+            const csv = [headers, ...rows]
+                .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+                .join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `swiftlink-audit-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
         } catch (err) {
-            console.error('Export failed:', err);
-            addToast('error', 'Export failed.');
+            console.error('Audit CSV export failed', err);
         }
-    }
+    };
 
     return (
         <PageWrapper>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Audit Trail</h1>
-                <button
-                    onClick={handleExport}
-                    style={btnSecondaryStyle}
-                >
-                    📥 Export CSV
-                </button>
             </div>
 
             {/* Filters Row */}
             <GlassCard style={{ padding: '20px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                    <button onClick={handleExportAuditCSV} style={btnSecondaryStyle}>
+                        Export CSV
+                    </button>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                     <div style={filterGroup}>
                         <label style={filterLabel}>Search</label>
