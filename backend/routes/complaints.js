@@ -160,37 +160,33 @@ router.get('/', requireAuth(['fleet_manager']), async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /:complaintId - Fleet Manager Explicit Detail Access Route
+// GET /:tripId/status - Client-Facing Complaint Progress
 // ─────────────────────────────────────────────────────────────────────────────
-router.get('/:complaintId', requireAuth(['fleet_manager']), async (req, res) => {
-    const { complaintId } = req.params;
+// Returns the current complaint status for a trip without exposing PII.
+// Clients poll this endpoint every 30 seconds for live progress updates.
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/:tripId/status', requireClientAuth, async (req, res) => {
+    const { tripId } = req.params;
+
+    if (req.client.trip_id !== tripId) {
+        return res.status(403).json({ error: 'Access denied' });
+    }
 
     try {
         const result = await pool.query(
-            `SELECT 
-                c.id AS complaint_id, c.trip_id, c.category, c.description, c.status, c.created_at,
-                row_to_json(t) AS trip_details
-             FROM complaints c
-             JOIN trips t ON c.trip_id = t.id
-             WHERE c.id = $1`,
-            [complaintId]
+            `SELECT id AS complaint_id, status, category, created_at
+             FROM complaints WHERE trip_id = $1
+             ORDER BY created_at DESC LIMIT 1`,
+            [tripId]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Complaint not found' });
+            return res.status(404).json({ error: 'No complaint found for this trip' });
         }
 
-        // 6. Explicitly insert native logging events preserving Fleet Manager accountability audits seamlessly
-        await pool.query(
-            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id)
-             VALUES ($1, $2, $3, $4)`,
-            ['COMPLAINT_VIEWED', req.user.id, 'fleet_manager', complaintId]
-        );
-
         return res.status(200).json(result.rows[0]);
-
     } catch (err) {
-        console.error('[complaints] GET /:complaintId error:', err);
+        console.error('[complaints] GET /:tripId/status error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -254,33 +250,37 @@ router.get('/:complaintId/messages', requireAuth(['fleet_manager']), async (req,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /:tripId/status - Client-Facing Complaint Progress
+// GET /:complaintId - Fleet Manager Explicit Detail Access Route
 // ─────────────────────────────────────────────────────────────────────────────
-// Returns the current complaint status for a trip without exposing PII.
-// Clients poll this endpoint every 30 seconds for live progress updates.
-// ─────────────────────────────────────────────────────────────────────────────
-router.get('/:tripId/status', requireClientAuth, async (req, res) => {
-    const { tripId } = req.params;
-
-    if (req.client.trip_id !== tripId) {
-        return res.status(403).json({ error: 'Access denied' });
-    }
+router.get('/:complaintId', requireAuth(['fleet_manager']), async (req, res) => {
+    const { complaintId } = req.params;
 
     try {
         const result = await pool.query(
-            `SELECT id AS complaint_id, status, category, created_at
-             FROM complaints WHERE trip_id = $1
-             ORDER BY created_at DESC LIMIT 1`,
-            [tripId]
+            `SELECT 
+                c.id AS complaint_id, c.trip_id, c.category, c.description, c.status, c.created_at,
+                row_to_json(t) AS trip_details
+             FROM complaints c
+             JOIN trips t ON c.trip_id = t.id
+             WHERE c.id = $1`,
+            [complaintId]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'No complaint found for this trip' });
+            return res.status(404).json({ error: 'Complaint not found' });
         }
 
+        // 6. Explicitly insert native logging events preserving Fleet Manager accountability audits seamlessly
+        await pool.query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id)
+             VALUES ($1, $2, $3, $4)`,
+            ['COMPLAINT_VIEWED', req.user.id, 'fleet_manager', complaintId]
+        );
+
         return res.status(200).json(result.rows[0]);
+
     } catch (err) {
-        console.error('[complaints] GET /:tripId/status error:', err);
+        console.error('[complaints] GET /:complaintId error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -349,27 +349,29 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
         }
 
         // Email notification to client on status change
-        try {
-            const tripEmail = await pool.query(
-                'SELECT client_corporate_email FROM trips WHERE id = $1',
-                [updatedResult.rows[0].trip_id]
-            );
-            if (tripEmail.rows.length > 0 && tripEmail.rows[0].client_corporate_email) {
-                const statusLabels = {
-                    open: 'Open',
-                    under_investigation: 'Under Investigation',
-                    resolved: 'Resolved',
-                    escalated: 'Escalated'
-                };
-                await transporter.sendMail({
-                    from: `"SwiftLink Ops" <${process.env.MAIL_FROM || process.env.MAIL_USER}>`,
-                    to: tripEmail.rows[0].client_corporate_email,
-                    subject: `Complaint Status Update — ${statusLabels[status] || status}`,
-                    text: `Your complaint (ref: ${complaintId}) has been updated to: ${statusLabels[status] || status}.\n\nSwiftLink Corporate Transport`
-                });
+        if (process.env.NODE_ENV !== 'test') {
+            try {
+                const tripEmail = await pool.query(
+                    'SELECT client_corporate_email FROM trips WHERE id = $1',
+                    [updatedResult.rows[0].trip_id]
+                );
+                if (tripEmail.rows.length > 0 && tripEmail.rows[0].client_corporate_email) {
+                    const statusLabels = {
+                        open: 'Open',
+                        under_investigation: 'Under Investigation',
+                        resolved: 'Resolved',
+                        escalated: 'Escalated'
+                    };
+                    await transporter.sendMail({
+                        from: `"SwiftLink Ops" <${process.env.MAIL_FROM || process.env.MAIL_USER}>`,
+                        to: tripEmail.rows[0].client_corporate_email,
+                        subject: `Complaint Status Update — ${statusLabels[status] || status}`,
+                        text: `Your complaint (ref: ${complaintId}) has been updated to: ${statusLabels[status] || status}.\n\nSwiftLink Corporate Transport`
+                    });
+                }
+            } catch (mailErr) {
+                console.error('[complaints] Email notification failed:', mailErr.message);
             }
-        } catch (mailErr) {
-            console.error('[complaints] Email notification failed:', mailErr.message);
         }
 
         return res.status(200).json(updatedResult.rows[0]);
