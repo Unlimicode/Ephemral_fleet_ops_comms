@@ -777,4 +777,60 @@ Fixes 6 failing tests across 2 suites. Root causes:
 
 ---
 
+## Sprint 19 — Theme Propagation, ChatWindow Redesign, Complaint Progress
+
+### P1 — Toast Naming Standardisation
+**Files modified:** `frontend/src/components/Toast.jsx`, `ManagerVehiclesPage.jsx`, `ManagerDriversPage.jsx`, `ManagerComplaintsPage.jsx`, `ManagerAuditPage.jsx`
+**What was built:** Standardised on `showToast` as the single exported function name. Replaced all `addToast` references (22 occurrences across 4 manager pages) and removed the `addToast: showToast` alias from the Toast context provider value.
+
+### P2 — Complaint Status Regression Fix
+**Files modified:** `backend/routes/complaints.js`
+**What was built:** Added `'open'` to the `validStatuses` array in the `PATCH /:complaintId/status` handler. The array now reads `['open', 'under_investigation', 'resolved', 'escalated']`.
+
+### P3 — BookingLandingPage Z-Index Verification
+**Files modified:** None
+**What was built:** Verified that background geo-shape elements already use `z-[-2]` classes and buttons render above them. No changes required.
+
+### P4 — SViftLink SVG Logo Consistency
+**Files modified:** `ManagerLayout.jsx`, `DriverLayout.jsx`, `LoginPage.jsx`
+**What was built:** Replaced inline logo markup (text "S" in black squares and `<img>` tags referencing `/swiftlink-icon.png`) with `<SwiftlinkLogo height={36} />` in layouts and `<SwiftlinkLogo height={48} />` in LoginPage.
+
+### P5 — LoginPage Theme Propagation
+**Files modified:** `frontend/src/pages/LoginPage.jsx`
+**What was built:** Extracted inline `useWindowWidth` IIFE to a standalone named function. Left panel: added two animated blobs (`animate-float-slow` and `animate-float-reverse`) with violet and cyan gradients. Added `reveal-up` + `stagger-N` classes to logo block, headline, and subheadline. Applied `kinetic-text` class to headline. Right panel: reduced arch-grid opacity to 0.3, added subtle blob, added `reveal-up` to card heading.
+
+### P6.1 — ManagerLayout Background Layer
+**Files modified:** `frontend/src/components/layout/ManagerLayout.jsx`
+**What was built:** Replaced existing warm-tone blobs with brand-consistent background layer: arch-grid at 35% opacity, violet blob (top-right, `rgba(108,99,255,0.10)`), cyan blob (bottom-left, `rgba(0,212,255,0.07)`), two geo-triangle decorators. Background uses `var(--bg-base)` instead of hardcoded `#F5EDE3`.
+
+### P6.2 — DriverLayout Background Layer
+**Files modified:** `frontend/src/components/layout/DriverLayout.jsx`
+**What was built:** Same architecture as P6.1 with driver-context blob colours: violet blob (`rgba(108,99,255,0.09)`) and green accent blob (`rgba(0,245,160,0.06)`). Geo-shape colours adjusted to `rgba(0,245,160,0.04)`.
+
+### P6.3 — Manager Pages: kinetic-text + reveal-up
+**Files modified:** `ManagerDispatchPage.jsx`, `ManagerDriversPage.jsx`, `ManagerVehiclesPage.jsx`, `ManagerComplaintsPage.jsx`, `ManagerAuditPage.jsx`, `ManagerPrivacyDashboardPage.jsx`
+**What was built:** Added `kinetic-text reveal-up` className to all primary h1 headings. Added `reveal-up` to stat grids and `reveal-up stagger-N` to section blocks in ManagerDispatchPage. ClassName additions only.
+
+### P6.4 — Driver Pages: kinetic-text + reveal-up
+**Files modified:** `DriverProfilePage.jsx`, `DriverNotificationsPage.jsx`
+**What was built:** Added `kinetic-text reveal-up` to h1 headings and `reveal-up stagger-1` to first content blocks. `DriverTripsPage` and `DriverActiveTripPage` already had these classes applied.
+
+### P7 — ChatWindow Redesign
+**Files modified:** `frontend/src/components/ChatWindow.jsx`
+**What was built:** Complete visual redesign. Container: `borderRadius: '2rem'`, `background: 'var(--glass-bg)'` with 40px blur. Header: `rgba(13,13,13,0.04)` background, kinetic-text channel label (800 weight, -0.02em tracking), badge changed to violet-cyan gradient with accent-primary text colour. Sent messages: `linear-gradient(135deg, #0D0D0D, #1a1a2e)` with violet border accent. Received messages: frosted glass at 60% white opacity. Send button: gradient (`accent-primary` to `accent-secondary`) with 12px violet box-shadow when active. Added `useWindowWidth` hook for responsive `minHeight` (480px desktop, 360px mobile).
+
+### P8 — Client Complaint Progress Tracker
+**Files modified:** `backend/routes/complaints.js`, `frontend/src/pages/BookingLandingPage.jsx`
+**What was built:**
+- **P8.1:** Added `GET /api/complaints/:tripId/status` endpoint protected by `requireClientAuth`. Returns `{complaint_id, status, category, created_at}` without PII. Cross-client access boundaries enforced.
+- **P8.2:** Added email notification in `PATCH /:complaintId/status` handler via shared mailer module. Sends status update email to `client_corporate_email` with complaint reference and human-readable status label. Failures are caught silently to avoid blocking the status update.
+- **P8.3:** Replaced static success card with live complaint progress tracker in BookingLandingPage. Polls `GET /complaints/:tripId/status` every 30 seconds. Displays colour-coded status badge (Open/amber, Under Investigation/violet, Resolved/green, Escalated/red), animated progress bar, category label, and email notification note.
+
+### Build Verification
+- `npm run lint` — exit code 0, zero warnings
+- `npm run build` — exit code 0, zero warnings
+- Commit hash: `1807e8e`
+
+---
+
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*
