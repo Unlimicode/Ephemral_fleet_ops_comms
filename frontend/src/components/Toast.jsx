@@ -11,7 +11,7 @@ export function ToastProvider({ children }) {
     };
 
     return (
-        <ToastContext.Provider value={{ showToast, addToast: showToast }}>
+        <ToastContext.Provider value={{ showToast }}>
             {children}
             {toast && (
                 <div style={{

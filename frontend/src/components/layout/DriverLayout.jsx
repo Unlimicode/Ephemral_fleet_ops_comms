@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../api/axios.js';
+import SwiftlinkLogo from '../SwiftlinkLogo.jsx';
 
 const TABS = [
     { to: '/driver/trips', label: 'Trips', icon: '🗂️' },
@@ -70,25 +71,27 @@ export default function DriverLayout() {
     );
 
     return (
-        <div style={{ minHeight: '100vh', background: '#F5EDE3', position: 'relative', overflowX: 'hidden' }}>
-            {/* Background Layer: Blobs */}
-            <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-                <div style={{
-                    position: 'absolute', bottom: '-15%', left: '-10%', width: 'min(650px, 80vw)', height: 'min(650px, 80vw)',
-                    borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,180,140,0.6) 0%, transparent 70%)',
-                    filter: 'blur(40px)', mixBlendMode: 'multiply',
-                    animation: 'blobFloat1 14s ease-in-out infinite'
+        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', position: 'relative', overflowX: 'hidden' }}>
+            {/* Background */}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                <div className="arch-grid" style={{ position: 'absolute', inset: 0, opacity: 0.35 }} />
+                <div className="animate-float-slow" style={{
+                    position: 'absolute', top: '-20%', right: '-10%',
+                    width: 700, height: 700, borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(108,99,255,0.09), transparent 70%)'
                 }} />
-                <div style={{
-                    position: 'absolute', top: '-10%', left: '30%', width: 'min(400px, 60vw)', height: 'min(400px, 60vw)',
-                    borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,200,170,0.5) 0%, transparent 70%)',
-                    filter: 'blur(45px)', mixBlendMode: 'multiply',
-                    animation: 'blobFloat2 18s ease-in-out infinite'
+                <div className="animate-float-reverse" style={{
+                    position: 'absolute', bottom: '-20%', left: '-10%',
+                    width: 600, height: 600, borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(0,245,160,0.06), transparent 70%)'
                 }} />
+                <div className="geo-shape animate-float-slow" style={{ top: '15%', left: '5%', color: 'rgba(13,13,13,0.025)' }}>
+                    <div className="geo-triangle" style={{ transform: 'scale(2) rotate(15deg)' }} />
+                </div>
+                <div className="geo-shape animate-float-reverse" style={{ bottom: '10%', right: '8%', color: 'rgba(0,245,160,0.04)' }}>
+                    <div className="geo-triangle" style={{ transform: 'scale(1.5) rotate(-10deg)' }} />
+                </div>
             </div>
-
-            {/* arch-grid overlay */}
-            <div className="arch-grid" />
 
             {/* ─── Navigation ─── */}
             {isMobile ? (
@@ -100,8 +103,7 @@ export default function DriverLayout() {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px'
                 }}>
                     <div className="flex items-center gap-2">
-                        <div className="bg-[#0D0D0D] w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black">S</div>
-                        <span className="font-extrabold tracking-tighter text-sm">Swiftlink</span>
+                        <SwiftlinkLogo height={36} />
                     </div>
                     <span className="font-bold text-sm">{user?.name?.split(' ')[0] || 'Driver'}</span>
                 </header>
@@ -117,8 +119,7 @@ export default function DriverLayout() {
                         padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                     }}>
                         <div className="flex items-center gap-3">
-                            <div className="bg-[#0D0D0D] w-9 h-9 rounded-xl flex items-center justify-center text-white font-black">S</div>
-                            <span className="font-extrabold tracking-tighter text-lg">Swiftlink</span>
+                            <SwiftlinkLogo height={36} />
                         </div>
 
                         {isDesktop && <div className="flex gap-2">{renderNavLinks()}</div>}

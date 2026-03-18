@@ -68,8 +68,8 @@ export default function BookingLandingPage() {
     const [networkError, setNetworkError] = useState(false);
     const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false });
     const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
-    const [complaintWindowSeconds, setComplaintWindowSeconds] = useState(null); // Redis TTL in seconds
-
+    const [complaintWindowSeconds, setComplaintWindowSeconds] = useState(null);
+    const [complaintProgress, setComplaintProgress] = useState(null);
 
     const authStarted = useRef(false);
     // Initial Auth & Session Hydration
@@ -159,6 +159,22 @@ export default function BookingLandingPage() {
             setRecoverySent(true);
         }
     };
+
+    // Poll complaint progress after submission
+    useEffect(() => {
+        if (!complaintStatus.success || !tripId) return;
+        const pollProgress = async () => {
+            try {
+                const res = await api.get(`/complaints/${tripId}/status`);
+                setComplaintProgress(res.data);
+            } catch {
+                // Silently fail — endpoint may 404 if no complaint exists yet
+            }
+        };
+        pollProgress();
+        const interval = setInterval(pollProgress, 30000);
+        return () => clearInterval(interval);
+    }, [complaintStatus.success, tripId]);
 
     useEffect(() => {
         // Handled by ChatWindow
@@ -303,10 +319,47 @@ export default function BookingLandingPage() {
                 {isCompleted && (
                     <div className="glass-card p-7 reveal-up active mb-10">
                         {complaintStatus.success ? (
-                            <div className="bg-success/10 border border-success/30 rounded-2xl p-6 text-center">
-                                <div className="text-3xl text-success mb-2">✓</div>
-                                <p className="font-bold text-success">Complaint submitted.</p>
-                                <p className="text-text-muted text-sm mt-1">We'll review within 24 hours.</p>
+                            <div className="glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#00F5A0', boxShadow: '0 0 8px rgba(0,245,160,0.6)' }} />
+                                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#0D0D0D' }}>Complaint Submitted</span>
+                                </div>
+
+                                {complaintProgress ? (() => {
+                                    const statusConfig = {
+                                        open: { label: 'Open', color: '#F59E0B', width: '25%' },
+                                        under_investigation: { label: 'Under Investigation', color: '#6C63FF', width: '50%' },
+                                        resolved: { label: 'Resolved', color: '#00F5A0', width: '100%' },
+                                        escalated: { label: 'Escalated', color: '#E05A5A', width: '75%' }
+                                    };
+                                    const cfg = statusConfig[complaintProgress.status] || statusConfig.open;
+                                    return (
+                                        <>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                                <span style={{
+                                                    fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
+                                                    letterSpacing: '0.15em', color: cfg.color,
+                                                    padding: '4px 12px', borderRadius: '50px',
+                                                    background: `${cfg.color}15`, border: `1px solid ${cfg.color}30`
+                                                }}>{cfg.label}</span>
+                                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                                    {new Date(complaintProgress.created_at).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <div style={{ height: '6px', background: 'rgba(13,13,13,0.06)', borderRadius: '3px', overflow: 'hidden', marginBottom: '12px' }}>
+                                                <div style={{ height: '100%', width: cfg.width, background: cfg.color, borderRadius: '3px', transition: 'width 0.6s ease' }} />
+                                            </div>
+                                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                                                Category: {complaintProgress.category} · Status updates are sent to your corporate email.
+                                            </p>
+                                        </>
+                                    );
+                                })() : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ width: '16px', height: '16px', border: '2px solid #6C63FF', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Loading progress...</span>
+                                    </div>
+                                )}
                             </div>
                         ) : complaintWindowSeconds !== null && complaintWindowSeconds <= 0 ? (
                             <div className="bg-bg-dark/5 border border-black/5 rounded-2xl p-6 text-center">

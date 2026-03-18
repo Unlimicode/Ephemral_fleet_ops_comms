@@ -6,14 +6,14 @@ export default function DriverProfilePage() {
 
     return (
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h1 style={{
+            <h1 className="kinetic-text reveal-up" style={{
                 fontSize: '24px', fontWeight: 800, color: 'var(--text-dark)',
                 fontFamily: 'Inter, sans-serif', letterSpacing: '-0.5px'
             }}>
                 Profile
             </h1>
 
-            <div className="glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
+            <div className="glass-card reveal-up stagger-1" style={{ padding: '24px', borderRadius: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
                     <div style={{
                         width: '64px', height: '64px', borderRadius: '50%',

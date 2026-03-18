@@ -1,10 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
 import useChat from '../hooks/useChat';
 
+function useWindowWidth() {
+    const [w, setW] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => setW(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    return w;
+}
+
 export default function ChatWindow({ tripId, token, role, counterpartName }) {
     const { messages, connected, error, sendMessage } = useChat({ tripId, token, role });
     const [inputValue, setInputValue] = useState('');
     const messagesEndRef = useRef(null);
+    const width = useWindowWidth();
+    const isMobile = width < 768;
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -23,22 +35,24 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
     return (
         <div style={{
             display: 'flex', flexDirection: 'column',
-            flex: 1,
-            borderRadius: '20px', overflow: 'hidden',
-            background: 'rgba(255,255,255,0.4)',
+            minHeight: isMobile ? 360 : 480,
+            maxHeight: '70vh',
+            borderRadius: '2rem',
+            overflow: 'hidden',
+            background: 'var(--glass-bg)',
             backdropFilter: 'blur(40px) saturate(180%)',
             WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-            border: '1px solid rgba(255,255,255,0.7)',
-            boxShadow: '0 8px 32px rgba(180,130,80,0.1)'
+            border: '0.5px solid var(--glass-border)',
+            boxShadow: '0 10px 40px rgba(180,130,80,0.12)'
         }}>
 
             {/* Header */}
             <div style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid rgba(255,255,255,0.5)',
+                padding: '14px 20px',
+                borderBottom: '0.5px solid var(--glass-border)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'space-between',
-                background: 'rgba(255,255,255,0.3)'
+                background: 'rgba(13,13,13,0.04)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{
@@ -47,15 +61,20 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                         boxShadow: connected ? '0 0 8px rgba(0,245,160,0.6)' : 'none',
                         animation: connected ? 'sessionPulse 2s infinite' : 'none'
                     }} />
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                    <span style={{
+                        fontSize: '14px', fontWeight: 800,
+                        letterSpacing: '-0.02em',
+                        color: 'var(--text-dark)'
+                    }}>
                         {connected ? `Secure channel · ${counterpartName}` : 'Connecting...'}
                     </span>
                 </div>
                 <span style={{
-                    fontSize: '11px', color: 'var(--text-muted)',
+                    fontSize: '11px', fontWeight: 600,
+                    color: 'var(--accent-primary)',
                     padding: '4px 10px', borderRadius: '50px',
-                    background: 'rgba(0,245,160,0.1)',
-                    border: '1px solid rgba(0,245,160,0.2)'
+                    background: 'linear-gradient(135deg, rgba(108,99,255,0.15), rgba(0,212,255,0.1))',
+                    border: '1px solid rgba(108,99,255,0.25)'
                 }}>🔒 Mediated · No PII</span>
             </div>
 
@@ -99,16 +118,16 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                                 padding: '10px 14px',
                                 borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                                 background: isMine
-                                    ? 'rgba(13,13,13,0.85)'
-                                    : 'rgba(255,255,255,0.7)',
-                                backdropFilter: 'blur(20px)',
-                                WebkitBackdropFilter: 'blur(20px)',
+                                    ? 'linear-gradient(135deg, #0D0D0D 0%, #1a1a2e 100%)'
+                                    : 'rgba(255,255,255,0.6)',
+                                backdropFilter: isMine ? 'none' : 'blur(20px)',
+                                WebkitBackdropFilter: isMine ? 'none' : 'blur(20px)',
                                 border: isMine
-                                    ? '1px solid rgba(255,255,255,0.1)'
-                                    : '1px solid rgba(255,255,255,0.8)',
+                                    ? '1px solid rgba(108,99,255,0.2)'
+                                    : '0.5px solid var(--glass-border)',
                                 boxShadow: isMine
-                                    ? '0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)'
-                                    : '0 2px 8px rgba(180,130,80,0.08)',
+                                    ? '0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(108,99,255,0.1)'
+                                    : '0 2px 8px rgba(180,130,80,0.06)',
                                 color: isMine ? '#F5EDE3' : 'var(--text-dark)',
                                 fontSize: '14px', lineHeight: 1.5
                             }}>
@@ -128,10 +147,10 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
 
             {/* Input area */}
             <div style={{
-                padding: '12px 16px',
-                borderTop: '1px solid rgba(255,255,255,0.5)',
+                padding: '14px 16px',
+                borderTop: '0.5px solid var(--glass-border)',
                 display: 'flex', gap: '10px', alignItems: 'flex-end',
-                background: 'rgba(255,255,255,0.3)'
+                background: 'rgba(13,13,13,0.03)'
             }}>
                 <textarea
                     placeholder={connected ? 'Type a message...' : 'Connecting to secure channel...'}
@@ -151,7 +170,8 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                     }}
                     style={{
                         flex: 1, padding: '10px 14px',
-                        borderRadius: '14px', border: '1px solid rgba(255,255,255,0.6)',
+                        borderRadius: '14px',
+                        border: '0.5px solid var(--glass-border)',
                         background: 'rgba(255,255,255,0.5)',
                         backdropFilter: 'blur(10px)',
                         fontSize: '14px', fontFamily: 'Inter, sans-serif',
@@ -165,15 +185,22 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                     type="button"
                     onClick={handleSend}
                     disabled={!connected || !inputValue.trim()}
-                    className="glass-button"
                     style={{
                         width: '44px', height: '44px',
-                        borderRadius: '14px', border: 'none',
+                        borderRadius: '14px',
+                        border: 'none',
+                        background: connected && inputValue.trim()
+                            ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))'
+                            : 'rgba(13,13,13,0.08)',
                         display: 'flex', alignItems: 'center',
                         justifyContent: 'center', fontSize: '18px',
+                        color: connected && inputValue.trim() ? '#FFF' : 'var(--text-muted)',
                         cursor: connected ? 'pointer' : 'not-allowed',
-                        opacity: connected ? 1 : 0.5,
-                        flexShrink: 0
+                        flexShrink: 0,
+                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                        boxShadow: connected && inputValue.trim()
+                            ? '0 4px 12px rgba(108,99,255,0.3)'
+                            : 'none'
                     }}
                 >→</button>
             </div>

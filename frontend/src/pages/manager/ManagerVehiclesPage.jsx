@@ -15,7 +15,7 @@ export default function ManagerVehiclesPage() {
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [newVehicle, setNewVehicle] = useState({ registration_number: '', type: 'Sedan', capacity: 4 });
     const [formError, setFormError] = useState('');
-    const { addToast } = useToast();
+    const { showToast } = useToast();
 
     const fetchVehicles = useCallback(async () => {
         try {
@@ -25,11 +25,11 @@ export default function ManagerVehiclesPage() {
         } catch (err) {
             console.error('Failed to fetch vehicles:', err);
             setError(true);
-            addToast('error', 'Could not load vehicle inventory.');
+            showToast('error', 'Could not load vehicle inventory.');
         } finally {
             setLoading(false);
         }
-    }, [addToast]);
+    }, [showToast]);
 
     useEffect(() => {
         fetchVehicles();
@@ -40,7 +40,7 @@ export default function ManagerVehiclesPage() {
         setFormError('');
         try {
             await api.post('/vehicles', newVehicle);
-            addToast('success', 'Vehicle added successfully.');
+            showToast('success', 'Vehicle added successfully.');
             setShowAddModal(false);
             setNewVehicle({ registration_number: '', type: 'Sedan', capacity: 4 });
             fetchVehicles();
@@ -53,13 +53,13 @@ export default function ManagerVehiclesPage() {
         if (!selectedVehicle) return;
         try {
             await api.delete(`/vehicles/${selectedVehicle.vehicle_id}`);
-            addToast('success', 'Vehicle removed from inventory.');
+            showToast('success', 'Vehicle removed from inventory.');
             setShowDeleteModal(false);
             setSelectedVehicle(null);
             fetchVehicles();
         } catch (err) {
             const msg = err.response?.data?.error || 'Failed to remove vehicle.';
-            addToast('error', msg);
+            showToast('error', msg);
             setShowDeleteModal(false);
         }
     }
@@ -84,7 +84,7 @@ export default function ManagerVehiclesPage() {
     return (
         <PageWrapper>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Vehicle Inventory</h1>
+                <h1 className="kinetic-text reveal-up" style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Vehicle Inventory</h1>
                 <button
                     onClick={() => setShowAddModal(true)}
                     style={btnBlackStyle}

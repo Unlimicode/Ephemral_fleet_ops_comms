@@ -20,7 +20,7 @@ export default function ManagerAuditPage() {
     const [error, setError] = useState(false);
     const [offset, setOffset] = useState(0);
     const [filters, setFilters] = useState({ action_type: '', search: '', from: '', to: '' });
-    const { addToast } = useToast();
+    const { showToast } = useToast();
 
     const fetchAudit = useCallback(async (isLoadMore = false) => {
         const newOffset = isLoadMore ? offset + 50 : 0;
@@ -51,12 +51,12 @@ export default function ManagerAuditPage() {
         } catch (err) {
             console.error('Failed to fetch audit logs:', err);
             setError(true);
-            addToast('error', 'Could not load audit trail.');
+            showToast('error', 'Could not load audit trail.');
         } finally {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [filters, offset, addToast]);
+    }, [filters, offset, showToast]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -103,7 +103,7 @@ export default function ManagerAuditPage() {
     return (
         <PageWrapper>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Audit Trail</h1>
+                <h1 className="kinetic-text reveal-up" style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Audit Trail</h1>
             </div>
 
             {/* Filters Row */}

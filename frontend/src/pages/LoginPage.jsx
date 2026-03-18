@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import SwiftlinkLogo from '../components/SwiftlinkLogo';
+
+function useWindowWidth() {
+    const [w, setW] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => setW(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    return w;
+}
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -10,15 +21,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState(null);
-    const width = (function useWindowWidth() {
-        const [w, setW] = useState(window.innerWidth);
-        useEffect(() => {
-            const handleResize = () => setW(window.innerWidth);
-            window.addEventListener('resize', handleResize);
-            return () => window.removeEventListener('resize', handleResize);
-        }, []);
-        return w;
-    })();
+    const width = useWindowWidth();
 
     const isMobile = width < 768;
     const isTablet = width >= 768 && width < 1024;
@@ -75,36 +78,40 @@ export default function LoginPage() {
                         <div className="geo-triangle" style={{ transform: 'scale(3) rotate(-10deg)' }} />
                     </div>
 
+                    {/* Animated blobs */}
+                    <div className="animate-float-slow" style={{
+                        position: 'absolute', top: '10%', right: '-15%', width: 400, height: 400,
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,99,255,0.18), transparent 70%)',
+                        pointerEvents: 'none', zIndex: 0
+                    }} />
+                    <div className="animate-float-reverse" style={{
+                        position: 'absolute', bottom: '-10%', left: '-10%', width: 350, height: 350,
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,255,0.12), transparent 70%)',
+                        pointerEvents: 'none', zIndex: 0
+                    }} />
+
                     {/* Content */}
                     <div style={{ position: 'relative', zIndex: 1 }}>
                         {/* Logo */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: isTablet ? 32 : 48 }}>
-                            <img
-                                src="/swiftlink-icon.png"
-                                alt="Swiftlink"
-                                style={{ height: isTablet ? '44px' : '56px', width: 'auto', borderRadius: 10 }}
-                            />
-                            <span style={{
-                                fontWeight: 800, fontSize: isTablet ? '1.5rem' : '2rem',
-                                letterSpacing: '-0.8px', color: '#F5EDE3', marginLeft: 10
-                            }}>Swiftlink</span>
+                        <div className="reveal-up active" style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: isTablet ? 32 : 48 }}>
+                            <SwiftlinkLogo height={48} />
                         </div>
 
                         {/* Eyebrow */}
-                        <div className="reveal-up active" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                        <div className="reveal-up active stagger-1" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-primary)', flexShrink: 0 }} />
                             <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.3em', color: 'rgba(245,237,227,0.4)' }}>Corporate Fleet Dispatch</span>
                         </div>
 
                         {/* Headline */}
-                        <h1 className="kinetic-text reveal-up active" style={{ fontSize: 'clamp(2.4rem, 4vw, 5rem)', marginBottom: 32, color: '#F5EDE3' }}>
-                            <span className="outline-text-light" style={{ display: 'block' }}>Seamless</span>
-                            <span style={{ display: 'block' }}>transfers.</span>
+                        <h1 className="kinetic-text reveal-up active stagger-1" style={{ fontSize: 'clamp(2.4rem, 4vw, 5rem)', marginBottom: 32, color: '#F5EDE3' }}>
+                            <span className="outline-text-light" style={{ display: 'block' }}>Privacy-first</span>
+                            <span style={{ display: 'block' }}>fleet operations.</span>
                             <span style={{ display: 'block', color: 'var(--accent-primary)' }}>Zero trace.</span>
                         </h1>
 
                         {/* Subtext */}
-                        <p className="reveal-up active stagger-1" style={{ fontSize: isTablet ? 14 : 16, color: 'rgba(245,237,227,0.55)', lineHeight: 1.8, maxWidth: 380, marginBottom: 48 }}>
+                        <p className="reveal-up active stagger-2" style={{ fontSize: isTablet ? 14 : 16, color: 'rgba(245,237,227,0.55)', lineHeight: 1.8, maxWidth: 380, marginBottom: 48 }}>
                             Built for Kenya&apos;s MICE sector. Corporate ground transport with privacy protected at the architecture level.
                         </p>
                     </div>
@@ -138,7 +145,7 @@ export default function LoginPage() {
                 alignItems: 'center', justifyContent: 'center', padding: 40
             }}>
                 {/* Background layers */}
-                <div className="arch-grid" style={{ position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none', zIndex: 0 }} />
+                <div className="arch-grid" style={{ position: 'absolute', inset: 0, opacity: 0.3, pointerEvents: 'none', zIndex: 0 }} />
                 <div className="geo-shape animate-float" style={{ top: '5%', right: '-3%', color: 'rgba(13,13,13,0.06)' }}>
                     <div className="geo-triangle-sm" style={{ transform: 'rotate(20deg)' }} />
                 </div>
@@ -146,10 +153,17 @@ export default function LoginPage() {
                     <div className="geo-triangle" style={{ transform: 'scale(1.5) rotate(-20deg)' }} />
                 </div>
 
+                {/* Subtle blob */}
+                <div className="animate-float-slow" style={{
+                    position: 'absolute', bottom: '-10%', right: '-10%', width: 300, height: 300,
+                    borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,99,255,0.08), transparent 70%)',
+                    pointerEvents: 'none', zIndex: 0
+                }} />
+
                 {/* Card wrapper */}
                 <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
                     <div className="glass-card" style={{ padding: isMobile ? '32px 24px' : '48px 44px', borderRadius: '2.5rem' }}>
-                        <h2 style={{ fontSize: 28, fontWeight: 900, color: '#0D0D0D', marginBottom: 6, letterSpacing: '-0.8px' }}>Sign in</h2>
+                        <h2 className="reveal-up active" style={{ fontSize: 28, fontWeight: 900, color: '#0D0D0D', marginBottom: 6, letterSpacing: '-0.8px' }}>Sign in</h2>
                         <p style={{ fontSize: 15, color: '#4A4A4A', marginBottom: 32 }}>Access your Swiftlink dashboard</p>
 
                         {/* Role toggle */}

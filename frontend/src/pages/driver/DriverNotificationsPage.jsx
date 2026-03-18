@@ -1,14 +1,14 @@
 export default function DriverNotificationsPage() {
     return (
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h1 style={{
+            <h1 className="kinetic-text reveal-up" style={{
                 fontSize: '24px', fontWeight: 800, color: 'var(--text-dark)',
                 fontFamily: 'Inter, sans-serif', letterSpacing: '-0.5px'
             }}>
                 Notifications
             </h1>
 
-            <div style={{
+            <div className="reveal-up stagger-1" style={{
                 padding: '48px 24px', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', gap: '12px',
                 border: '1.5px dashed rgba(13,13,13,0.1)', borderRadius: '24px',

@@ -265,7 +265,7 @@ export default function ManagerPrivacyDashboardPage() {
     return (
         <PageWrapper>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <h1 style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px' }}>Privacy Dashboard</h1>
+                <h1 className="kinetic-text reveal-up" style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px' }}>Privacy Dashboard</h1>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button onClick={handleExportPDF} className="glass-button" style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
                         Export PDF

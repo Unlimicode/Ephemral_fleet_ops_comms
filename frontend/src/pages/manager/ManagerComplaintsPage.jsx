@@ -22,7 +22,7 @@ export default function ManagerComplaintsPage() {
     const [expandedComplaintId, setExpandedComplaintId] = useState(null);
     const [messages, setMessages] = useState({});
     const [loadingMessages, setLoadingMessages] = useState({});
-    const { addToast } = useToast();
+    const { showToast } = useToast();
 
     const fetchComplaints = useCallback(async () => {
         try {
@@ -32,11 +32,11 @@ export default function ManagerComplaintsPage() {
         } catch (err) {
             console.error('Failed to fetch complaints:', err);
             setError(true);
-            addToast('error', 'Could not load complaints.');
+            showToast('error', 'Could not load complaints.');
         } finally {
             setLoading(false);
         }
-    }, [addToast]);
+    }, [showToast]);
 
     useEffect(() => {
         fetchComplaints();
@@ -45,31 +45,31 @@ export default function ManagerComplaintsPage() {
     async function handleStatusUpdate(complaintId, status) {
         try {
             await api.patch(`/complaints/${complaintId}/status`, { status });
-            addToast('success', `Status updated to ${status.replace('_', ' ')}.`);
+            showToast('success', `Status updated to ${status.replace('_', ' ')}.`);
             fetchComplaints();
         } catch (err) {
             console.error('Failed to update status:', err);
-            addToast('error', 'Failed to update status.');
+            showToast('error', 'Failed to update status.');
         }
     }
 
     async function handleSaveNotes(complaintId, notes) {
         try {
             await api.patch(`/complaints/${complaintId}/notes`, { notes });
-            addToast('success', 'Investigation notes saved.');
+            showToast('success', 'Investigation notes saved.');
         } catch (err) {
             console.error('Failed to save notes:', err);
-            addToast('error', 'Failed to save notes.');
+            showToast('error', 'Failed to save notes.');
         }
     }
 
     async function handleNotifyDriver(complaintId) {
         try {
             await api.post(`/complaints/${complaintId}/notify-driver`);
-            addToast('success', 'Driver has been notified of the review.');
+            showToast('success', 'Driver has been notified of the review.');
         } catch (err) {
             console.error('Failed to notify driver:', err);
-            addToast('error', 'Failed to notify driver.');
+            showToast('error', 'Failed to notify driver.');
         }
     }
 
@@ -89,7 +89,7 @@ export default function ManagerComplaintsPage() {
             const res = await api.get(`/complaints/${complaintId}/messages`);
             setMessages(prev => ({ ...prev, [complaintId]: res.data.messages }));
         } catch (err) {
-            addToast('error', err.response?.data?.error || 'Failed to fetch messages.');
+            showToast('error', err.response?.data?.error || 'Failed to fetch messages.');
         } finally {
             setLoadingMessages(prev => ({ ...prev, [complaintId]: false }));
         }
@@ -120,7 +120,7 @@ export default function ManagerComplaintsPage() {
     return (
         <PageWrapper>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Complaints</h1>
+                <h1 className="kinetic-text reveal-up" style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Complaints</h1>
                 <span style={{
                     background: '#EF4444', color: '#FFF',
                     padding: '2px 10px', borderRadius: '50px',

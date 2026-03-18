@@ -15,7 +15,7 @@ export default function ManagerDriversPage() {
     const [selectedDriver, setSelectedDriver] = useState(null);
     const [newDriver, setNewDriver] = useState({ full_name: '', work_email: '', password: '', employee_id: '' });
     const [formError, setFormError] = useState('');
-    const { addToast } = useToast();
+    const { showToast } = useToast();
 
     const fetchDrivers = useCallback(async () => {
         try {
@@ -25,11 +25,11 @@ export default function ManagerDriversPage() {
         } catch (err) {
             console.error('Failed to fetch drivers:', err);
             setError(true);
-            addToast('error', 'Could not load driver roster.');
+            showToast('error', 'Could not load driver roster.');
         } finally {
             setLoading(false);
         }
-    }, [addToast]);
+    }, [showToast]);
 
     useEffect(() => {
         fetchDrivers();
@@ -42,7 +42,7 @@ export default function ManagerDriversPage() {
         setFormError('');
         try {
             await api.post('/roster/drivers', newDriver);
-            addToast('success', 'Driver added successfully.');
+            showToast('success', 'Driver added successfully.');
             setShowAddModal(false);
             setNewDriver({ full_name: '', work_email: '', password: '', employee_id: '' });
             fetchDrivers();
@@ -55,13 +55,13 @@ export default function ManagerDriversPage() {
         if (!selectedDriver) return;
         try {
             await api.patch(`/roster/drivers/${selectedDriver.driver_id}/deactivate`);
-            addToast('success', 'Driver deactivated and sessions revoked.');
+            showToast('success', 'Driver deactivated and sessions revoked.');
             setShowDeactivateModal(false);
             setSelectedDriver(null);
             fetchDrivers();
         } catch (err) {
             console.error('Failed to deactivate driver:', err);
-            addToast('error', 'Failed to deactivate driver.');
+            showToast('error', 'Failed to deactivate driver.');
         }
     }
 
@@ -85,7 +85,7 @@ export default function ManagerDriversPage() {
     return (
         <PageWrapper>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Driver Roster</h1>
+                <h1 className="kinetic-text reveal-up" style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Driver Roster</h1>
                 <button
                     onClick={() => setShowAddModal(true)}
                     style={{

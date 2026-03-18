@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import SwiftlinkLogo from '../SwiftlinkLogo.jsx';
 
 const NAV_LINKS = [
     { to: '/manager/dashboard', label: 'Dashboard', icon: '🔒' },
@@ -84,31 +85,27 @@ export default function ManagerLayout() {
     );
 
     return (
-        <div style={{ minHeight: '100vh', background: '#F5EDE3', position: 'relative', overflowX: 'hidden' }}>
-            {/* Background Layer: Blobs */}
-            <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-                <div style={{
-                    position: 'absolute', bottom: '-15%', left: '-10%', width: 'min(650px, 80vw)', height: 'min(650px, 80vw)',
-                    borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,180,140,0.6) 0%, transparent 70%)',
-                    filter: 'blur(40px)', mixBlendMode: 'multiply',
-                    animation: 'blobFloat1 14s ease-in-out infinite'
+        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', position: 'relative', overflowX: 'hidden' }}>
+            {/* Background */}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                <div className="arch-grid" style={{ position: 'absolute', inset: 0, opacity: 0.35 }} />
+                <div className="animate-float-slow" style={{
+                    position: 'absolute', top: '-20%', right: '-10%',
+                    width: 700, height: 700, borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(108,99,255,0.10), transparent 70%)'
                 }} />
-                <div style={{
-                    position: 'absolute', top: '-10%', left: '30%', width: 'min(400px, 60vw)', height: 'min(400px, 60vw)',
-                    borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,200,170,0.5) 0%, transparent 70%)',
-                    filter: 'blur(45px)', mixBlendMode: 'multiply',
-                    animation: 'blobFloat2 18s ease-in-out infinite'
+                <div className="animate-float-reverse" style={{
+                    position: 'absolute', bottom: '-20%', left: '-10%',
+                    width: 600, height: 600, borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(0,212,255,0.07), transparent 70%)'
                 }} />
-                <div style={{
-                    position: 'absolute', top: '10%', right: '5%', width: 'min(300px, 50vw)', height: 'min(300px, 50vw)',
-                    borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,99,255,0.4) 0%, transparent 70%)',
-                    filter: 'blur(50px)', mixBlendMode: 'multiply',
-                    animation: 'blobFloat3 22s ease-in-out infinite'
-                }} />
+                <div className="geo-shape animate-float-slow" style={{ top: '15%', left: '5%', color: 'rgba(13,13,13,0.025)' }}>
+                    <div className="geo-triangle" style={{ transform: 'scale(2) rotate(15deg)' }} />
+                </div>
+                <div className="geo-shape animate-float-reverse" style={{ bottom: '10%', right: '8%', color: 'rgba(108,99,255,0.04)' }}>
+                    <div className="geo-triangle" style={{ transform: 'scale(1.5) rotate(-10deg)' }} />
+                </div>
             </div>
-
-            {/* arch-grid overlay */}
-            <div className="arch-grid" />
 
             {/* ─── Navigation ─── */}
             {isMobile ? (
@@ -120,8 +117,7 @@ export default function ManagerLayout() {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px'
                 }}>
                     <div className="flex items-center gap-2">
-                        <div className="bg-[#0D0D0D] w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black">S</div>
-                        <span className="font-extrabold tracking-tighter text-sm">Fleet Ops</span>
+                        <SwiftlinkLogo height={36} />
                     </div>
                     <span className="font-bold text-sm">{user?.name?.split(' ')[0] || 'Manager'}</span>
                 </header>
@@ -138,8 +134,7 @@ export default function ManagerLayout() {
                     }}>
                         {/* Logo */}
                         <div className="flex items-center gap-3">
-                            <div className="bg-[#0D0D0D] w-9 h-9 rounded-xl flex items-center justify-center text-white font-black">S</div>
-                            <span className="font-extrabold tracking-tighter text-lg">Fleet Ops</span>
+                            <SwiftlinkLogo height={36} />
                         </div>
 
                         {/* Middle Links (Desktop Only) */}

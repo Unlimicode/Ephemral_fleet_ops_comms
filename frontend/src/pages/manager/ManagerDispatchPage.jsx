@@ -110,7 +110,7 @@ export default function ManagerDispatchPage() {
         <PageWrapper>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 {/* Section 1: Stat Bar */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                <div className="reveal-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
                     <StatCard title="Active Trips" value={activeTrips.length} subtitle="Currently in progress" icon="🟢" pulse={activeTrips.length > 0} tint="green" />
                     <StatCard title="Pending Bookings" value={pendingTrips.length} subtitle="Awaiting assignment" icon="⚡" tint="amber" />
                     <StatCard title="Available Drivers" value={availableDrivers.length} subtitle="Ready for dispatch" icon="👥" tint="blue" />
@@ -118,7 +118,7 @@ export default function ManagerDispatchPage() {
                 </div>
 
                 {/* Section 2: Pending Bookings */}
-                <section>
+                <section className="reveal-up stagger-1">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
                         <h2 style={{
                             fontSize: '22px', fontWeight: 800,
@@ -169,7 +169,7 @@ export default function ManagerDispatchPage() {
                 </section>
 
                 {/* Section 3: Active Trips */}
-                <section>
+                <section className="reveal-up stagger-2">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
                         <h2 style={{
                             fontSize: '22px', fontWeight: 800,
