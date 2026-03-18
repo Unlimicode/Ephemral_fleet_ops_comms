@@ -240,7 +240,7 @@ export default function SwiftlinkHomePage() {
             <main style={{ position: 'relative' }}>
 
                 {/* ══ Section 1: Hero ══ */}
-                <section className="sticky-section mask-merge-down" style={{ background: 'var(--bg-base)', position: 'relative', zIndex: 10, paddingBottom: isMobile ? 64 : 0 }}>
+                <section className="sticky-section mask-merge-down" style={{ background: 'var(--bg-base)', position: 'relative', zIndex: 10, paddingBottom: isMobile ? 120 : 0, overflow: 'visible' }}>
                     <div className="arch-grid parallax-layer" data-speed="0.2" />
                     {!isMobile && (
                         <>
