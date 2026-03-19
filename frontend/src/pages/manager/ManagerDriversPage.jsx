@@ -15,7 +15,7 @@ export default function ManagerDriversPage() {
     const [selectedDriver, setSelectedDriver] = useState(null);
     const [newDriver, setNewDriver] = useState({ full_name: '', work_email: '', password: '', employee_id: '' });
     const [formError, setFormError] = useState('');
-    const { showToast } = useToast();
+    const { addToast } = useToast();
 
     const fetchDrivers = useCallback(async () => {
         try {
@@ -25,11 +25,11 @@ export default function ManagerDriversPage() {
         } catch (err) {
             console.error('Failed to fetch drivers:', err);
             setError(true);
-            showToast('error', 'Could not load driver roster.');
+            addToast('Could not load driver roster.', 'error');
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, [addToast]);
 
     useEffect(() => {
         fetchDrivers();
@@ -42,7 +42,7 @@ export default function ManagerDriversPage() {
         setFormError('');
         try {
             await api.post('/roster/drivers', newDriver);
-            showToast('success', 'Driver added successfully.');
+            addToast('Driver added successfully.', 'success');
             setShowAddModal(false);
             setNewDriver({ full_name: '', work_email: '', password: '', employee_id: '' });
             fetchDrivers();
@@ -55,13 +55,13 @@ export default function ManagerDriversPage() {
         if (!selectedDriver) return;
         try {
             await api.patch(`/roster/drivers/${selectedDriver.driver_id}/deactivate`);
-            showToast('success', 'Driver deactivated and sessions revoked.');
+            addToast('Driver deactivated and sessions revoked.', 'success');
             setShowDeactivateModal(false);
             setSelectedDriver(null);
             fetchDrivers();
         } catch (err) {
             console.error('Failed to deactivate driver:', err);
-            showToast('error', 'Failed to deactivate driver.');
+            addToast('Failed to deactivate driver.', 'error');
         }
     }
 

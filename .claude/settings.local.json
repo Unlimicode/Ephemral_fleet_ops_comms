@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(\"D:/Programming/Development/Ephemral_fleet_ops_comms/implementation_plan.md\":*)"
+    ]
+  }
+}

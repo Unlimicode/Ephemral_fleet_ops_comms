@@ -20,7 +20,7 @@ export default function ManagerAuditPage() {
     const [error, setError] = useState(false);
     const [offset, setOffset] = useState(0);
     const [filters, setFilters] = useState({ action_type: '', search: '', from: '', to: '' });
-    const { showToast } = useToast();
+    const { addToast } = useToast();
 
     const fetchAudit = useCallback(async (isLoadMore = false) => {
         const newOffset = isLoadMore ? offset + 50 : 0;
@@ -51,12 +51,12 @@ export default function ManagerAuditPage() {
         } catch (err) {
             console.error('Failed to fetch audit logs:', err);
             setError(true);
-            showToast('error', 'Could not load audit trail.');
+            addToast('Could not load audit trail.', 'error');
         } finally {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [filters, offset, showToast]);
+    }, [filters, offset, addToast]);
 
     useEffect(() => {
         const timer = setTimeout(() => {

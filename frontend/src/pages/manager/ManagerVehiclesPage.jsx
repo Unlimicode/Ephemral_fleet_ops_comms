@@ -15,7 +15,7 @@ export default function ManagerVehiclesPage() {
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [newVehicle, setNewVehicle] = useState({ registration_number: '', type: 'Sedan', capacity: 4 });
     const [formError, setFormError] = useState('');
-    const { showToast } = useToast();
+    const { addToast } = useToast();
 
     const fetchVehicles = useCallback(async () => {
         try {
@@ -25,11 +25,11 @@ export default function ManagerVehiclesPage() {
         } catch (err) {
             console.error('Failed to fetch vehicles:', err);
             setError(true);
-            showToast('error', 'Could not load vehicle inventory.');
+            addToast('Could not load vehicle inventory.', 'error');
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, [addToast]);
 
     useEffect(() => {
         fetchVehicles();
@@ -40,7 +40,7 @@ export default function ManagerVehiclesPage() {
         setFormError('');
         try {
             await api.post('/vehicles', newVehicle);
-            showToast('success', 'Vehicle added successfully.');
+            addToast('Vehicle added successfully.', 'success');
             setShowAddModal(false);
             setNewVehicle({ registration_number: '', type: 'Sedan', capacity: 4 });
             fetchVehicles();
@@ -53,13 +53,13 @@ export default function ManagerVehiclesPage() {
         if (!selectedVehicle) return;
         try {
             await api.delete(`/vehicles/${selectedVehicle.vehicle_id}`);
-            showToast('success', 'Vehicle removed from inventory.');
+            addToast('Vehicle removed from inventory.', 'success');
             setShowDeleteModal(false);
             setSelectedVehicle(null);
             fetchVehicles();
         } catch (err) {
             const msg = err.response?.data?.error || 'Failed to remove vehicle.';
-            showToast('error', msg);
+            addToast(msg, 'error');
             setShowDeleteModal(false);
         }
     }

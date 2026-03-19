@@ -803,3 +803,9 @@ without a test-environment guard.
 *This document is append-only. Each phase is recorded once in chronological order. Do not modify existing entries.*
 
 ---
+
+### [Sprint 19] — Fix addToast/showToast naming mismatch
+- **Date:** 2026-03-19
+- **Files modified:** `frontend/src/components/Toast.jsx`, `frontend/src/pages/manager/ManagerAuditPage.jsx`, `frontend/src/pages/manager/ManagerVehiclesPage.jsx`, `frontend/src/pages/manager/ManagerDriversPage.jsx`, `frontend/src/pages/manager/ManagerComplaintsPage.jsx`, `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`
+- **What changed:** Renamed internal function and context value from `showToast` to `addToast` in Toast.jsx; updated all consumer destructuring from `showToast` to `addToast`; fixed reversed argument order `(type, message)` → `(message, type)` in all manager pages
+- **Why:** CLAUDE.md convention specifies `addToast` as the export name; several manager pages were silently passing type as the message string due to swapped argument order, causing incorrect toast display

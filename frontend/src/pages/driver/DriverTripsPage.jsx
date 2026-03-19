@@ -7,7 +7,7 @@ export default function DriverTripsPage({ defaultTab }) {
     const [trips, setTrips] = useState([]);
     const [activeTab, setActiveTab] = useState(defaultTab || 'upcoming'); // upcoming, active, completed
     const [loading, setLoading] = useState(true);
-    const { showToast } = useToast();
+    const { addToast } = useToast();
 
     useEffect(() => {
         if (defaultTab) {
@@ -36,20 +36,20 @@ export default function DriverTripsPage({ defaultTab }) {
     const handleAccept = async (tripId) => {
         try {
             await api.patch(`/driver/trips/${tripId}/accept`, { response: 'accepted' });
-            showToast('Trip accepted successfully.', 'success');
+            addToast('Trip accepted successfully.', 'success');
             fetchTrips();
         } catch {
-            showToast('Failed to accept trip.', 'error');
+            addToast('Failed to accept trip.', 'error');
         }
     };
 
     const handleDecline = async (tripId, reason) => {
         try {
             await api.patch(`/driver/trips/${tripId}/accept`, { response: 'rejected', reason });
-            showToast('Trip declined and returned to dispatch.', 'success');
+            addToast('Trip declined and returned to dispatch.', 'success');
             fetchTrips();
         } catch {
-            showToast('Failed to decline trip.', 'error');
+            addToast('Failed to decline trip.', 'error');
         }
     };
 

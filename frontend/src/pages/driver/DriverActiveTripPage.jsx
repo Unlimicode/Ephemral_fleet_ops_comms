@@ -8,7 +8,7 @@ import ChatWindow from '../../components/ChatWindow.jsx';
 export default function DriverActiveTripPage() {
     const { tripId } = useParams();
     const navigate = useNavigate();
-    const { showToast } = useToast();
+    const { addToast } = useToast();
     const { token } = useAuth();
     const [trip, setTrip] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -19,12 +19,12 @@ export default function DriverActiveTripPage() {
             setTrip(res.data);
         } catch (err) {
             console.error('Failed to load active trip', err);
-            showToast('Failed to load trip details.', 'error');
+            addToast('Failed to load trip details.', 'error');
             navigate('/driver/trips');
         } finally {
             setLoading(false);
         }
-    }, [tripId, navigate, showToast]);
+    }, [tripId, navigate, addToast]);
 
     useEffect(() => {
         fetchTrip();
@@ -33,20 +33,20 @@ export default function DriverActiveTripPage() {
     const handleStartTrip = async () => {
         try {
             await api.patch(`/driver/trips/${tripId}/start`);
-            showToast('Trip started successfully.', 'success');
+            addToast('Trip started successfully.', 'success');
             fetchTrip();
         } catch {
-            showToast('Failed to start trip.', 'error');
+            addToast('Failed to start trip.', 'error');
         }
     };
 
     const handleCompleteTrip = async () => {
         try {
             await api.patch(`/driver/trips/${tripId}/complete`);
-            showToast('Trip completed successfully.', 'success');
+            addToast('Trip completed successfully.', 'success');
             navigate('/driver/trips');
         } catch {
-            showToast('Failed to complete trip.', 'error');
+            addToast('Failed to complete trip.', 'error');
         }
     };
 

@@ -22,7 +22,7 @@ export default function ManagerComplaintsPage() {
     const [expandedComplaintId, setExpandedComplaintId] = useState(null);
     const [messages, setMessages] = useState({});
     const [loadingMessages, setLoadingMessages] = useState({});
-    const { showToast } = useToast();
+    const { addToast } = useToast();
 
     const fetchComplaints = useCallback(async () => {
         try {
@@ -32,11 +32,11 @@ export default function ManagerComplaintsPage() {
         } catch (err) {
             console.error('Failed to fetch complaints:', err);
             setError(true);
-            showToast('error', 'Could not load complaints.');
+            addToast('Could not load complaints.', 'error');
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, [addToast]);
 
     useEffect(() => {
         fetchComplaints();
@@ -45,31 +45,31 @@ export default function ManagerComplaintsPage() {
     async function handleStatusUpdate(complaintId, status) {
         try {
             await api.patch(`/complaints/${complaintId}/status`, { status });
-            showToast('success', `Status updated to ${status.replace('_', ' ')}.`);
+            addToast(`Status updated to ${status.replace('_', ' ')}.`, 'success');
             fetchComplaints();
         } catch (err) {
             console.error('Failed to update status:', err);
-            showToast('error', 'Failed to update status.');
+            addToast('Failed to update status.', 'error');
         }
     }
 
     async function handleSaveNotes(complaintId, notes) {
         try {
             await api.patch(`/complaints/${complaintId}/notes`, { notes });
-            showToast('success', 'Investigation notes saved.');
+            addToast('Investigation notes saved.', 'success');
         } catch (err) {
             console.error('Failed to save notes:', err);
-            showToast('error', 'Failed to save notes.');
+            addToast('Failed to save notes.', 'error');
         }
     }
 
     async function handleNotifyDriver(complaintId) {
         try {
             await api.post(`/complaints/${complaintId}/notify-driver`);
-            showToast('success', 'Driver has been notified of the review.');
+            addToast('Driver has been notified of the review.', 'success');
         } catch (err) {
             console.error('Failed to notify driver:', err);
-            showToast('error', 'Failed to notify driver.');
+            addToast('Failed to notify driver.', 'error');
         }
     }
 
@@ -89,7 +89,7 @@ export default function ManagerComplaintsPage() {
             const res = await api.get(`/complaints/${complaintId}/messages`);
             setMessages(prev => ({ ...prev, [complaintId]: res.data.messages }));
         } catch (err) {
-            showToast('error', err.response?.data?.error || 'Failed to fetch messages.');
+            addToast(err.response?.data?.error || 'Failed to fetch messages.', 'error');
         } finally {
             setLoadingMessages(prev => ({ ...prev, [complaintId]: false }));
         }

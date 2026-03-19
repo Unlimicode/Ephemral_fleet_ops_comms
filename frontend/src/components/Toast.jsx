@@ -5,13 +5,13 @@ const ToastContext = createContext(null);
 export function ToastProvider({ children }) {
     const [toast, setToast] = useState(null);
 
-    const showToast = (message, type = 'success') => {
+    const addToast = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
     };
 
     return (
-        <ToastContext.Provider value={{ showToast }}>
+        <ToastContext.Provider value={{ addToast }}>
             {children}
             {toast && (
                 <div style={{
