@@ -67,7 +67,7 @@ export default function BookingLandingPage() {
     const [recoveryEmail, setRecoveryEmail] = useState('');
     const [recoverySent, setRecoverySent] = useState(false);
     const [networkError, setNetworkError] = useState(false);
-    const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false });
+    const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false, error: false });
     const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
     const [complaintWindowSeconds, setComplaintWindowSeconds] = useState(null);
     const [complaintProgress, setComplaintProgress] = useState(null);
@@ -141,12 +141,12 @@ export default function BookingLandingPage() {
 
     const handleComplaintSubmit = async (e) => {
         e.preventDefault();
-        setComplaintStatus({ loading: true, success: false });
+        setComplaintStatus({ loading: true, success: false, error: false });
         try {
             await api.post(`/complaints/${tripId}`, complaintForm);
-            setComplaintStatus({ loading: false, success: true });
+            setComplaintStatus({ loading: false, success: true, error: false });
         } catch {
-            setComplaintStatus({ loading: false, success: false });
+            setComplaintStatus({ loading: false, success: false, error: true });
         }
     };
 
@@ -317,45 +317,92 @@ export default function BookingLandingPage() {
                 {isCompleted && (
                     <div className="glass-card p-7 reveal-up active mb-10">
                         {complaintStatus.success ? (
-                            <div className="glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#00F5A0', boxShadow: '0 0 8px rgba(0,245,160,0.6)' }} />
-                                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#0D0D0D' }}>Complaint Submitted</span>
+                            <div className="glass-card-dark reveal-up active" style={{ padding: '24px', borderRadius: '24px' }}>
+                                {/* Header */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                                    <div style={{
+                                        width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                                        background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.4)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '14px', color: '#A5A0FF'
+                                    }}>✓</div>
+                                    <div>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#F0F2F7' }}>Complaint Received</div>
+                                        {complaintProgress && (
+                                            <div style={{ fontSize: '11px', color: 'rgba(240,242,247,0.5)', marginTop: '2px' }}>
+                                                Filed {new Date(complaintProgress.created_at).toLocaleString('en-KE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {complaintProgress ? (() => {
-                                    const statusConfig = {
-                                        open: { label: 'Open', color: '#F59E0B', width: '25%' },
-                                        under_investigation: { label: 'Under Investigation', color: '#6C63FF', width: '50%' },
-                                        resolved: { label: 'Resolved', color: '#00F5A0', width: '100%' },
-                                        escalated: { label: 'Escalated', color: '#E05A5A', width: '75%' }
-                                    };
-                                    const cfg = statusConfig[complaintProgress.status] || statusConfig.open;
+                                    const steps = ['Filed', 'Under Investigation', 'Resolved'];
+                                    const stepIndex = { open: 0, under_investigation: 1, resolved: 2, escalated: 2 };
+                                    const current = stepIndex[complaintProgress.status] ?? 0;
+                                    const activeColor = '#6C63FF';
+                                    const futureColor = 'rgba(255,255,255,0.2)';
                                     return (
                                         <>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                            {/* Timeline dots + connectors */}
+                                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                                {steps.map((step, i) => (
+                                                    <div key={step} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
+                                                        <div style={{
+                                                            width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                                                            background: i <= current ? activeColor : futureColor,
+                                                            boxShadow: i === current ? '0 0 8px rgba(108,99,255,0.7)' : 'none'
+                                                        }} />
+                                                        {i < steps.length - 1 && (
+                                                            <div style={{ flex: 1, height: '1px', background: i < current ? activeColor : futureColor }} />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Step labels */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                                {steps.map((step, i) => {
+                                                    const isActive = i === current;
+                                                    const isFuture = i > current;
+                                                    return (
+                                                        <span key={step} className={`reveal-up active stagger-${i + 1}`} style={{
+                                                            fontSize: '10px',
+                                                            fontWeight: isActive ? 800 : 600,
+                                                            letterSpacing: isActive ? '-0.05em' : '0.08em',
+                                                            color: isFuture ? 'rgba(255,255,255,0.2)' : '#F0F2F7',
+                                                            textTransform: isActive ? 'none' : 'uppercase',
+                                                            textAlign: i === 0 ? 'left' : i === 2 ? 'right' : 'center'
+                                                        }}>
+                                                            {step}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Category pill */}
+                                            <div style={{ marginBottom: '16px' }}>
                                                 <span style={{
-                                                    fontSize: '11px', fontWeight: 700, textTransform: 'uppercase',
-                                                    letterSpacing: '0.15em', color: cfg.color,
-                                                    padding: '4px 12px', borderRadius: '50px',
-                                                    background: `${cfg.color}15`, border: `1px solid ${cfg.color}30`
-                                                }}>{cfg.label}</span>
-                                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                                                    {new Date(complaintProgress.created_at).toLocaleDateString()}
+                                                    display: 'inline-block', fontSize: '10px', fontWeight: 700,
+                                                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                                                    padding: '4px 12px', borderRadius: '9999px',
+                                                    background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.3)',
+                                                    color: '#A5A0FF'
+                                                }}>
+                                                    {complaintProgress.category}
                                                 </span>
                                             </div>
-                                            <div style={{ height: '6px', background: 'rgba(13,13,13,0.06)', borderRadius: '3px', overflow: 'hidden', marginBottom: '12px' }}>
-                                                <div style={{ height: '100%', width: cfg.width, background: cfg.color, borderRadius: '3px', transition: 'width 0.6s ease' }} />
-                                            </div>
-                                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                                                Category: {complaintProgress.category} · Status updates are sent to your corporate email.
+
+                                            {/* Info line */}
+                                            <p style={{ fontSize: '12px', color: 'rgba(240,242,247,0.5)', lineHeight: 1.5 }}>
+                                                Email updates will be sent as your complaint progresses.
                                             </p>
                                         </>
                                     );
                                 })() : (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <div style={{ width: '16px', height: '16px', border: '2px solid #6C63FF', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Loading progress...</span>
+                                        <span style={{ fontSize: '13px', color: 'rgba(240,242,247,0.5)' }}>Loading progress...</span>
                                     </div>
                                 )}
                             </div>
@@ -402,6 +449,12 @@ export default function BookingLandingPage() {
                                         className="w-full bg-white/40 border border-white/60 rounded-input p-4 text-sm resize-none min-h-[120px] focus:ring-1 focus:ring-primary outline-none transition-all"
                                         required
                                     />
+
+                                    {complaintStatus.error && (
+                                        <p style={{ fontSize: '13px', color: '#EF4444', fontWeight: 600, textAlign: 'center' }}>
+                                            Failed to submit. Please try again.
+                                        </p>
+                                    )}
 
                                     <button
                                         type="submit"
