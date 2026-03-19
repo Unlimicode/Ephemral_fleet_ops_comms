@@ -2,18 +2,19 @@
 
 ## Project Overview
 Privacy-preserving fleet operations and communication platform for small Kenyan fleet operators.
-BSC final year project. Currently Sprint 17–18.
+BSC final year project — SCT221-0593/2022, Ian Lemashon Sopia, JKUAT.
 
 Three actor types: **fleet managers**, **drivers** (PWA), **clients** (corporate trip bookers).
 
 ---
 
 ## Stack
-- **Backend:** Node.js / Express, PostgreSQL, Redis, Socket.IO
+- **Backend:** Node.js / Express, PostgreSQL (Supabase), Redis (Upstash), Socket.IO
 - **Frontend:** React / Vite, Tailwind CSS, PWA (drivers)
 - **Email:** Resend SMTP (prod), Ethereal Email (dev) — all mail goes through `backend/config/mailer.js`
-- **Auth:** JWT + Redis TTL (ephemeral sessions), magic links
+- **Auth:** JWT + Redis TTL (ephemeral sessions), magic links for managers, HttpOnly cookies for clients
 - **Dev tunneling:** ngrok via root-level `start-dev.js`
+- **CI:** GitHub Actions — backend tests run on every push to main
 
 ---
 
@@ -21,144 +22,195 @@ Three actor types: **fleet managers**, **drivers** (PWA), **clients** (corporate
 
 ### Root
 ```
-start-dev.js          — starts backend + frontend + ngrok together
-package.json          — root-level scripts
-implementation_plan.md — sprint log, DO NOT overwrite
+start-dev.js            — starts backend + frontend + ngrok together
+package.json            — root-level dev script
+implementation_plan.md  — sprint engineering log, APPEND ONLY, never overwrite
+CLAUDE.md               — this file
 ```
 
 ### Backend `/backend`
 ```
-server.js             — Express app entry point
+server.js               — Express app entry point, transporter.verify() on startup
 config/
-  db.js               — PostgreSQL pool
-  redis.js            — Redis client
-  redisHelpers.js     — TTL/session utilities
-  mailer.js           — SINGLE shared mailer (Resend/Ethereal). All email calls go here.
-  webpush.js          — Web push config
+  db.js                 — PostgreSQL connection pool
+  redis.js              — Redis client (TLS enabled for Upstash)
+  redisHelpers.js       — TTL utilities: setSession, getSession, deleteSession, extendSession, getTTL
+  mailer.js             — SINGLE shared mailer. All email calls go here. Never create inline transporters.
+  webpush.js            — VAPID config for Web Push
 middleware/
-  auth.js             — Manager JWT middleware
-  clientAuth.js       — Client JWT middleware
+  auth.js               — JWT middleware for managers and drivers (requireAuth)
+  clientAuth.js         — HttpOnly cookie middleware for clients (requireClientAuth)
 routes/
-  auth.js             — Manager auth (magic link)
-  bookings.js         — Trip bookings (create, assign, status)
-  complaints.js       — Complaint lifecycle
-  contact.js          — Client contact/enquiry
-  dashboard.js        — Manager dashboard stats
-  drivers.js          — Driver management
-  driverTrips.js      — Driver-facing trip actions
-  index.js            — Route aggregator
-  push.js             — Web push subscriptions
-  roster.js           — Driver roster/scheduling
-  trips.js            — Trip records
-  vehicles.js         — Vehicle management
+  auth.js               — Manager magic link auth
+  bookings.js           — Client bookings: submission, token validation, session, history
+  complaints.js         — Complaint lifecycle: file, status update, message archive access
+  contact.js            — Client contact/enquiry
+  dashboard.js          — Manager dashboard: summary, sessions, compliance report, audit
+  drivers.js            — Driver account management
+  driverTrips.js        — Driver-facing trip actions: accept, reject, start, complete
+  index.js              — Route aggregator (mounts all routers)
+  push.js               — Web push subscriptions: subscribe, unsubscribe, VAPID key
+  roster.js             — Driver roster: add, deactivate, availability
+  trips.js              — Manager trip management: create, assign, view
+  vehicles.js           — Vehicle inventory: add, remove, view
 socket/
-  io.js               — Socket.IO server, WebSocket relay
-  dashboardNamespace.js — Dashboard-specific socket namespace
+  io.js                 — Socket.IO server, WebSocket relay namespace (/)
+  dashboardNamespace.js — /dashboard namespace for manager real-time events
 utils/
-  encryption.js       — Data encryption helpers
-  sendPushNotification.js — Push notification dispatch
+  encryption.js         — AES-256-GCM encrypt/decrypt for message archives
+  sendPushNotification.js — Push dispatch, auto-deletes stale subscriptions on 404/410
 database/
-  schema.sql          — PostgreSQL schema
-  seed.js / seed.sql  — Dev seed data
+  schema.sql            — PostgreSQL schema (6 tables + push_subscriptions)
+  seed.js               — Master seed script (npm run seed)
+  seed.sql              — SQL seed fragments
+  seedData.js           — CI seed data helpers
+tests/                  — 14 suites, 76 tests, all must pass before commit
+  auth.test.js
+  bookings.test.js
+  complaints.test.js
+  conditionalPersistence.test.js
+  dashboard.test.js
+  driverAuth.test.js
+  driverTrips.test.js
+  investigation.test.js
+  privacyDashboard.test.js
+  push.test.js
+  pushNotifications.test.js
+  relay.test.js
+  roster.test.js
+  trips.test.js
 ```
 
 ### Frontend `/frontend/src`
 ```
-App.jsx               — Router root, route definitions
-main.jsx              — Vite entry point
+App.jsx                 — Router root, ProtectedRoute guard, all route definitions
+main.jsx                — Vite entry, wraps App with BrowserRouter then AuthProvider
 api/
-  axios.js            — Axios instance with baseURL + auth headers
+  axios.js              — Axios instance with baseURL + Bearer token interceptor
 context/
-  AuthContext.jsx     — Auth state provider (manager + driver + client)
+  AuthContext.jsx       — Auth state: token, role, user. Persisted in sessionStorage.
 hooks/
-  useChat.js          — Chat polling + Socket.IO hook
-  usePushNotifications.js — Push subscription hook
+  useChat.js            — Socket.IO chat hook: connect, send, receive, session_closed
+  usePushNotifications.js — Push subscription lifecycle hook
 utils/
-  ripple.js           — Ripple click effect utility
+  ripple.js             — Ripple click effect utility
 styles/
-  tokens.css          — Design tokens (colours, spacing)
-  animations.css      — Reveal/stagger/kinetic animations
+  tokens.css            — CSS custom properties: colours, glass effect, typography
+  animations.css        — Reveal/stagger/kinetic animation keyframes
 components/
   layout/
-    ManagerLayout.jsx — Manager shell (pill-nav, blob bg, arch-grid)
-    DriverLayout.jsx  — Driver shell (mobile-first, pill-nav)
-    GlassCard.jsx     — Reusable glass card component (backdrop-filter blur)
-    PageWrapper.jsx   — Generic page wrapper with layout constraints
+    ManagerLayout.jsx   — Manager shell: pill-nav, blob background, arch-grid overlay
+    DriverLayout.jsx    — Driver shell: mobile-first, fixed bottom tab bar
+    GlassCard.jsx       — Reusable glass card (backdrop-filter blur, session-pulse variant)
+    PageWrapper.jsx     — Page padding container (p-4 md:p-6)
   ActiveTripsMap.jsx
   BookingCard.jsx
-  ChatWindow.jsx
+  ChatWindow.jsx        — Shared chat UI used by both driver and client
   DriverCard.jsx
+  DriverTripCard.jsx    — Driver trip list card (status-aware, accept/reject actions)
   GeoBadge.jsx
-  PushNotificationManager.jsx
+  PushNotificationToggle.jsx
   StatCard.jsx
-  SwiftlinkLogo.jsx   — SVG logo component, use everywhere for consistency
-  Toast.jsx           — Toast notifications — export is `addToast` (NOT showToast)
+  SwiftlinkLogo.jsx     — SVG logo component. Always use this — never inline SVG or img.
+  Toast.jsx             — Export: addToast (NOT showToast). Signature: addToast(message, type)
 pages/
   manager/
-    ManagerDispatchPage.jsx         — /manager/dispatch — DEFAULT manager home, bookings/dispatch
-    ManagerDriversPage.jsx          — /manager/drivers — Driver management
-    ManagerVehiclesPage.jsx         — /manager/vehicles — Vehicle management
-    ManagerComplaintsPage.jsx       — /manager/complaints — Complaint handling + investigation
-    ManagerAuditPage.jsx            — /manager/audit — Compliance/reporting (Sprint 18)
-  ManagerPrivacyDashboardPage.jsx   — /manager/dashboard — Privacy/data dashboard (imported as ManagerDashboardPage in App.jsx, lives at pages root not pages/manager/)
+    ManagerDispatchPage.jsx       — /manager/dispatch — DEFAULT manager landing
+    ManagerDriversPage.jsx        — /manager/drivers
+    ManagerVehiclesPage.jsx       — /manager/vehicles
+    ManagerComplaintsPage.jsx     — /manager/complaints
+    ManagerAuditPage.jsx          — /manager/audit — compliance and reporting export
+  ManagerPrivacyDashboardPage.jsx — /manager/dashboard — lives at pages root (not pages/manager/), imported as ManagerDashboardPage in App.jsx
   driver/
-    DriverTripsPage.jsx         — Driver trip list
-    DriverActiveTripPage.jsx    — Active trip view + chat
-    DriverProfilePage.jsx       — Driver profile
-    DriverNotificationsPage.jsx — Push notification history
-  booking/
-    BookingLandingPage.jsx  — /booking — Client trip session: booking details + driver card + live chat + complaint form
-  BookingHistoryPage.jsx            — /booking/history — Client booking history (pages root, not in booking/)
-  LoginPage.jsx                     — /login
-  ManagerPrivacyDashboardPage.jsx   — /manager/dashboard (see manager routes above)
-  SwiftlinkHomePage.jsx             — / — Public landing page
+    DriverTripsPage.jsx           — /driver/trips (handles /driver/trips/active via defaultTab prop)
+    DriverActiveTripPage.jsx      — /driver/trips/:tripId
+    DriverProfilePage.jsx         — /driver/profile
+    DriverNotificationsPage.jsx   — /driver/notifications
+  BookingLandingPage.jsx          — /booking — client trip session: details, driver card, live chat, complaint form
+  BookingHistoryPage.jsx          — /booking/history — lives at pages root (not pages/booking/)
+  LoginPage.jsx                   — /login
+  SwiftlinkHomePage.jsx           — / — public landing page
 ```
+
+---
+
+## Route Summary
+
+| Role | Default Landing | All Routes |
+|------|----------------|------------|
+| fleet_manager | /manager/dispatch | dispatch, drivers, vehicles, complaints, dashboard, audit |
+| driver | /driver/trips | trips, trips/active, trips/:tripId, profile, notifications |
+| client | /booking | booking, booking/history |
+| public | / | /, /login |
 
 ---
 
 ## Critical Conventions
 
-### Status Strings (check these when card/component visibility breaks)
+### Trip Status Flow
 ```
-Booking:  pending → accepted → assigned → in_progress → completed | cancelled
-Complaint: open → under_investigation → resolved
+pending -> accepted -> in_progress -> completed
+                                   -> cancelled
 ```
-- Chat visibility opens at `accepted` status on BookingLandingPage
-- `session_closed` WebSocket event triggers client-side trip end transition
+- `accepted` = manager assigned driver, driver not yet started
+- `in_progress` = driver pressed start, client picked up
+- Chat on BookingLandingPage opens when booking status is `accepted`
+- Redis session keys created when driver accepts, destroyed on complete
+
+### Complaint Status Flow
+```
+open -> under_investigation -> resolved
+```
+- Message archive only decryptable when status is `under_investigation`
+- Status CAN return to `open` from `under_investigation` — do not block this transition
+- `session_closed` WebSocket event triggers client-side trip end UI transition
 
 ### Auth Pattern
-- Managers: magic link → JWT stored in Redis with TTL
-- Drivers: separate auth flow via `clientAuth.js` middleware
-- Clients: JWT, separate middleware
+- **Managers:** magic link email -> single-use Redis token -> JWT (Bearer header)
+- **Drivers:** password login -> JWT (Bearer header)
+- **Clients:** booking token email -> single-use Redis token -> JWT (HttpOnly cookie, inaccessible to JS)
 
-### Email — IMPORTANT GOTCHAS
-- **All email goes through `backend/config/mailer.js` only** — never create inline transporters
+### Email — Critical Gotchas
+- All email goes through `backend/config/mailer.js` only — never create inline transporters
 - Named exports: `sendBookingConfirmation`, `sendDriverAssignedNotification`, `sendTripCompletionNotification`
 - Resend click-tracking strips magic link tokens — never add HTML wrappers to magic link emails
 - `MAIL_FROM` must match the Ethereal account address in dev or sends fail silently
+- Wrap all `sendMail` calls in `if (process.env.NODE_ENV !== 'test')` to prevent ECONNREFUSED in CI
 
 ### WebSocket Events
 - Client sends: `send_message`
-- Client receives: `receive_message`
-- Field for sender role: `msg.from` (not `msg.role`)
-- Dashboard namespace is separate from main relay namespace
+- Server emits to room: `receive_message`
+- Sender field on message object: `msg.from` (not `msg.role`)
+- Session end event: `session_closed` with `complaint_window_hours: 24` payload
+- Dashboard namespace `/dashboard` is completely separate from relay namespace `/`
 
 ### Responsive Breakpoints
-- `useWindowWidth` hook pattern is the standard — event listener, state, cleanup
-- It is NOT currently a standalone file (not in hooks/ or utils/) — if needed, create it at `frontend/src/hooks/useWindowWidth.js`
+- Standard hook: `useWindowWidth` — event listener + state + cleanup pattern
+- Not a standalone file yet — create at `frontend/src/hooks/useWindowWidth.js` if needed
 - Never use static `window.innerWidth` checks
+- Manager content: `max-width: 1440px`
+- Driver content: `max-width: 900px`
+- Breakpoints: mobile < 768px, tablet 768-1023px, desktop >= 1024px
 
 ### Design System
 - Background: `#F5EDE3`
 - Cards: `glass-card` / `glass-card-dark` with `backdrop-filter: blur(40px)`
-- Nav: `pill-nav` pattern (Google Stitch reference)
+- Nav: `pill-nav` pattern (reference: Google Stitch design file in project)
 - Animations: `kinetic-text`, `reveal-up stagger`, animated blobs, `arch-grid` overlay
-- Logo: always use `<SwiftlinkLogo />` component — do not use inline SVG or img tags
+- Logo: always `<SwiftlinkLogo />` — no inline SVG, no img tags
+
+---
+
+## Do Not Touch
+- `implementation_plan.md` — append only, never overwrite or reformat existing entries
+- `backend/config/mailer.js` — never create alternative transporters anywhere
+- `_dev_logs/` — debug artefacts, ignore entirely
+- `*.txt` files in `backend/` root — test output artefacts, ignore
 
 ---
 
 ## Change Documentation Convention
-After every change, append to `implementation_plan.md` using this format:
+After every completed change, append to `implementation_plan.md`:
 ```
 ### [Sprint X] — [short title]
 - **Date:** YYYY-MM-DD
@@ -166,87 +218,71 @@ After every change, append to `implementation_plan.md` using this format:
 - **What changed:** one line per change
 - **Why:** brief reason
 ```
-Never overwrite existing entries — append only.
 Commit message format: `type(scope): description` (conventional commits)
+Examples: `fix(complaints): allow status to return to open`, `feat(audit): add CSV export`
 
 ---
 
 ## CI Pipeline (GitHub Actions)
 Backend tests run on every push. Before finishing any task:
-1. Run `cd backend && npm test` locally and confirm all suites pass
-2. Check these suites specifically — they have a history of failures:
+1. Run `cd backend; npm test` and confirm 14 suites, 76 tests, 0 failures
+2. These suites have a history of failures — always check them:
    - `driverTrips.test.js`
    - `roster.test.js`
    - `relay.test.js`
    - `dashboard.test.js`
    - `bookings.test.js`
-3. Never leave a task in a state where tests are broken
-4. After confirming tests pass, remind the user to commit and push
+   - `complaints.test.js`
+3. Never finish a task with broken tests
+4. After tests pass, remind the user to commit and push
 
 ---
 
-## Token Usage — How to Work Efficiently
-To keep Claude Code token usage low on Pro plan:
-
-**Scope tasks narrowly**
-- One file or one feature per session where possible
-- Say exactly which file to edit rather than describing symptoms broadly
-- e.g. "Edit `ManagerComplaintsPage.jsx` to fix X" not "the complaints page is broken"
-
-**Use /compact regularly**
-- Run `/compact` in the Claude Code terminal when a session gets long
-- This summarises conversation history and frees up context window
-
-**Use /model to match task to model**
-- Sonnet for most tasks (faster, cheaper on quota)
-- Opus only for complex architecture decisions or hard debugging
-- Switch with `/model` command
-
-**Read before writing**
-- Ask Claude Code to read and describe a file before editing it
-- Catches misunderstandings before tokens are spent on a wrong implementation
-
-**One task, then commit**
-- Finish one change → confirm tests pass → commit → start next task
-- Long sessions that span many files cost significantly more
-
-**Don't re-explain context**
-- CLAUDE.md handles baseline context automatically
-- Only add what's specific to the current task in your prompt
-
----
-
-
-- `implementation_plan.md` — sprint log, append only, never overwrite
-- `backend/config/mailer.js` — do not create alternative mail transports
-- `_dev_logs/` — debug artefacts, ignore entirely
-- `*.txt` output files in backend root — test artefacts, ignore
+## Token Usage — Work Efficiently
+- **Scope narrowly** — one file or one feature per session
+- **Name the file** — "edit ManagerComplaintsPage.jsx to fix X" not "the complaints page is broken"
+- **Use /compact** — run when session gets long, frees context window
+- **Use /model** — Sonnet for routine tasks, Opus only for hard debugging or architecture decisions
+- **Read before writing** — ask Claude Code to read and describe a file before editing it
+- **One task then commit** — finish, confirm tests pass, commit, then start next
+- **CLAUDE.md handles baseline context** — only add task-specific detail in your prompt
 
 ---
 
 ## Dev Environment
-```bash
+```powershell
 # Start everything (backend + frontend + ngrok)
 node start-dev.js
 
 # Backend only
-cd backend && npm run dev
+cd backend; npm run dev
 
 # Frontend only
-cd frontend && npm run dev
+cd frontend; npm run dev
 
 # Run backend tests
-cd backend && npm test
+cd backend; npm test
+
+# Seed the database
+cd backend; npm run seed
 ```
 
 ---
 
-## Current Outstanding Work (Sprint 17–18)
-- [ ] `addToast`/`showToast` naming mismatch in `Toast.jsx`
-- [ ] Request Transfer button obscured by animated shapes on mobile scroll
-- [ ] Complaint status regression (cannot return to `open`)
-- [ ] Message visibility tied to `under_investigation` status (should open at `accepted`)
-- [ ] SwiftLink SVG logo consistency across all layouts
-- [ ] Client-facing complaint progress view + email notifications on status change
-- [ ] Sprint 18: Manager dashboard Stitch-style redesign (all 6 pages: ManagerDispatchPage, ManagerDriversPage, ManagerVehiclesPage, ManagerComplaintsPage, ManagerAuditPage, ManagerPrivacyDashboardPage)
-- [ ] Sprint 18: Compliance/reporting export (`ManagerAuditPage.jsx`)
+## Current Status — Sprint 19
+
+### Completed
+- [x] Sprints 1-8: Full backend — auth, trips, WebSocket relay, complaints, push notifications, privacy dashboard APIs
+- [x] Sprints 9-12: Full frontend foundation — layouts, pages, chat, responsive design system
+- [x] Sprint 13: Client-driver WebSocket wire-up, BookingLandingPage
+- [x] Sprint 14: Email consolidation to shared mailer, Privacy Dashboard UI
+- [x] Sprint 18: PDF compliance export (ManagerPrivacyDashboardPage), CSV audit export (ManagerAuditPage)
+- [x] Fix: addToast/showToast naming mismatch and reversed args fixed across 7 files (commit 75ccb26)
+
+### Outstanding
+- [ ] Request Transfer button obscured by animated shapes on mobile scroll (BookingLandingPage)
+- [ ] Complaint status regression — cannot return to `open` from `under_investigation`
+- [ ] Message visibility incorrectly tied to `under_investigation` (should open at `accepted` booking status)
+- [ ] SwiftLink SVG logo inconsistency across layouts
+- [ ] Client-facing complaint progress view + email notifications on complaint status change
+- [ ] Sprint 18: Manager dashboard Stitch-style redesign (all 6 pages: Dispatch, Drivers, Vehicles, Complaints, Audit, PrivacyDashboard)
