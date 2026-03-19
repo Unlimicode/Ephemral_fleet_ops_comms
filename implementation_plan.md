@@ -821,3 +821,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
 - **What changed:** Changed chat visibility condition from `status !== 'in_progress'` to `!isActive`; removed dead `accepted` branch from placeholder text
 - **Why:** Chat should open at `accepted` status per spec — the driver is assigned and a mediated channel should be available before the trip starts
+
+### [Sprint 19] — Fix Request Transfer button obscured on mobile scroll
+- **Date:** 2026-03-19
+- **Files modified:** `frontend/src/pages/SwiftlinkHomePage.jsx`
+- **What changed:** Removed `mask-merge-down` class from Section 1 on mobile via conditional className
+- **Why:** The IntersectionObserver clip effect clips the bottom 15% of Section 1 on scroll, hiding the Request Transfer button which sits near the section bottom; the stacking visual is desktop-only so the clip is not needed on mobile
