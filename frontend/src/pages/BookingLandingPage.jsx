@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import ChatWindow from '../components/ChatWindow';
+import SwiftlinkLogo from '../components/SwiftlinkLogo';
 
 // --- Components ---
 
@@ -211,11 +212,8 @@ export default function BookingLandingPage() {
 
             {/* Sticky Top Bar */}
             <nav className="sticky top-0 z-50 h-[56px] px-5 bg-[#F5EDE3]/80 backdrop-blur-[20px] flex items-center justify-between border-b border-black/5">
-                <div className="flex items-center gap-3">
-                    <div className="bg-bg-dark size-9 rounded-xl flex items-center justify-center">
-                        <img src="/swiftlink-icon.png" className="size-6 object-contain" alt="Logo" />
-                    </div>
-                    <span className="font-extrabold tracking-tighter text-lg">SwiftLink</span>
+                <div className="flex items-center">
+                    <SwiftlinkLogo height={36} />
                 </div>
                 <StatusBadge status={status} />
             </nav>

@@ -4,6 +4,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import '../styles/tokens.css';
 import '../styles/animations.css';
+import SwiftlinkLogo from '../components/SwiftlinkLogo';
 
 export default function SwiftlinkHomePage() {
     const navigate = useNavigate();
@@ -175,9 +176,8 @@ export default function SwiftlinkHomePage() {
                 border: '1px solid rgba(255,255,255,0.3)', borderRadius: 9999,
                 padding: isMobile ? '12px 20px' : '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-                    <img src="/swiftlink-icon.png" alt="Swiftlink" style={{ height: isMobile ? 28 : 36, width: isMobile ? 28 : 36, borderRadius: 8 }} />
-                    <span style={{ fontWeight: 800, fontSize: isMobile ? '1rem' : '1.3rem', letterSpacing: '-0.8px', marginLeft: 10 }}>Swiftlink</span>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <SwiftlinkLogo height={isMobile ? 28 : 36} />
                 </div>
 
                 {isMobile ? (
@@ -643,11 +643,8 @@ export default function SwiftlinkHomePage() {
                     {/* Zone 2 — Bottom strip */}
                     <div style={{ padding: isMobile ? '32px 0 0' : '32px 80px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', gap: 32 }}>
                         <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                                <div style={{ width: 24, height: 24, background: '#F5EDE3', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span style={{ fontWeight: 800, fontSize: 12, color: '#0D0D0D' }}>S</span>
-                                </div>
-                                <span style={{ fontWeight: 800, fontSize: '1rem', color: '#F5EDE3' }}>swiftlink</span>
+                            <div style={{ marginBottom: 12 }}>
+                                <SwiftlinkLogo height={28} />
                             </div>
                             <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(245,237,227,0.2)' }}>© 2026 Architectural Logistics Collective</span>
                         </div>
