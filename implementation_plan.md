@@ -809,3 +809,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/components/Toast.jsx`, `frontend/src/pages/manager/ManagerAuditPage.jsx`, `frontend/src/pages/manager/ManagerVehiclesPage.jsx`, `frontend/src/pages/manager/ManagerDriversPage.jsx`, `frontend/src/pages/manager/ManagerComplaintsPage.jsx`, `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`
 - **What changed:** Renamed internal function and context value from `showToast` to `addToast` in Toast.jsx; updated all consumer destructuring from `showToast` to `addToast`; fixed reversed argument order `(type, message)` → `(message, type)` in all manager pages
 - **Why:** CLAUDE.md convention specifies `addToast` as the export name; several manager pages were silently passing type as the message string due to swapped argument order, causing incorrect toast display
+
+### [Sprint 19] — Fix complaint status select regression
+- **Date:** 2026-03-19
+- **Files modified:** `frontend/src/pages/manager/ManagerComplaintsPage.jsx`
+- **What changed:** Changed `defaultValue` to `value` on the status `<select>` in `ComplaintCard`
+- **Why:** `defaultValue` is uncontrolled — React sets it once on mount and ignores subsequent prop changes, so the dropdown could not visually reflect or select `open` after a complaint had moved to another status

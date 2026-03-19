@@ -222,7 +222,7 @@ function ComplaintCard({ complaint, isExpanded, onToggle, onStatusUpdate, onSave
 
                 <div style={{ display: 'flex', gap: '6px' }}>
                     <select
-                        defaultValue={complaint.status}
+                        value={complaint.status}
                         onChange={e => onStatusUpdate(e.target.value)}
                         style={{ ...inputStyle, padding: '8px 12px' }}
                     >
