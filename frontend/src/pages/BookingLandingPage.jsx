@@ -297,12 +297,12 @@ export default function BookingLandingPage() {
 
                 {/* Chat Area */}
                 <div className="reveal-up active stagger-3 flex flex-col min-h-[450px] mb-5">
-                    {status !== 'in_progress' ? (
+                    {!isActive ? (
                         <div className="glass-card-dark flex-1 flex flex-col items-center justify-center p-8 text-center rounded-[24px]">
                             <div className="text-5xl mb-6">🔒</div>
                             <h3 className="text-xl font-bold text-text-cream mb-2">Secure channel pending</h3>
                             <p className="text-text-muted text-sm leading-relaxed">
-                                {status === 'accepted' ? 'Connecting secure channel...' : 'Your driver will be assigned shortly. The channel opens automatically when they accept.'}
+                                Your driver will be assigned shortly. The channel opens automatically when they accept.
                             </p>
                         </div>
                     ) : (

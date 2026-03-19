@@ -815,3 +815,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/manager/ManagerComplaintsPage.jsx`
 - **What changed:** Changed `defaultValue` to `value` on the status `<select>` in `ComplaintCard`
 - **Why:** `defaultValue` is uncontrolled — React sets it once on mount and ignores subsequent prop changes, so the dropdown could not visually reflect or select `open` after a complaint had moved to another status
+
+### [Sprint 19] — Fix chat window visibility on BookingLandingPage
+- **Date:** 2026-03-19
+- **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** Changed chat visibility condition from `status !== 'in_progress'` to `!isActive`; removed dead `accepted` branch from placeholder text
+- **Why:** Chat should open at `accepted` status per spec — the driver is assigned and a mediated channel should be available before the trip starts
