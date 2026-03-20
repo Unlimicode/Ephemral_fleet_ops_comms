@@ -875,3 +875,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`
 - **What changed:** Replaced light dashed-border empty state in DriverTripsPage with glass-card-dark card, purple icon container, kinetic-text title, muted subtitle; updated active tab subtitle to guide driver to Upcoming tab; replaced plain "Trip not found." text return in DriverActiveTripPage with a full layout including back button, glass-card-dark error card with icon, kinetic-text title, subtitle, and #6C63FF btn-premium back button
 - **Why:** Previous empty and error states had no visual consistency with the rest of the driver UI and gave no recovery path; the not-found state previously had no back button leaving the driver stranded.
+
+### [Sprint 19] — Fix request-new-link flow in BookingLandingPage
+- **Date:** 2026-03-21
+- **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** Fixed API call URL from `/bookings/request-new-link` to `/bookings/${tripId}/request-new-link`; fixed request body field from `email` to `client_corporate_email` to match backend schema; moved `setRecoverySent(true)` into the try block so it only fires on success; added `recoveryError` state and set it in the catch block instead of silently swallowing errors; updated `AuthError` component to accept `onEmailChange` and `recoveryError` props instead of `setEmail`, clears error on input change, and displays red error text below the send button when set
+- **Why:** The link recovery flow was broken end-to-end — wrong URL returned 404, wrong field name caused backend validation failure, and errors were silently dropped leaving the client with no feedback

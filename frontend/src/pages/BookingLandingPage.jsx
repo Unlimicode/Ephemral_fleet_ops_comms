@@ -29,7 +29,7 @@ const LoadingState = () => (
     </div>
 );
 
-const AuthError = ({ onRetry, email, setEmail, recoverySent }) => (
+const AuthError = ({ onRetry, email, recoverySent, recoveryError, onEmailChange }) => (
     <div className="min-h-screen bg-[#F5EDE3] flex items-center justify-center p-6">
         <div className="glass-card p-10 text-center max-w-sm w-full reveal-up active">
             <div className="text-4xl mb-4">🔒</div>
@@ -41,7 +41,7 @@ const AuthError = ({ onRetry, email, setEmail, recoverySent }) => (
                     type="email"
                     placeholder="Corporate email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={onEmailChange}
                     className="w-full rounded-input bg-white/40 border border-white/60 px-4 py-3 outline-none focus:ring-1 focus:ring-primary"
                 />
                 <button
@@ -51,6 +51,7 @@ const AuthError = ({ onRetry, email, setEmail, recoverySent }) => (
                     Send New Link
                 </button>
                 {recoverySent && <p className="text-success text-xs font-bold mt-2">✓ Check your inbox.</p>}
+                {recoveryError && <p className="text-xs font-bold mt-2" style={{ color: '#EF4444' }}>{recoveryError}</p>}
             </div>
         </div>
     </div>
@@ -66,6 +67,7 @@ export default function BookingLandingPage() {
     const [authFailed, setAuthFailed] = useState(false);
     const [recoveryEmail, setRecoveryEmail] = useState('');
     const [recoverySent, setRecoverySent] = useState(false);
+    const [recoveryError, setRecoveryError] = useState('');
     const [networkError, setNetworkError] = useState(false);
     const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false, error: false });
     const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
@@ -147,11 +149,10 @@ export default function BookingLandingPage() {
     const handleRequestNewLink = async () => {
         if (!recoveryEmail) return;
         try {
-            await api.post('/bookings/request-new-link', { email: recoveryEmail });
+            await api.post(`/bookings/${tripId}/request-new-link`, { client_corporate_email: recoveryEmail });
             setRecoverySent(true);
-        } catch {
-            // Instruction: simplest friction-less approach
-            setRecoverySent(true);
+        } catch (err) {
+            setRecoveryError(err.response?.data?.message || 'Failed to send link. Please try again.');
         }
     };
 
@@ -172,7 +173,7 @@ export default function BookingLandingPage() {
     }, [complaintStatus.success, tripId]);
 
     if (loading) return <LoadingState />;
-    if (authFailed) return <AuthError email={recoveryEmail} setEmail={setRecoveryEmail} onRetry={handleRequestNewLink} recoverySent={recoverySent} />;
+    if (authFailed) return <AuthError email={recoveryEmail} onEmailChange={(e) => { setRecoveryEmail(e.target.value); setRecoveryError(''); }} onRetry={handleRequestNewLink} recoverySent={recoverySent} recoveryError={recoveryError} />;
     if (!booking) return null;
 
     const status = booking.status;
