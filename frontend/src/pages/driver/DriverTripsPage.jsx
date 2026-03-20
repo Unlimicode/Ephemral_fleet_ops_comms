@@ -104,7 +104,25 @@ export default function DriverTripsPage({ defaultTab }) {
 
             {/* Trip List */}
             {loading ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading...</div>
+                <>
+                    <style>{`@keyframes shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }`}</style>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {[0, 1, 2].map(i => {
+                            const sh = { background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%)', backgroundSize: '200% 100%', animation: `shimmer 1.5s ${i * 0.15}s infinite linear`, borderRadius: '12px' };
+                            return (
+                                <div key={i} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ ...sh, width: '80px', height: '20px' }} />
+                                    <div style={{ ...sh, width: '100%', height: '24px' }} />
+                                    <div style={{ ...sh, width: '60%', height: '16px' }} />
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <div style={{ ...sh, width: '100px', height: '36px' }} />
+                                        <div style={{ ...sh, width: '100px', height: '36px' }} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </>
             ) : displayedTrips.length === 0 ? (
                 <div className="reveal-up stagger-2" style={{
                     padding: '48px 24px', display: 'flex', flexDirection: 'column',

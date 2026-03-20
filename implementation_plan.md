@@ -863,3 +863,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
 - **What changed:** Replaced fixed 10s poll with adaptive interval: 3000ms when booking.status is pending or null, 10000ms once accepted or beyond; pollInterval derived constant added to useEffect dependency array so interval resets automatically on status transition
 - **Why:** Pending status is the highest-friction wait state for the client — tighter polling means assignment is reflected in ~3s instead of up to 10s; once accepted the channel is open and real-time updates come via WebSocket so slower polling is acceptable.
+
+### [Sprint 19] — Skeleton loaders on driver trips and active trip pages
+- **Date:** 2026-03-20
+- **Files modified:** `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`
+- **What changed:** Replaced "Loading..." text in DriverTripsPage with 3 shimmer skeleton cards matching DriverTripCard layout (status badge, route, timestamp, action button blocks); replaced early-return loading pattern in DriverActiveTripPage with inline skeleton sections matching the 4-section loaded layout so the back button stays visible during load; both use the same shimmer keyframe (200% → -200% backgroundPosition, 1.5s linear infinite)
+- **Why:** Plain text loading states give no visual affordance of what is coming; skeletons reduce perceived load time and prevent layout shift when content arrives.

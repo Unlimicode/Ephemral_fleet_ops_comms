@@ -50,14 +50,16 @@ export default function DriverActiveTripPage() {
         }
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
-    if (!trip) return <div style={{ padding: '40px', textAlign: 'center' }}>Trip not found.</div>;
+    if (!loading && !trip) return <div style={{ padding: '40px', textAlign: 'center' }}>Trip not found.</div>;
 
-    const isInProgress = trip.status === 'in_progress';
+    const isInProgress = trip?.status === 'in_progress';
+    const sh = { background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear', borderRadius: '12px' };
 
     return (
         <div style={{ padding: '0 0 20px 0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Header with back button */}
+            <style>{`@keyframes shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }`}</style>
+
+            {/* Header with back button — always visible */}
             <div className="reveal-up" style={{ padding: '20px 20px 0 20px' }}>
                 <button onClick={() => navigate('/driver/trips')} style={{
                     background: 'transparent', border: 'none', color: 'var(--text-secondary)',
@@ -67,6 +69,31 @@ export default function DriverActiveTripPage() {
                 </button>
             </div>
 
+            {loading ? (
+                <>
+                    {/* Section 1 skeleton */}
+                    <section className="glass-card" style={{ margin: '0 20px', padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ ...sh, width: '200px', height: '32px' }} />
+                        <div style={{ ...sh, width: '100%', height: '18px' }} />
+                        <div style={{ ...sh, width: '100%', height: '18px' }} />
+                    </section>
+
+                    {/* Section 2 skeleton */}
+                    <section style={{ padding: '0 20px' }}>
+                        <div style={{ ...sh, width: '160px', height: '44px', borderRadius: '999px' }} />
+                    </section>
+
+                    {/* Section 3 skeleton */}
+                    <section className="glass-card-dark" style={{ margin: '0 20px', minHeight: '450px', borderRadius: '24px', ...sh }} />
+
+                    {/* Section 4 skeleton */}
+                    <section className="glass-card" style={{ margin: '0 20px', padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ ...sh, width: '40%', height: '16px' }} />
+                        <div style={{ ...sh, width: '60%', height: '16px' }} />
+                    </section>
+                </>
+            ) : (
+                <>
             {/* Section 1: Trip Status Card */}
             <section className={`glass-card reveal-up stagger-1 ${isInProgress ? 'session-pulse' : ''}`} style={{
                 margin: '0 20px', padding: '24px', borderRadius: '24px',
@@ -179,6 +206,8 @@ export default function DriverActiveTripPage() {
                     )}
                 </div>
             </section>
+                </>
+            )}
         </div>
     );
 }
