@@ -114,13 +114,15 @@ export default function BookingLandingPage() {
         }
     }, [tripId]);
 
+    const pollInterval = (!booking?.status || booking.status === 'pending') ? 3000 : 10000;
+
     useEffect(() => {
         if (tripId) {
             fetchBooking();
-            const interval = setInterval(fetchBooking, 10000);
+            const interval = setInterval(fetchBooking, pollInterval);
             return () => clearInterval(interval);
         }
-    }, [tripId, fetchBooking]);
+    }, [tripId, fetchBooking, pollInterval]);
 
     // Live Countdown for Complaint Window
     useEffect(() => {

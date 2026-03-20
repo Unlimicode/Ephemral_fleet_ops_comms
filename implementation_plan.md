@@ -857,3 +857,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/manager/ManagerDispatchPage.jsx`, `frontend/src/components/ActiveTripCard.jsx`
 - **What changed:** Replaced alert() in handleAssign catch with addToast; removed confirm() guard from handleComplete and replaced with confirmingTripId state; ActiveTripCard now accepts isConfirming/onConfirm/onCancel props and swaps "Mark Complete" for a Confirm/Cancel pill row (fade-in animation) when isConfirming is true; replaced alert() in handleComplete catch with addToast
 - **Why:** Native alert() and confirm() block the browser thread, cannot be styled, and break the design system — all feedback should go through Toast and inline UI.
+
+### [Sprint 19] — Adaptive polling interval on BookingLandingPage
+- **Date:** 2026-03-20
+- **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** Replaced fixed 10s poll with adaptive interval: 3000ms when booking.status is pending or null, 10000ms once accepted or beyond; pollInterval derived constant added to useEffect dependency array so interval resets automatically on status transition
+- **Why:** Pending status is the highest-friction wait state for the client — tighter polling means assignment is reflected in ~3s instead of up to 10s; once accepted the channel is open and real-time updates come via WebSocket so slower polling is acceptable.
