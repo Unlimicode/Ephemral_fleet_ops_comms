@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios.js';
 import { useToast } from '../../components/Toast.jsx';
 import DriverTripCard from '../../components/DriverTripCard.jsx';
@@ -8,6 +9,7 @@ export default function DriverTripsPage({ defaultTab }) {
     const [activeTab, setActiveTab] = useState(defaultTab || 'upcoming'); // upcoming, active, completed
     const [loading, setLoading] = useState(true);
     const { addToast } = useToast();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (defaultTab) {
@@ -117,7 +119,12 @@ export default function DriverTripsPage({ defaultTab }) {
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {displayedTrips.map((trip, idx) => (
-                        <div key={trip.id} className={`reveal-up stagger-${Math.min(idx + 2, 4)}`}>
+                        <div
+                            key={trip.id}
+                            className={`reveal-up stagger-${Math.min(idx + 2, 4)}`}
+                            onClick={activeTab === 'active' ? () => navigate(`/driver/trips/${trip.id}`) : undefined}
+                            style={activeTab === 'active' ? { cursor: 'pointer' } : undefined}
+                        >
                             <DriverTripCard
                                 trip={trip}
                                 index={idx}

@@ -75,7 +75,6 @@ export default function App() {
           }
         >
           <Route path="/driver/trips" element={<DriverTripsPage />} />
-          <Route path="/driver/trips/active" element={<DriverTripsPage defaultTab="active" />} />
           <Route path="/driver/trips/:tripId" element={<DriverActiveTripPage />} />
           <Route path="/driver/profile" element={<DriverProfilePage />} />
           <Route path="/driver/notifications" element={<DriverNotificationsPage />} />

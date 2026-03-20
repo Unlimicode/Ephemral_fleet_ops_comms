@@ -1,12 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import api from '../../api/axios.js';
 import SwiftlinkLogo from '../SwiftlinkLogo.jsx';
 
 const TABS = [
     { to: '/driver/trips', label: 'Trips', icon: '🗂️' },
-    { to: '/driver/trips/active', label: 'Active', icon: '⚡' },
     { to: '/driver/notifications', label: 'Notifications', icon: '🔔' },
     { to: '/driver/profile', label: 'Profile', icon: '👤' },
 ];
@@ -25,29 +23,11 @@ export default function DriverLayout() {
     const { user } = useAuth();
     const location = useLocation();
     const width = useWindowWidth();
-    const [activeTripId, setActiveTripId] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     const isDesktop = width >= 1024;
     const isTablet = width >= 768 && width < 1024;
     const isMobile = width < 768;
-
-    const checkActiveTrips = useCallback(async () => {
-        try {
-            const res = await api.get('/driver/trips');
-            const triplist = res.data || [];
-            const active = triplist.find(t => t.status === 'in_progress');
-            setActiveTripId(active ? active.id : null);
-        } catch (err) {
-            console.error('Failed to check active trips for indicator', err);
-        }
-    }, []);
-
-    useEffect(() => {
-        Promise.resolve().then(() => checkActiveTrips());
-        const interval = setInterval(checkActiveTrips, 30000);
-        return () => clearInterval(interval);
-    }, [checkActiveTrips]);
 
     const renderNavLinks = (vertical = false) => (
         TABS.map(tab => (
@@ -63,9 +43,6 @@ export default function DriverLayout() {
                 `}
             >
                 {tab.label}
-                {tab.label === 'Active' && activeTripId && (
-                    <span className="absolute -top-1 -right-1 flex h-2 w-2 items-center justify-center rounded-full bg-[#00F5A0] animate-pulse shadow-[0_0_8px_rgba(0,245,160,0.8)]" />
-                )}
             </NavLink>
         ))
     );
@@ -202,9 +179,6 @@ export default function DriverLayout() {
                                     {tab.label}
                                 </span>
                                 {isActive && <div className="w-1 h-1 rounded-full bg-[#0D0D0D]" />}
-                                {tab.label === 'Active' && activeTripId && (
-                                    <div className="absolute top-0 right-3 w-2 h-2 bg-[#00F5A0] rounded-full animate-pulse shadow-[0_0_8px_rgba(0,245,160,0.8)]" />
-                                )}
                             </NavLink>
                         );
                     })}

@@ -833,3 +833,9 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/trips.js`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
 - **What changed:** Added PATCH /:tripId/force-complete route protected by fleet_manager role; updated handleComplete in ManagerDispatchPage to call force-complete instead of the driver-only complete route
 - **Why:** Manager was calling a driver-only route (requireAuth(['driver'])), always receiving 403. No manager-level force-complete endpoint existed.
+
+### [Sprint 19] — Remove redundant Active tab, make active trip cards navigate to trip page
+- **Date:** 2026-03-20
+- **Files modified:** `frontend/src/components/layout/DriverLayout.jsx`, `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/App.jsx`
+- **What changed:** Removed Active tab from DriverLayout bottom tab bar and desktop nav; removed 30-second polling loop that checked for activeTripId; removed /driver/trips/active route from App.jsx; wrapped active trip cards in DriverTripsPage with a clickable div that navigates to /driver/trips/:tripId on tap
+- **Why:** Active tab duplicated the Trips tab with no additional value; active trips now navigate directly to the DriverActiveTripPage which has full trip controls, making the separate tab and polling unnecessary.
