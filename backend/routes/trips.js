@@ -165,6 +165,50 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     }
 });
 
+// ── PATCH /:tripId/force-complete — Force Complete Trip (Manager) ─────────────
+router.patch('/:tripId/force-complete', requireAuth(['fleet_manager']), async (req, res) => {
+    const { tripId } = req.params;
+
+    try {
+        const tripCheck = await query(
+            'SELECT id FROM trips WHERE id = $1 AND status = $2',
+            [tripId, 'in_progress']
+        );
+        if (tripCheck.rows.length === 0) return res.status(404).json({ error: 'Trip not found or not in progress' });
+
+        const result = await query(
+            `UPDATE trips SET status = 'completed' WHERE id = $1 RETURNING *`,
+            [tripId]
+        );
+
+        await deleteSession(`session:trip:${tripId}:driver`);
+        await deleteSession(`session:trip:${tripId}:client`);
+        await setSession(`complaint:window:${tripId}`, { active: true }, 86400);
+
+        const io = getIo();
+        if (io) {
+            io.to(`trip:${tripId}`).emit('session_closed', {
+                tripId,
+                reason: 'Trip completed — communication channel closed',
+                complaint_window_hours: 24
+            });
+        }
+
+        emitDashboardEvent('session_destroyed', { trip_id: tripId, timestamp: new Date().toISOString() });
+
+        await query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['TRIP_COMPLETED', req.user.id, 'fleet_manager', tripId, {}]
+        );
+
+        return res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error('[trips] force-complete error:', err.message, err.stack);
+        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
+    }
+});
+
 // ── GET /:tripId/session-status — Utility for Dashboard ──────────────────────
 router.get('/:tripId/session-status', requireAuth(['fleet_manager', 'driver']), async (req, res) => {
     const { tripId } = req.params;

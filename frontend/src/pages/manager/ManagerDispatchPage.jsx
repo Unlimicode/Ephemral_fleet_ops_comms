@@ -65,7 +65,7 @@ export default function ManagerDispatchPage() {
     const handleComplete = async (tripId) => {
         if (!confirm('Are you sure you want to force mark this trip complete?')) return;
         try {
-            await api.patch(`/trips/${tripId}/complete`);
+            await api.patch(`/trips/${tripId}/force-complete`);
             fetchData();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to complete trip.');

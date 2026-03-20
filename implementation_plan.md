@@ -827,3 +827,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/SwiftlinkHomePage.jsx`
 - **What changed:** Removed `mask-merge-down` class from Section 1 on mobile via conditional className
 - **Why:** The IntersectionObserver clip effect clips the bottom 15% of Section 1 on scroll, hiding the Request Transfer button which sits near the section bottom; the stacking visual is desktop-only so the clip is not needed on mobile
+
+### [Sprint 19] — Add manager force-complete route
+- **Date:** 2026-03-20
+- **Files modified:** `backend/routes/trips.js`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- **What changed:** Added PATCH /:tripId/force-complete route protected by fleet_manager role; updated handleComplete in ManagerDispatchPage to call force-complete instead of the driver-only complete route
+- **Why:** Manager was calling a driver-only route (requireAuth(['driver'])), always receiving 403. No manager-level force-complete endpoint existed.
