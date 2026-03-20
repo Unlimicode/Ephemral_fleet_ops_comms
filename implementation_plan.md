@@ -839,3 +839,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/components/layout/DriverLayout.jsx`, `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/App.jsx`
 - **What changed:** Removed Active tab from DriverLayout bottom tab bar and desktop nav; removed 30-second polling loop that checked for activeTripId; removed /driver/trips/active route from App.jsx; wrapped active trip cards in DriverTripsPage with a clickable div that navigates to /driver/trips/:tripId on tap
 - **Why:** Active tab duplicated the Trips tab with no additional value; active trips now navigate directly to the DriverActiveTripPage which has full trip controls, making the separate tab and polling unnecessary.
+
+### [Sprint 19] — Full ChatWindow redesign with animations and session state
+- **Date:** 2026-03-20
+- **Files modified:** `frontend/src/components/ChatWindow.jsx`, `frontend/src/hooks/useChat.js`, `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** Complete rewrite of ChatWindow with three distinct states (pre-connection with animated pulse rings and shimmer badge, connected with message animations and typing indicator, session-closed with fade-in card); added sessionClosed state to useChat hook replacing setError on session_closed event; removed vestigial empty session_closed useEffects from BookingLandingPage
+- **Why:** Previous ChatWindow had no pre-connection UX, no session-closed UI, no message entry animations, and the session_closed socket event was handled inconsistently across parent components instead of being owned by the chat component itself.

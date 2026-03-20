@@ -5,6 +5,7 @@ export default function useChat({ tripId, token, role }) {
     const [messages, setMessages] = useState([]);
     const [connected, setConnected] = useState(false);
     const [error, setError] = useState(null);
+    const [sessionClosed, setSessionClosed] = useState(false);
     const socketRef = useRef(null);
 
     useEffect(() => {
@@ -35,8 +36,8 @@ export default function useChat({ tripId, token, role }) {
             setMessages(prev => [...prev, msg]);
         });
 
-        socket.on('session_closed', (payload) => {
-            setError(payload?.reason || 'Session has expired. This trip is complete.');
+        socket.on('session_closed', () => {
+            setSessionClosed(true);
             socket.disconnect();
         });
 
@@ -50,5 +51,5 @@ export default function useChat({ tripId, token, role }) {
         socketRef.current.emit('send_message', { content });
     }, [connected]);
 
-    return { messages, connected, error, sendMessage };
+    return { messages, connected, error, sendMessage, sessionClosed };
 }

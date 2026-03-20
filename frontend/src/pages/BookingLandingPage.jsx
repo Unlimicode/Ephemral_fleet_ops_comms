@@ -121,15 +121,6 @@ export default function BookingLandingPage() {
         }
     }, [tripId, fetchBooking]);
 
-    // Handle session_closed from socket
-    useEffect(() => {
-        // Socket.IO event listener for session_closed
-        // Note: useChat doesn't return the socket instance directly easily, 
-        // but we can listen for status changes in poll.
-        // If we want immediate response to session_closed, useChat should ideally 
-        // have a callback or expose the socket.
-    }, []);
-
     // Live Countdown for Complaint Window
     useEffect(() => {
         if (complaintWindowSeconds === null || complaintWindowSeconds <= 0) return;
@@ -176,10 +167,6 @@ export default function BookingLandingPage() {
         const interval = setInterval(pollProgress, 30000);
         return () => clearInterval(interval);
     }, [complaintStatus.success, tripId]);
-
-    useEffect(() => {
-        // Handled by ChatWindow
-    }, []);
 
     if (loading) return <LoadingState />;
     if (authFailed) return <AuthError email={recoveryEmail} setEmail={setRecoveryEmail} onRetry={handleRequestNewLink} recoverySent={recoverySent} />;
