@@ -67,7 +67,7 @@ export default function DriverTripsPage({ defaultTab }) {
         emptyState = { icon: '📋', title: 'No upcoming trips', subtitle: 'New assignments will appear here' };
     } else if (activeTab === 'active') {
         displayedTrips = activeTripsList;
-        emptyState = { icon: '⚡', title: 'No active trips', subtitle: 'Accept an assignment to start a trip' };
+        emptyState = { icon: '⚡', title: 'No active trips', subtitle: 'Head to Upcoming to accept an assignment' };
     } else {
         displayedTrips = completedTrips;
         emptyState = { icon: '✅', title: 'No completed trips', subtitle: 'Your trip history will appear here' };
@@ -124,15 +124,19 @@ export default function DriverTripsPage({ defaultTab }) {
                     </div>
                 </>
             ) : displayedTrips.length === 0 ? (
-                <div className="reveal-up stagger-2" style={{
-                    padding: '48px 24px', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', gap: '12px',
-                    border: '1.5px dashed rgba(13,13,13,0.1)', borderRadius: '20px',
-                    background: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(20px)'
+                <div className="glass-card-dark reveal-up stagger-2" style={{
+                    padding: '40px 24px', borderRadius: '24px', textAlign: 'center'
                 }}>
-                    <span style={{ fontSize: '32px' }}>{emptyState.icon}</span>
-                    <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' }}>{emptyState.title}</p>
-                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>{emptyState.subtitle}</p>
+                    <div style={{
+                        width: '72px', height: '72px', borderRadius: '999px',
+                        background: 'rgba(108,99,255,0.12)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        margin: '0 auto 16px', fontSize: '40px', color: '#6C63FF'
+                    }}>
+                        {emptyState.icon}
+                    </div>
+                    <p style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.05em', color: '#FFF', margin: 0 }} className="kinetic-text">{emptyState.title}</p>
+                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '6px', lineHeight: 1.5 }}>{emptyState.subtitle}</p>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

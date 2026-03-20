@@ -50,7 +50,31 @@ export default function DriverActiveTripPage() {
         }
     };
 
-    if (!loading && !trip) return <div style={{ padding: '40px', textAlign: 'center' }}>Trip not found.</div>;
+    if (!loading && !trip) return (
+        <div style={{ padding: '0 0 20px 0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="reveal-up" style={{ padding: '20px 20px 0 20px' }}>
+                <button onClick={() => navigate('/driver/trips')} style={{
+                    background: 'transparent', border: 'none', color: 'var(--text-secondary)',
+                    fontSize: '28px', cursor: 'pointer', padding: 0
+                }}>←</button>
+            </div>
+            <div style={{ padding: '0 20px' }}>
+                <div className="glass-card-dark" style={{ padding: '40px 24px', borderRadius: '24px', textAlign: 'center' }}>
+                    <div style={{
+                        width: '72px', height: '72px', borderRadius: '999px',
+                        background: 'rgba(108,99,255,0.12)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        margin: '0 auto 16px', fontSize: '40px', color: '#6C63FF'
+                    }}>⚠️</div>
+                    <p className="kinetic-text" style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.05em', color: '#FFF', margin: '0 0 6px 0' }}>Trip Not Found</p>
+                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5, margin: '0 0 24px 0' }}>This trip may have ended or is unavailable.</p>
+                    <button className="btn-premium" onClick={() => navigate('/driver/trips')} style={{ background: '#6C63FF', padding: '14px 32px' }}>
+                        Back to Trips
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     const isInProgress = trip?.status === 'in_progress';
     const sh = { background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear', borderRadius: '12px' };

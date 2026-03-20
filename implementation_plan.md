@@ -869,3 +869,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`
 - **What changed:** Replaced "Loading..." text in DriverTripsPage with 3 shimmer skeleton cards matching DriverTripCard layout (status badge, route, timestamp, action button blocks); replaced early-return loading pattern in DriverActiveTripPage with inline skeleton sections matching the 4-section loaded layout so the back button stays visible during load; both use the same shimmer keyframe (200% → -200% backgroundPosition, 1.5s linear infinite)
 - **Why:** Plain text loading states give no visual affordance of what is coming; skeletons reduce perceived load time and prevent layout shift when content arrives.
+
+### [Sprint 19] — Polish empty states on driver trips and active trip pages
+- **Date:** 2026-03-21
+- **Files modified:** `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`
+- **What changed:** Replaced light dashed-border empty state in DriverTripsPage with glass-card-dark card, purple icon container, kinetic-text title, muted subtitle; updated active tab subtitle to guide driver to Upcoming tab; replaced plain "Trip not found." text return in DriverActiveTripPage with a full layout including back button, glass-card-dark error card with icon, kinetic-text title, subtitle, and #6C63FF btn-premium back button
+- **Why:** Previous empty and error states had no visual consistency with the rest of the driver UI and gave no recovery path; the not-found state previously had no back button leaving the driver stranded.
