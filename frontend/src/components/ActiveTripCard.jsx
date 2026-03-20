@@ -1,6 +1,8 @@
-export default function ActiveTripCard({ trip, onComplete }) {
+export default function ActiveTripCard({ trip, onComplete, isConfirming, onConfirm, onCancel }) {
     return (
         <div className="glass-card session-pulse" style={{ padding: '24px', overflow: 'visible' }}>
+            <style>{`@keyframes confirmFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', margin: '12px 12px 0 0', position: 'relative' }}>
                 <span className="session-pulse" style={{
                     width: '10px', height: '10px', borderRadius: '50%',
@@ -27,17 +29,45 @@ export default function ActiveTripCard({ trip, onComplete }) {
                 </p>
             </div>
 
-            <button
-                className="glass-button"
-                onClick={() => onComplete(trip.id)}
-                style={{
-                    width: '100%', padding: '12px', borderRadius: '12px',
-                    color: '#F5EDE3', fontSize: '14px', fontWeight: 600,
-                    cursor: 'pointer'
-                }}
-            >
-                Mark Complete
-            </button>
+            {isConfirming ? (
+                <div style={{
+                    display: 'flex', gap: '8px',
+                    animation: 'confirmFadeIn 0.15s ease both'
+                }}>
+                    <button
+                        onClick={onConfirm}
+                        style={{
+                            flex: 1, padding: '12px', borderRadius: '999px', border: 'none',
+                            background: '#6C63FF', color: '#FFF',
+                            fontSize: '14px', fontWeight: 700, cursor: 'pointer'
+                        }}
+                    >
+                        Confirm
+                    </button>
+                    <button
+                        onClick={onCancel}
+                        style={{
+                            flex: 1, padding: '12px', borderRadius: '999px', border: 'none',
+                            background: 'rgba(255,255,255,0.1)', color: 'var(--text-dark)',
+                            fontSize: '14px', fontWeight: 700, cursor: 'pointer'
+                        }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            ) : (
+                <button
+                    className="glass-button"
+                    onClick={() => onComplete(trip.id)}
+                    style={{
+                        width: '100%', padding: '12px', borderRadius: '12px',
+                        color: '#F5EDE3', fontSize: '14px', fontWeight: 600,
+                        cursor: 'pointer'
+                    }}
+                >
+                    Mark Complete
+                </button>
+            )}
         </div>
     );
 }

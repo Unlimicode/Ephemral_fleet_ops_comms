@@ -851,3 +851,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
 - **What changed:** Switched complaint form outer wrapper from glass-card to per-branch cards; Branch 3 (active form) now glass-card-dark with #6C63FF left border, kinetic-text header, depleting countdown bar with colour shift (#6C63FF > 2h, #F59E0B <= 2h, #EF4444 <= 30min), styled category pills (#6C63FF selected / rgba purple unselected), dark textarea with focus ring, character counter at 500 chars, error as glass-card banner with red left border; Branch 2 (expired) switched to glass-card-dark with kinetic-text; Branch 1 (success tracker) untouched
 - **Why:** Previous form used light glass-card inconsistent with dark chat UI; countdown was an unreadable inline IIFE badge; pills had no visual hierarchy; error was plain red text with no card treatment.
+
+### [Sprint 19] — Replace alert/confirm dialogs with toast and inline confirmation
+- **Date:** 2026-03-20
+- **Files modified:** `frontend/src/pages/manager/ManagerDispatchPage.jsx`, `frontend/src/components/ActiveTripCard.jsx`
+- **What changed:** Replaced alert() in handleAssign catch with addToast; removed confirm() guard from handleComplete and replaced with confirmingTripId state; ActiveTripCard now accepts isConfirming/onConfirm/onCancel props and swaps "Mark Complete" for a Confirm/Cancel pill row (fade-in animation) when isConfirming is true; replaced alert() in handleComplete catch with addToast
+- **Why:** Native alert() and confirm() block the browser thread, cannot be styled, and break the design system — all feedback should go through Toast and inline UI.

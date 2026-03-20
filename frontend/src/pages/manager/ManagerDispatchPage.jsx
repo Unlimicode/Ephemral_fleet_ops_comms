@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import api from '../../api/axios.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useToast } from '../../components/Toast.jsx';
 import StatCard from '../../components/StatCard.jsx';
 import BookingCard from '../../components/BookingCard.jsx';
 import ActiveTripCard from '../../components/ActiveTripCard.jsx';
@@ -9,11 +10,13 @@ import PageWrapper from '../../components/layout/PageWrapper.jsx';
 
 export default function ManagerDispatchPage() {
     const { token } = useAuth();
+    const { addToast } = useToast();
     const [trips, setTrips] = useState([]);
     const [drivers, setDrivers] = useState([]);
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [confirmingTripId, setConfirmingTripId] = useState(null);
 
     const fetchData = useCallback(async () => {
         try {
@@ -58,17 +61,16 @@ export default function ManagerDispatchPage() {
             await api.patch(`/trips/${tripId}/assign`, { driver_id: driverId, vehicle_id: vehicleId });
             fetchData();
         } catch (err) {
-            alert(err.response?.data?.message || 'Assignment failed.');
+            addToast(err.response?.data?.message || 'Assignment failed.', 'error');
         }
     };
 
     const handleComplete = async (tripId) => {
-        if (!confirm('Are you sure you want to force mark this trip complete?')) return;
         try {
             await api.patch(`/trips/${tripId}/force-complete`);
             fetchData();
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to complete trip.');
+            addToast(err.response?.data?.message || 'Failed to complete trip.', 'error');
         }
     };
 
@@ -209,7 +211,10 @@ export default function ManagerDispatchPage() {
                                 <ActiveTripCard
                                     key={trip.id}
                                     trip={trip}
-                                    onComplete={handleComplete}
+                                    onComplete={() => setConfirmingTripId(trip.id)}
+                                    isConfirming={confirmingTripId === trip.id}
+                                    onConfirm={() => { handleComplete(trip.id); setConfirmingTripId(null); }}
+                                    onCancel={() => setConfirmingTripId(null)}
                                 />
                             ))}
                         </div>
