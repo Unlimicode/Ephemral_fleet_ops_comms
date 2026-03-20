@@ -71,6 +71,7 @@ export default function BookingLandingPage() {
     const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
     const [complaintWindowSeconds, setComplaintWindowSeconds] = useState(null);
     const [complaintProgress, setComplaintProgress] = useState(null);
+    const [descFocused, setDescFocused] = useState(false);
 
     const authStarted = useRef(false);
     // Initial Auth & Session Hydration
@@ -302,7 +303,7 @@ export default function BookingLandingPage() {
 
                 {/* Complaint Form */}
                 {isCompleted && (
-                    <div className="glass-card p-7 reveal-up active mb-10">
+                    <div className="reveal-up active mb-10">
                         {complaintStatus.success ? (
                             <div className="glass-card-dark reveal-up active" style={{ padding: '24px', borderRadius: '24px' }}>
                                 {/* Header */}
@@ -394,64 +395,139 @@ export default function BookingLandingPage() {
                                 )}
                             </div>
                         ) : complaintWindowSeconds !== null && complaintWindowSeconds <= 0 ? (
-                            <div className="bg-bg-dark/5 border border-black/5 rounded-2xl p-6 text-center">
-                                <div className="text-3xl mb-2">⏰</div>
-                                <p className="font-bold text-text-muted text-sm uppercase tracking-wider">Complaint Window Closed</p>
-                                <p className="text-text-muted text-xs mt-1">Privacy policy: Communication archives purged.</p>
+                            <div className="glass-card-dark" style={{ padding: '40px 28px', borderRadius: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ fontSize: '40px' }}>⏰</div>
+                                <h3 className="kinetic-text" style={{ fontSize: '20px', margin: 0 }}>Complaint Window Closed</h3>
+                                <p style={{ fontSize: '13px', color: 'rgba(240,242,247,0.45)', margin: 0, lineHeight: 1.6 }}>
+                                    The 24-hour window for this trip has passed.
+                                </p>
                             </div>
                         ) : (
-                            <>
-                                <div className="flex justify-between items-end mb-6">
-                                    <h3 className="font-extrabold text-xl">File a Complaint</h3>
-                                    <span className="text-text-muted text-[10px] font-bold uppercase tracking-widest bg-bg-dark/5 px-2 py-1 rounded">
-                                        {complaintWindowSeconds ? (() => {
-                                            const h = Math.floor(complaintWindowSeconds / 3600);
-                                            const m = Math.floor((complaintWindowSeconds % 3600) / 60);
-                                            const s = complaintWindowSeconds % 60;
-                                            return `${h}h ${m}m ${s}s left`;
-                                        })() : '24h Window'}
-                                    </span>
+                            <div className="glass-card-dark" style={{ padding: '28px 24px', borderRadius: '24px', borderLeft: '3px solid #6C63FF' }}>
+                                <style>{`.complaint-desc::placeholder { color: rgba(255,255,255,0.35); }`}</style>
+
+                                {/* Header */}
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h3 className="kinetic-text" style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.05em', color: '#F0F2F7', margin: '0 0 6px 0' }}>
+                                        File a Complaint
+                                    </h3>
+                                    <p style={{ fontSize: '13px', color: 'rgba(240,242,247,0.45)', margin: 0, lineHeight: 1.5 }}>
+                                        Your feedback is confidential and helps us maintain service standards
+                                    </p>
                                 </div>
 
-                                <form onSubmit={handleComplaintSubmit} className="space-y-6">
-                                    <div className="overflow-x-auto -mx-2 pb-2">
-                                        <div className="flex gap-2 px-2 whitespace-nowrap">
-                                            {['Service Quality', 'Safety', 'Punctuality', 'Vehicle Condition', 'Other'].map(cat => (
-                                                <button
-                                                    key={cat}
-                                                    type="button"
-                                                    onClick={() => setComplaintForm({ ...complaintForm, category: cat })}
-                                                    className={`px-4 py-2 rounded-pill text-[11px] font-bold tracking-tight transition-all ${complaintForm.category === cat ? 'bg-bg-dark text-white' : 'bg-white/40 border border-black/5 text-text-muted'}`}
-                                                >
-                                                    {cat}
-                                                </button>
-                                            ))}
+                                {/* Countdown timer */}
+                                {complaintWindowSeconds !== null && complaintWindowSeconds > 0 && (() => {
+                                    const timerColor = complaintWindowSeconds <= 1800 ? '#EF4444' : complaintWindowSeconds <= 7200 ? '#F59E0B' : '#6C63FF';
+                                    const h = Math.floor(complaintWindowSeconds / 3600);
+                                    const m = Math.floor((complaintWindowSeconds % 3600) / 60);
+                                    const s = complaintWindowSeconds % 60;
+                                    const barPercent = Math.min(100, (complaintWindowSeconds / 86400) * 100);
+                                    return (
+                                        <div style={{ marginBottom: '28px' }}>
+                                            <p className="kinetic-text" style={{ fontSize: '28px', fontWeight: 800, color: timerColor, margin: '0 0 10px 0', letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums' }}>
+                                                {h}h {String(m).padStart(2, '0')}m {String(s).padStart(2, '0')}s
+                                            </p>
+                                            <div style={{ width: '100%', height: '3px', borderRadius: '9999px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', marginBottom: '8px' }}>
+                                                <div style={{
+                                                    width: `${barPercent}%`, height: '100%',
+                                                    background: timerColor, borderRadius: '9999px',
+                                                    transition: 'width 1s linear, background 0.5s ease'
+                                                }} />
+                                            </div>
+                                            <p style={{ fontSize: '11px', color: 'rgba(240,242,247,0.4)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                                remaining to file
+                                            </p>
+                                        </div>
+                                    );
+                                })()}
+
+                                <form onSubmit={handleComplaintSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    {/* Category pills */}
+                                    <div style={{ overflowX: 'auto', margin: '0 -4px', paddingBottom: '4px' }}>
+                                        <div style={{ display: 'flex', gap: '8px', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                                            {['Service Quality', 'Safety', 'Punctuality', 'Vehicle Condition', 'Other'].map(cat => {
+                                                const selected = complaintForm.category === cat;
+                                                return (
+                                                    <button
+                                                        key={cat}
+                                                        type="button"
+                                                        onClick={() => setComplaintForm({ ...complaintForm, category: cat })}
+                                                        style={{
+                                                            padding: '8px 16px', borderRadius: '9999px',
+                                                            fontSize: '12px', fontWeight: 700, flexShrink: 0,
+                                                            border: selected ? 'none' : '1px solid rgba(108,99,255,0.2)',
+                                                            background: selected ? '#6C63FF' : 'rgba(108,99,255,0.15)',
+                                                            color: selected ? '#FFF' : '#A5A0FF',
+                                                            boxShadow: selected ? '0 2px 12px rgba(108,99,255,0.4)' : 'none',
+                                                            cursor: 'pointer', transition: 'all 0.15s ease'
+                                                        }}
+                                                    >
+                                                        {cat}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 
-                                    <textarea
-                                        placeholder="Describe what happened..."
-                                        value={complaintForm.description}
-                                        onChange={(e) => setComplaintForm({ ...complaintForm, description: e.target.value })}
-                                        className="w-full bg-white/40 border border-white/60 rounded-input p-4 text-sm resize-none min-h-[120px] focus:ring-1 focus:ring-primary outline-none transition-all"
-                                        required
-                                    />
+                                    {/* Textarea with character counter */}
+                                    <div style={{ position: 'relative' }}>
+                                        <textarea
+                                            className="complaint-desc"
+                                            placeholder="Describe what happened..."
+                                            value={complaintForm.description}
+                                            onChange={(e) => setComplaintForm({ ...complaintForm, description: e.target.value.slice(0, 500) })}
+                                            onFocus={() => setDescFocused(true)}
+                                            onBlur={() => setDescFocused(false)}
+                                            maxLength={500}
+                                            required
+                                            style={{
+                                                width: '100%', minHeight: '120px', padding: '16px',
+                                                background: 'rgba(255,255,255,0.07)',
+                                                border: `1px solid ${descFocused ? 'rgba(108,99,255,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                                                boxShadow: descFocused ? '0 0 0 3px rgba(108,99,255,0.1)' : 'none',
+                                                borderRadius: '16px', color: '#F5EDE3',
+                                                fontSize: '14px', lineHeight: 1.6,
+                                                resize: 'none', outline: 'none',
+                                                fontFamily: 'Inter, sans-serif',
+                                                boxSizing: 'border-box', display: 'block',
+                                                transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                                                paddingBottom: '32px'
+                                            }}
+                                        />
+                                        <span style={{
+                                            position: 'absolute', bottom: '12px', right: '14px',
+                                            fontSize: '11px', fontWeight: 600, pointerEvents: 'none',
+                                            color: complaintForm.description.length > 500 ? '#EF4444' : 'rgba(255,255,255,0.4)'
+                                        }}>
+                                            {complaintForm.description.length}/500
+                                        </span>
+                                    </div>
 
+                                    {/* Error banner */}
                                     {complaintStatus.error && (
-                                        <p style={{ fontSize: '13px', color: '#EF4444', fontWeight: 600, textAlign: 'center' }}>
-                                            Failed to submit. Please try again.
-                                        </p>
+                                        <div className="glass-card" style={{
+                                            padding: '12px 16px', borderRadius: '12px',
+                                            borderLeft: '3px solid #EF4444',
+                                            display: 'flex', alignItems: 'center', gap: '10px'
+                                        }}>
+                                            <span style={{ fontSize: '14px', flexShrink: 0 }}>⚠️</span>
+                                            <p style={{ fontSize: '13px', color: '#EF4444', fontWeight: 600, margin: 0 }}>
+                                                Failed to submit. Please try again.
+                                            </p>
+                                        </div>
                                     )}
 
                                     <button
                                         type="submit"
-                                        disabled={complaintStatus.loading}
-                                        className="btn-premium btn-accent w-full py-4 rounded-xl flex items-center justify-center gap-2"
+                                        disabled={!complaintForm.category || !complaintForm.description.trim() || complaintForm.description.length > 500 || complaintStatus.loading}
+                                        className="btn-premium btn-accent w-full"
+                                        style={{ padding: '16px', borderRadius: '14px' }}
                                     >
                                         {complaintStatus.loading ? 'Submitting...' : 'Submit Complaint →'}
                                     </button>
                                 </form>
-                            </>
+                            </div>
                         )}
                     </div>
                 )}

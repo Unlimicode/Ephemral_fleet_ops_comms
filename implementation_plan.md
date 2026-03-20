@@ -845,3 +845,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/components/ChatWindow.jsx`, `frontend/src/hooks/useChat.js`, `frontend/src/pages/BookingLandingPage.jsx`
 - **What changed:** Complete rewrite of ChatWindow with three distinct states (pre-connection with animated pulse rings and shimmer badge, connected with message animations and typing indicator, session-closed with fade-in card); added sessionClosed state to useChat hook replacing setError on session_closed event; removed vestigial empty session_closed useEffects from BookingLandingPage
 - **Why:** Previous ChatWindow had no pre-connection UX, no session-closed UI, no message entry animations, and the session_closed socket event was handled inconsistently across parent components instead of being owned by the chat component itself.
+
+### [Sprint 19] — Redesign complaint form with depleting timer, styled pills, character count
+- **Date:** 2026-03-20
+- **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** Switched complaint form outer wrapper from glass-card to per-branch cards; Branch 3 (active form) now glass-card-dark with #6C63FF left border, kinetic-text header, depleting countdown bar with colour shift (#6C63FF > 2h, #F59E0B <= 2h, #EF4444 <= 30min), styled category pills (#6C63FF selected / rgba purple unselected), dark textarea with focus ring, character counter at 500 chars, error as glass-card banner with red left border; Branch 2 (expired) switched to glass-card-dark with kinetic-text; Branch 1 (success tracker) untouched
+- **Why:** Previous form used light glass-card inconsistent with dark chat UI; countdown was an unreadable inline IIFE badge; pills had no visual hierarchy; error was plain red text with no card treatment.
