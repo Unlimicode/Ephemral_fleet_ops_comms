@@ -881,3 +881,15 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
 - **What changed:** Fixed API call URL from `/bookings/request-new-link` to `/bookings/${tripId}/request-new-link`; fixed request body field from `email` to `client_corporate_email` to match backend schema; moved `setRecoverySent(true)` into the try block so it only fires on success; added `recoveryError` state and set it in the catch block instead of silently swallowing errors; updated `AuthError` component to accept `onEmailChange` and `recoveryError` props instead of `setEmail`, clears error on input change, and displays red error text below the send button when set
 - **Why:** The link recovery flow was broken end-to-end — wrong URL returned 404, wrong field name caused backend validation failure, and errors were silently dropped leaving the client with no feedback
+
+### [Sprint 19] — Full redesign of ManagerDispatchPage
+- **Date:** 2026-03-21
+- **Files modified:** `frontend/src/pages/manager/ManagerDispatchPage.jsx`, `frontend/src/hooks/useWindowWidth.js` (created)
+- **What changed:** Complete render-layer redesign — removed PageWrapper wrapper; added header row with kinetic-text "Dispatch" and live socket indicator (pulses #6C63FF when connected); replaced StatCard grid with a 3-column metrics row: Active Trips card (glass-card-dark, 56px kinetic number, progress bar), stacked Pending + Drivers mini-cards, Fleet Status card with CSS conic-gradient donut chart showing deployed/total vehicles; replaced section headers with 18px bold + #A5A0FF count badge; upgraded all empty states to glass-card-dark with purple icon circles and kinetic-text; upgraded Awaiting Acceptance items to glass-card-dark rows with amber dot "Pending" label; added skeleton loader matching new layout; added glass-card-dark error state with red left border and retry button; made bottom row 60/40 split on desktop; added responsive isMobile breakpoint via useWindowWidth hook; wired socket connect/disconnect events to socketConnected state
+- **Why:** Sprint 18/19 manager redesign goal — Stitch-inspired dark metrics layout replacing generic StatCards for a more information-dense, visually distinct dispatch centre
+
+### [Sprint 19] — Fix field name bugs in dispatch and ActiveTripCard
+- **Date:** 2026-03-21
+- **Files modified:** `frontend/src/components/ActiveTripCard.jsx`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- **What changed:** ActiveTripCard: replaced `trip.driver?.full_name` and `trip.vehicle?.registration_number` with `trip.driver_name` and `trip.vehicle_reg` — the correct flat aliases returned by `GET /trips` JOIN query; ManagerDispatchPage: replaced `d.availability === 'available'` with `d.availability_status === 'available'` — the correct field name hydrated from Redis in `GET /roster/drivers`
+- **Why:** Both fields were silently returning undefined — ActiveTripCard always rendered "Driver • Vehicle" for every active trip, and the available drivers count in the metrics card was always 0

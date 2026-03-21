@@ -14,7 +14,7 @@ export default function ActiveTripCard({ trip, onComplete, isConfirming, onConfi
             </div>
 
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', margin: '0 0 12px 0' }}>
-                {trip.driver?.full_name || 'Driver'} • {trip.vehicle?.registration_number || 'Vehicle'}
+                {trip.driver_name || 'Driver'} • {trip.vehicle_reg || 'Vehicle'}
             </h3>
 
             <div style={{ padding: '12px', background: 'rgba(255,255,255,0.4)', borderRadius: '12px', marginBottom: '16px' }}>
