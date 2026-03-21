@@ -67,12 +67,21 @@ export default function ManagerLayout() {
                 key={link.to}
                 to={link.to}
                 onClick={() => setDrawerOpen(false)}
-                className={({ isActive }) => `
-                    flex items-center gap-3 px-5 py-2 rounded-full transition-all text-sm font-bold relative
-                    ${isActive
-                        ? 'bg-[#0D0D0D] text-[#F5EDE3]'
-                        : vertical ? 'text-[#F5EDE3] hover:bg-white/10' : 'text-[#6B6B6B] hover:bg-white/40'}
-                `}
+                className={({ isActive }) => `flex items-center gap-2 text-sm font-bold relative${!isActive ? (vertical ? ' hover:bg-white/10' : ' hover:bg-[rgba(0,0,0,0.06)]') : ''}`}
+                style={({ isActive }) => isActive ? {
+                    background: '#2D2D2D',
+                    color: '#F5EDE3',
+                    borderRadius: '9999px',
+                    padding: '8px 18px',
+                    transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+                    textDecoration: 'none',
+                } : {
+                    color: vertical ? '#F5EDE3' : '#6B6B6B',
+                    padding: '8px 18px',
+                    borderRadius: '9999px',
+                    transition: 'all 0.3s ease',
+                    textDecoration: 'none',
+                }}
             >
                 {link.label}
                 {link.label === 'Complaints' && complaintCount > 0 && (
@@ -124,24 +133,44 @@ export default function ManagerLayout() {
             ) : (
                 /* Desktop/Tablet Pill Nav */
                 <nav style={{
-                    position: 'sticky', top: '16px', zIndex: 50,
+                    position: 'sticky', top: '24px', zIndex: 50,
                     maxWidth: '1440px', margin: '16px auto', padding: '0 16px'
                 }}>
                     <div style={{
-                        background: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(40px)',
-                        border: '1px solid rgba(255,255,255,0.5)', borderRadius: '9999px',
-                        padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                        background: 'rgba(255,255,255,0.25)',
+                        backdropFilter: 'blur(40px)',
+                        WebkitBackdropFilter: 'blur(40px)',
+                        border: '1px solid rgba(255,255,255,0.5)',
+                        borderRadius: '9999px',
+                        padding: '10px 24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
                     }}>
                         {/* Logo */}
-                        <div className="flex items-center gap-3">
-                            <SwiftlinkLogo height={36} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <SwiftlinkLogo height={32} />
+                            <span style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontWeight: 900, fontSize: '17px', letterSpacing: '-0.03em', color: '#0D0D0D' }}>SwiftLink</span>
                         </div>
 
                         {/* Middle Links (Desktop Only) */}
-                        {isDesktop && <div className="flex gap-2">{renderNavLinks()}</div>}
+                        {isDesktop && (
+                            <div style={{ position: 'relative', display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.04)', borderRadius: '9999px', padding: '4px' }}>
+                                {renderNavLinks()}
+                            </div>
+                        )}
 
                         {/* Right Actions */}
-                        <div className="flex items-center gap-4">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            {/* Clock pill — desktop only */}
+                            {isDesktop && (
+                                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', fontWeight: 600, color: '#6B6B6B', background: 'rgba(0,0,0,0.04)', borderRadius: '9999px', padding: '6px 14px', letterSpacing: '0.02em' }}>
+                                    {currentTime.toLocaleTimeString()} · {currentTime.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                </div>
+                            )}
+                            {/* Divider */}
+                            {isDesktop && <div style={{ width: '1px', height: '24px', background: 'rgba(0,0,0,0.1)' }} />}
                             {/* Notification Bell */}
                             <div className="relative cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
                                 🔔
@@ -214,25 +243,11 @@ export default function ManagerLayout() {
             <main style={{
                 maxWidth: isMobile ? '100%' : '1440px',
                 margin: '0 auto',
-                padding: isMobile ? '16px' : isTablet ? '20px 24px' : '24px 32px',
+                padding: isMobile ? '16px' : isTablet ? '16px 24px' : '20px 32px',
                 paddingBottom: isMobile ? '80px' : '32px',
                 position: 'relative',
                 zIndex: 1
             }}>
-                {/* Live Clock (Desktop/Tablet) */}
-                {!isMobile && (
-                    <div className="flex justify-end mb-6">
-                        <div style={{
-                            background: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(40px)',
-                            border: '1px solid rgba(255,255,255,0.5)', borderRadius: '9999px',
-                            padding: '6px 16px', fontSize: '12px', fontWeight: 600,
-                            fontFamily: 'JetBrains Mono, monospace', color: '#6B6B6B'
-                        }}>
-                            {currentTime.toLocaleTimeString()} • {currentTime.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                        </div>
-                    </div>
-                )}
-
                 <Outlet />
             </main>
 

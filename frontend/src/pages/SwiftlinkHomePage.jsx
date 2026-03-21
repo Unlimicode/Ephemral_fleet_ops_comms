@@ -176,8 +176,9 @@ export default function SwiftlinkHomePage() {
                 border: '1px solid rgba(255,255,255,0.3)', borderRadius: 9999,
                 padding: isMobile ? '12px 20px' : '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <SwiftlinkLogo height={isMobile ? 28 : 36} />
+                    <span style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontWeight: 900, fontSize: isMobile ? '15px' : '18px', letterSpacing: '-0.03em', color: '#0D0D0D' }}>SwiftLink</span>
                 </div>
 
                 {isMobile ? (
