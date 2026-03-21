@@ -893,3 +893,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/components/ActiveTripCard.jsx`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
 - **What changed:** ActiveTripCard: replaced `trip.driver?.full_name` and `trip.vehicle?.registration_number` with `trip.driver_name` and `trip.vehicle_reg` — the correct flat aliases returned by `GET /trips` JOIN query; ManagerDispatchPage: replaced `d.availability === 'available'` with `d.availability_status === 'available'` — the correct field name hydrated from Redis in `GET /roster/drivers`
 - **Why:** Both fields were silently returning undefined — ActiveTripCard always rendered "Driver • Vehicle" for every active trip, and the available drivers count in the metrics card was always 0
+
+### [Sprint 19] — Verify useWindowWidth hook and confirm build passes
+- **Date:** 2026-03-21
+- **Files modified:** none (verification only)
+- **What changed:** Confirmed `frontend/src/hooks/useWindowWidth.js` exists with default export; confirmed import in `ManagerDispatchPage.jsx` uses matching default import; `npm run build` passes with 401 modules, 0 errors
+- **Why:** Build verification after dispatch page redesign and field name fixes
