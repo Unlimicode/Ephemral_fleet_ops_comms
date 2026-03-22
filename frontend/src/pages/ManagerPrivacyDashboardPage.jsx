@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import jsPDF from 'jspdf';
 import api from '../api/axios';
-import ManagerLayout from '../components/layout/ManagerLayout.jsx';
-import PageWrapper from '../components/layout/PageWrapper.jsx';
-import GlassCard from '../components/layout/GlassCard.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import useWindowWidth from '../hooks/useWindowWidth.js';
 
 const getEventMessage = (type, data) => {
     const ref = data.id || data.tripId;
@@ -19,24 +18,28 @@ const getEventMessage = (type, data) => {
 
 const getEventColor = (type) => {
     switch (type) {
-        case 'session_created': return '#10b981'; // green
-        case 'session_destroyed': return '#ef4444'; // red
-        case 'complaint_filed': return '#f59e0b'; // amber
-        case 'trip_assigned': return '#3b82f6'; // blue
-        default: return 'var(--text-muted)';
+        case 'session_created': return '#10b981';
+        case 'session_destroyed': return '#ef4444';
+        case 'complaint_filed': return '#f59e0b';
+        case 'trip_assigned': return '#3b82f6';
+        default: return 'rgba(0,0,0,0.3)';
     }
 };
 
 export default function ManagerPrivacyDashboardPage() {
+    const { token } = useAuth();
+    const width = useWindowWidth();
+    const isMobile = width < 768;
+    const isTablet = width >= 768 && width < 1024;
+    const isDesktop = width >= 1024;
+
     const [sessions, setSessions] = useState([]);
     const [summary, setSummary] = useState(null);
+    const [overview, setOverview] = useState(null);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const socketRef = useRef(null);
-
-    // --- Data Fetching ---
 
     const fetchSessions = useCallback(async () => {
         try {
@@ -56,6 +59,15 @@ export default function ManagerPrivacyDashboardPage() {
         }
     }, []);
 
+    const fetchOverview = useCallback(async () => {
+        try {
+            const res = await api.get('/dashboard/overview');
+            setOverview(res.data);
+        } catch (err) {
+            console.error('Failed to fetch overview', err);
+        }
+    }, []);
+
     const addEvent = useCallback((type, data) => {
         const event = {
             id: Date.now(),
@@ -69,16 +81,10 @@ export default function ManagerPrivacyDashboardPage() {
     }, []);
 
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    useEffect(() => {
         const deferredFetch = async () => {
             setLoading(true);
             try {
-                await Promise.all([fetchSessions(), fetchSummary()]);
+                await Promise.all([fetchSessions(), fetchSummary(), fetchOverview()]);
                 setError(false);
             } catch {
                 setError(true);
@@ -89,9 +95,11 @@ export default function ManagerPrivacyDashboardPage() {
         deferredFetch();
         const sessInterval = setInterval(fetchSessions, 5000);
         const summInterval = setInterval(fetchSummary, 30000);
+        const overviewInterval = setInterval(fetchOverview, 10000);
 
-        // Socket.IO for Lifecycle Feed
-        socketRef.current = io(import.meta.env.VITE_WS_URL + '/dashboard');
+        socketRef.current = io(import.meta.env.VITE_WS_URL + '/dashboard', {
+            auth: { token }
+        });
         socketRef.current.on('session_created', (data) => addEvent('session_created', data));
         socketRef.current.on('session_destroyed', (data) => addEvent('session_destroyed', data));
         socketRef.current.on('complaint_filed', (data) => addEvent('complaint_filed', data));
@@ -100,9 +108,10 @@ export default function ManagerPrivacyDashboardPage() {
         return () => {
             clearInterval(sessInterval);
             clearInterval(summInterval);
+            clearInterval(overviewInterval);
             if (socketRef.current) socketRef.current.disconnect();
         };
-    }, [fetchSessions, fetchSummary, addEvent]);
+    }, [fetchSessions, fetchSummary, fetchOverview, addEvent, token]);
 
     const handleExportPDF = async () => {
         try {
@@ -110,13 +119,11 @@ export default function ManagerPrivacyDashboardPage() {
             const report = res.data;
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            // Page dimensions
             const pageWidth = doc.internal.pageSize.getWidth();
             const margin = 20;
             const contentWidth = pageWidth - margin * 2;
             let y = 20;
 
-            // Helper: add text with auto line-wrap
             const addText = (text, x, fontSize, color, bold = false) => {
                 doc.setFontSize(fontSize);
                 doc.setTextColor(...color);
@@ -127,7 +134,6 @@ export default function ManagerPrivacyDashboardPage() {
                 y += lines.length * (fontSize * 0.4) + 4;
             };
 
-            // Header
             addText('SwiftLink Compliance Report', margin, 22, [13, 13, 13], true);
             addText('Mediated Ephemeral Identity Framework — Data Minimization Evidence', margin, 11, [107, 107, 107]);
             addText(`Generated: ${new Date(report.generated_at).toLocaleString()}`, margin, 10, [107, 107, 107]);
@@ -138,7 +144,6 @@ export default function ManagerPrivacyDashboardPage() {
             doc.line(margin, y, pageWidth - margin, y);
             y += 8;
 
-            // Section 1 — Session Metrics
             addText('Session Metrics', margin, 14, [13, 13, 13], true);
             y += 2;
             const c = report.compliance;
@@ -164,7 +169,6 @@ export default function ManagerPrivacyDashboardPage() {
             doc.line(margin, y, pageWidth - margin, y);
             y += 8;
 
-            // Section 2 — Audit Summary
             addText('Audit Summary', margin, 14, [13, 13, 13], true);
             y += 2;
             doc.setFontSize(11);
@@ -178,14 +182,12 @@ export default function ManagerPrivacyDashboardPage() {
             doc.line(margin, y, pageWidth - margin, y);
             y += 8;
 
-            // Section 3 — Architecture Note
             addText('Architecture Note', margin, 14, [13, 13, 13], true);
             y += 2;
             addText(report.architecture_note, margin, 10, [107, 107, 107]);
             y += 4;
             addText(report.regulatory_basis, margin, 10, [107, 107, 107]);
 
-            // Footer
             const pageCount = doc.internal.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
@@ -219,7 +221,7 @@ export default function ManagerPrivacyDashboardPage() {
                 t.destination,
                 t.pickup_time ? new Date(t.pickup_time).toLocaleString() : '—',
                 t.driver_name || t.assigned_driver_id || '—',
-                t.registration_number || t.vehicle_id || '—',
+                t.vehicle_reg || t.vehicle_id || '—',
                 t.status,
                 complaintTripIds.has(t.id) ? 'Yes' : 'No'
             ]);
@@ -242,209 +244,350 @@ export default function ManagerPrivacyDashboardPage() {
 
     if (loading && !summary && sessions.length === 0) {
         return (
-            <PageWrapper>
-                <div style={{ textAlign: 'center', padding: '100px', opacity: 0.5 }}>
-                    <div className="spinner" style={{ margin: '0 auto 12px' }} />
-                    Loading dashboard...
-                </div>
-            </PageWrapper>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', opacity: 0.5 }}>
+                <p style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '14px', fontWeight: 600 }}>Loading dashboard...</p>
+            </div>
         );
     }
 
     if (error && !summary) {
         return (
-            <PageWrapper>
-                <div style={{ textAlign: 'center', padding: '100px' }}>
-                    <h2 style={{ color: '#EF4444' }}>Failed to load dashboard data</h2>
-                    <button onClick={() => window.location.reload()} className="glass-button" style={{ padding: '10px 20px', borderRadius: '12px' }}>Retry</button>
-                </div>
-            </PageWrapper>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '16px' }}>
+                <p style={{ color: '#EF4444', fontWeight: 700, fontFamily: "'Be Vietnam Pro', sans-serif" }}>Failed to load dashboard data</p>
+                <button onClick={() => window.location.reload()} style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Retry</button>
+            </div>
         );
     }
 
+    const activeSessions = (overview?.active_driver_sessions || 0) + (overview?.active_client_sessions || 0);
+    const activeTrips = Math.max(overview?.active_trips || 1, 1);
+    const overviewTrips = overview?.trips || [];
+
     return (
-        <PageWrapper>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <h1 className="kinetic-text reveal-up" style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px' }}>Privacy Dashboard</h1>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={handleExportPDF} className="glass-button" style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
-                        Export PDF
-                    </button>
-                    <button onClick={handleExportTripCSV} className="glass-button" style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
-                        Export Trips CSV
-                    </button>
-                    <button onClick={() => window.location.href = '/manager/audit'} className="glass-button" style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 700 }}>
-                        Export Audit CSV
-                    </button>
+        <>
+            <style>{`
+                @keyframes pulse-dot {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.5; transform: scale(0.8); }
+                }
+                @keyframes float-slow {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    50% { transform: translateY(-30px) rotate(8deg); }
+                }
+                @keyframes float-reverse {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    50% { transform: translateY(20px) rotate(-6deg); }
+                }
+                .privacy-card {
+                    background: rgba(255,255,255,0.55);
+                    backdrop-filter: blur(40px) saturate(180%);
+                    -webkit-backdrop-filter: blur(40px) saturate(180%);
+                    border: 1px solid rgba(255,255,255,0.7);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+                    border-radius: 2rem;
+                    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                }
+                .privacy-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 16px 48px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
+                }
+                .status-pulse {
+                    position: relative;
+                }
+                .status-pulse::after {
+                    content: '';
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    background: inherit;
+                    border-radius: 50%;
+                    z-index: -1;
+                    animation: pulse-dot 2s infinite;
+                }
+                .priv-geo-1 { animation: float-slow 11s ease-in-out infinite; }
+                .priv-geo-2 { animation: float-reverse 9s ease-in-out infinite; }
+                .priv-geo-3 { animation: float-slow 13s ease-in-out infinite; }
+            `}</style>
+
+            {/* Fixed background layer */}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                <div style={{
+                    position: 'absolute', inset: 0, opacity: 0.4,
+                    backgroundImage: 'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)',
+                    backgroundSize: '80px 80px'
+                }} />
+                <div className="priv-geo-1" style={{ position: 'absolute', top: '10%', left: '3%', color: 'rgba(108,99,255,0.10)', pointerEvents: 'none' }}>
+                    <div style={{ width: 0, height: 0, borderLeft: '120px solid transparent', borderRight: '120px solid transparent', borderBottom: '180px solid currentColor', transform: 'rotate(12deg) scale(1.5)' }} />
+                </div>
+                <div className="priv-geo-2" style={{ position: 'absolute', bottom: '8%', right: '5%', color: 'rgba(108,99,255,0.08)', pointerEvents: 'none' }}>
+                    <div style={{ width: 0, height: 0, borderLeft: '100px solid transparent', borderRight: '100px solid transparent', borderBottom: '150px solid currentColor', transform: 'rotate(-15deg) scale(1.8)' }} />
+                </div>
+                <div className="priv-geo-3" style={{ position: 'absolute', top: '45%', right: '15%', color: 'rgba(0,212,255,0.06)', pointerEvents: 'none' }}>
+                    <div style={{ width: 0, height: 0, borderLeft: '60px solid transparent', borderRight: '60px solid transparent', borderBottom: '90px solid currentColor', transform: 'rotate(25deg)' }} />
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '24px' }}>
+            {/* Page content */}
+            <div style={{ position: 'relative', zIndex: 1, maxWidth: '1440px', margin: '0 auto', padding: isMobile ? '12px 16px 80px' : '16px 40px 80px', fontFamily: "'Be Vietnam Pro', sans-serif" }}>
 
-                {/* Section 1: Live Session Monitor */}
-                <GlassCard style={{ padding: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', animation: 'pulse 2s infinite' }} />
-                        <h2 style={{ fontSize: '18px', fontWeight: 800 }}>Live Sessions</h2>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {sessions.length > 0 ? sessions.map(s => (
-                            <SessionRow key={s.tripId} session={s} />
-                        )) : (
-                            <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
-                                <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>🛡️</span>
-                                <p style={{ fontSize: '14px' }}>No active sessions. All data has been expired.</p>
-                            </div>
-                        )}
-                    </div>
-                </GlassCard>
-
-                {/* Section 2: TTL Countdown Rings */}
-                <GlassCard style={{ padding: '24px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px' }}>Session Lifetimes</h2>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
-                        {sessions.filter(s => s.ttl > 0).slice(0, 6).map(s => (
-                            <TTLRing key={`${s.tripId}-${s.ttl}`} session={s} />
-                        ))}
-                        {sessions.filter(s => s.ttl > 0).length === 0 && (
-                            <p style={{ opacity: 0.5, fontSize: '14px', marginTop: '40px' }}>No active TTL counters.</p>
-                        )}
-                    </div>
-                </GlassCard>
-
-                {/* Section 3: Data Lifecycle Feed */}
-                <GlassCard style={{ padding: '24px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <h2 style={{ fontSize: '18px', fontWeight: 800 }}>Data Lifecycle Events</h2>
-                        <span style={{ padding: '2px 8px', background: 'rgba(0,0,0,0.05)', borderRadius: '20px', fontSize: '12px', fontWeight: 700 }}>{events.length}</span>
-                    </div>
-                    <div style={{ height: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '8px' }}>
-                        {events.length > 0 ? events.map(e => (
-                            <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.4)', borderRadius: '12px', borderLeft: `4px solid ${e.color}`, animation: 'fadeIn 0.3s ease-out' }}>
-                                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>{e.timestamp}</div>
-                                <div style={{ fontSize: '13px', fontWeight: 600 }}>{e.message}</div>
-                            </div>
-                        )) : (
-                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                                <p style={{ fontFamily: 'monospace', fontSize: '14px' }}>Waiting for events<span className="cursor-blink">_</span></p>
-                            </div>
-                        )}
-                    </div>
-                </GlassCard>
-
-                {/* Section 4: Data Minimization Status */}
-                <GlassCard style={{ padding: '24px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px' }}>Data Minimization Status</h2>
-                    {summary ? (
-                        <>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                                <MetricTile label="Sessions Created" value={summary.sessions_created} color="#3b82f6" />
-                                <MetricTile label="Credentials Expired" value={summary.credentials_expired} color="#10b981" />
-                                <MetricTile label="Data Wiped" value={summary.data_wiped} color="#10b981" icon="🛡️" />
-                                <MetricTile label="Conditionally Persisted" value={summary.conditionally_persisted} color="#f59e0b" />
-                            </div>
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: 700 }}>
-                                    <span>Data minimization rate</span>
-                                    <span style={{ color: 'var(--accent-success)' }}>{summary.minimization_rate}%</span>
-                                </div>
-                                <div style={{ height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ height: '100%', width: `${summary.minimization_rate}%`, background: 'var(--accent-success)', transition: 'width 1s ease-in-out' }} />
-                                </div>
-                                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '12px' }}>
-                                    of completed trips left no permanent communication record.
-                                </p>
-                            </div>
-                        </>
-                    ) : (
-                        <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                            Loading metrics...
+                {/* HEADER */}
+                <header style={{ marginBottom: '32px', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', gap: '16px' }}>
+                    <div>
+                        <h1 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: isMobile ? '36px' : '48px', fontWeight: 900, letterSpacing: '-0.03em', color: '#0D0D0D', marginBottom: '10px', textTransform: 'uppercase' }}>
+                            Privacy Overview
+                        </h1>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="status-pulse" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#00F5A0', flexShrink: 0 }} />
+                            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)' }}>
+                                System Online // Secure Channel
+                            </p>
                         </div>
-                    )}
-                </GlassCard>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+                        <button onClick={handleExportPDF} className="privacy-card" style={{ padding: '10px 20px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 700, color: '#6C63FF', fontFamily: "'Be Vietnam Pro', sans-serif", borderRadius: '999px', background: 'rgba(255,255,255,0.55)' }}>
+                            Export PDF
+                        </button>
+                        <button onClick={handleExportTripCSV} className="privacy-card" style={{ padding: '10px 20px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 700, color: '#6C63FF', fontFamily: "'Be Vietnam Pro', sans-serif", borderRadius: '999px', background: 'rgba(255,255,255,0.55)' }}>
+                            Export CSV
+                        </button>
+                    </div>
+                </header>
 
-            </div>
-        </PageWrapper>
-    );
-}
+                {/* STAT TILES ROW */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '20px', marginBottom: '24px' }}>
 
-function SessionRow({ session }) {
-    const isRedis = session.dataLocation === 'redis';
-    const statusColor = session.status === 'active' ? '#10b981' : session.status === 'complaint_window' ? '#f59e0b' : 'var(--text-muted)';
+                    {/* Tile 1 — Active Sessions */}
+                    <div className="privacy-card" style={{ padding: '24px' }}>
+                        <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(0,0,0,0.4)', marginBottom: '12px' }}>Active Sessions</p>
+                        <p style={{ fontSize: '40px', fontWeight: 900, color: '#0D0D0D', lineHeight: 1, marginBottom: '16px' }}>{activeSessions}</p>
+                        <div style={{ width: '100%', height: '4px', borderRadius: '999px', background: 'rgba(0,0,0,0.06)' }}>
+                            <div style={{ height: '100%', borderRadius: '999px', background: '#6C63FF', width: `${Math.min(100, (activeSessions / activeTrips) * 100)}%`, transition: 'width 0.8s ease' }} />
+                        </div>
+                    </div>
 
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.4)', padding: '12px 16px', borderRadius: '16px' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor, marginRight: '12px' }} />
-            <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, fontFamily: 'JetBrains Mono, monospace' }}>
-                    Trip #{session.tripId.slice(0, 8)}...
+                    {/* Tile 2 — Message Buffers */}
+                    <div className="privacy-card" style={{ padding: '24px' }}>
+                        <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(0,0,0,0.4)', marginBottom: '12px' }}>Message Buffers</p>
+                        <p style={{ fontSize: '40px', fontWeight: 900, color: '#6C63FF', lineHeight: 1, marginBottom: '8px' }}>{overview?.active_message_buffers || 0}</p>
+                        <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>active buffers</p>
+                    </div>
+
+                    {/* Tile 3 — Complaint Windows */}
+                    <div className="privacy-card" style={{ padding: '24px' }}>
+                        <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(0,0,0,0.4)', marginBottom: '12px' }}>Complaint Windows</p>
+                        <p style={{ fontSize: '40px', fontWeight: 900, color: '#F59E0B', lineHeight: 1, marginBottom: '8px' }}>{overview?.open_complaint_windows || 0}</p>
+                        <p style={{ fontSize: '10px', color: (overview?.open_complaint_windows || 0) > 0 ? '#F59E0B' : '#00A86B', fontWeight: 600 }}>
+                            {(overview?.open_complaint_windows || 0) > 0 ? 'require attention' : 'all clear'}
+                        </p>
+                    </div>
+
+                    {/* Tile 4 — Sessions Destroyed Today */}
+                    <div className="privacy-card" style={{ padding: '24px' }}>
+                        <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(0,0,0,0.4)', marginBottom: '12px' }}>Sessions Destroyed Today</p>
+                        <p style={{ fontSize: '40px', fontWeight: 900, color: '#00F5A0', lineHeight: 1, marginBottom: '16px' }}>{overview?.sessions_destroyed_today || 0}</p>
+                        <div style={{ width: '100%', height: '4px', borderRadius: '999px', background: 'rgba(0,245,160,0.15)' }}>
+                            <div style={{ height: '100%', borderRadius: '999px', background: '#00F5A0', width: '100%' }} />
+                        </div>
+                    </div>
+
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Driver ↔ Client</div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '10px', padding: '3px 10px', borderRadius: '6px', background: isRedis ? '#dbeafe' : '#fef3c7', color: isRedis ? '#1e40af' : '#92400e', fontWeight: 800, display: 'inline-block', whiteSpace: 'nowrap' }}>
-                    {isRedis ? '⚡ Redis' : '🔒 PostgreSQL'}
-                </span>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: statusColor, padding: '3px 10px', borderRadius: '6px', display: 'inline-block', whiteSpace: 'nowrap' }}>
-                    {session.status.toUpperCase()}
-                </span>
-            </div>
-        </div>
-    );
-}
 
-const MAX_TTL = 3600;
+                {/* MAIN GRID — 12 col desktop */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : 'repeat(12, 1fr)', gap: '24px' }}>
 
-function TTLRing({ session }) {
-    const [timeLeft, setTimeLeft] = useState(session.ttl);
+                    {/* Zone 1 — Minimization Rate (span 7) */}
+                    <div className="privacy-card" style={{ gridColumn: isDesktop ? 'span 7' : 'span 1', padding: '40px', position: 'relative', overflow: 'hidden' }}>
+                        <span className="material-symbols-outlined" style={{ position: 'absolute', top: 0, right: 0, fontSize: '160px', color: '#6C63FF', opacity: 0.04, pointerEvents: 'none', lineHeight: 1, userSelect: 'none' }}>auto_awesome</span>
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                            <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(0,0,0,0.4)', marginBottom: '8px' }}>Primary Metric</p>
+                            <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '22px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0D0D0D', marginBottom: '32px' }}>Data Minimization Rate</h2>
+                            <div style={{ lineHeight: 1 }}>
+                                <span style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '96px', fontWeight: 900, letterSpacing: '-0.05em', color: '#6C63FF', lineHeight: 1 }}>
+                                    {summary?.minimization_rate || 0}
+                                </span>
+                                <span style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '40px', fontWeight: 900, color: '#6C63FF', opacity: 0.4 }}>%</span>
+                            </div>
+                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.45)', maxWidth: '380px', marginTop: '24px', lineHeight: 1.6 }}>
+                                Percentage of trip data automatically wiped without human intervention. Higher is better.
+                            </p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '24px' }}>
+                                {[
+                                    { label: 'Created', value: summary?.sessions_created || 0 },
+                                    { label: 'Expired', value: summary?.credentials_expired || 0 },
+                                    { label: 'Wiped', value: summary?.data_wiped || 0 },
+                                    { label: 'Persisted', value: summary?.conditionally_persisted || 0 },
+                                ].map(({ label, value }) => (
+                                    <span key={label} style={{ background: 'rgba(108,99,255,0.08)', borderRadius: '999px', padding: '6px 14px', fontSize: '11px', fontWeight: 700, color: '#6C63FF' }}>
+                                        {label}: {value}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
+                    {/* Zone 2 — Live Session Monitor (span 5) */}
+                    <div className="privacy-card" style={{ gridColumn: isDesktop ? 'span 5' : 'span 1', padding: '32px', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexShrink: 0 }}>
+                            <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#0D0D0D' }}>Live Session Monitor</h2>
+                            <span style={{ background: 'rgba(0,245,160,0.15)', color: '#00A86B', borderRadius: '999px', padding: '4px 12px', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>Real-Time</span>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                            {overviewTrips.length > 0 ? overviewTrips.map(trip => (
+                                <div key={trip.trip_id} style={{ background: 'rgba(255,255,255,0.5)', borderRadius: '20px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.7)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(108,99,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#6C63FF' }}>route</span>
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#0D0D0D', fontFamily: 'JetBrains Mono, monospace' }}>#{trip.trip_id.slice(0, 8)}</p>
+                                        <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {trip.pickup_location} → {trip.destination}
+                                        </p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                        <span title="Driver Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: trip.driver_session_active ? '#00F5A0' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                        <span title="Client Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: trip.client_session_active ? '#6C63FF' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                        <span title="Complaint Window" style={{ width: '12px', height: '12px', borderRadius: '50%', background: trip.complaint_window_active ? '#F59E0B' : trip.complaint_filed ? '#E05A5A' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                    </div>
+                                </div>
+                            )) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
+                                    <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.3)', fontStyle: 'italic' }}>No active sessions</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
-    const formatTime = (s) => {
-        const h = Math.floor(s / 3600);
-        const m = Math.floor((s % 3600) / 60);
-        const sec = s % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-    };
+                    {/* Zone 3 — Data Lifecycle Flow (span 7) */}
+                    <div className="privacy-card" style={{ gridColumn: isDesktop ? 'span 7' : isTablet ? 'span 2' : 'span 1', padding: '32px' }}>
+                        <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#0D0D0D', textAlign: 'center', marginBottom: '40px' }}>Data Lifecycle Flow</h2>
+                        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center' }}>
 
-    const perc = Math.min(100, (timeLeft / MAX_TTL) * 100);
-    const ringColor = perc > 50 ? '#10b981' : perc > 25 ? '#f59e0b' : '#ef4444';
-    const radius = 50;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (perc / 100) * circumference;
+                            {/* Node 1 — Creation */}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'white', boxShadow: '0 4px 20px rgba(108,99,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#6C63FF' }}>sensors</span>
+                                </div>
+                                <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(0,0,0,0.5)' }}>Creation</p>
+                                <p style={{ fontSize: '18px', fontWeight: 900, color: '#6C63FF' }}>{summary?.sessions_created || 0}</p>
+                            </div>
 
-    return (
-        <div style={{ textAlign: 'center', width: '120px' }}>
-            <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto' }}>
-                <svg width="100" height="100" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r={radius} fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="8" />
-                    <circle cx="60" cy="60" r={radius} fill="none" stroke={ringColor} strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" transform="rotate(-90 60 60)" style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }} />
-                </svg>
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '13px', fontWeight: 800 }}>
-                    {formatTime(timeLeft)}
+                            {/* Connector 1 */}
+                            <div style={isMobile
+                                ? { width: '2px', height: '32px', background: 'linear-gradient(180deg, #6C63FF, #00F5A0)', margin: '0 auto' }
+                                : { flex: 1, height: '2px', background: 'linear-gradient(90deg, #6C63FF, #00F5A0)', minWidth: '24px' }
+                            } />
+
+                            {/* Node 2 — Minimization */}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'white', boxShadow: '0 4px 20px rgba(108,99,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#6C63FF' }}>security</span>
+                                </div>
+                                <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(0,0,0,0.5)' }}>Minimization</p>
+                                <p style={{ fontSize: '18px', fontWeight: 900, color: '#6C63FF' }}>{summary?.sessions_created || 0}</p>
+                            </div>
+
+                            {/* Connector 2 */}
+                            <div style={isMobile
+                                ? { width: '2px', height: '32px', background: 'linear-gradient(180deg, #00F5A0, #00D4FF)', margin: '0 auto' }
+                                : { flex: 1, height: '2px', background: 'linear-gradient(90deg, #00F5A0, #00D4FF)', minWidth: '24px' }
+                            } />
+
+                            {/* Node 3 — Auto-Wipe */}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'white', boxShadow: '0 4px 20px rgba(0,212,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#00D4FF' }}>delete_sweep</span>
+                                </div>
+                                <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(0,0,0,0.5)' }}>Auto-Wipe</p>
+                                <p style={{ fontSize: '18px', fontWeight: 900, color: '#00D4FF' }}>{summary?.data_wiped || 0}</p>
+                            </div>
+
+                            {/* Connector 3 */}
+                            <div style={isMobile
+                                ? { width: '2px', height: '32px', background: 'linear-gradient(180deg, #00D4FF, rgba(0,0,0,0.15))', margin: '0 auto' }
+                                : { flex: 1, height: '2px', background: 'linear-gradient(90deg, #00D4FF, rgba(0,0,0,0.15))', minWidth: '24px' }
+                            } />
+
+                            {/* Node 4 — Persistence */}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'white', boxShadow: '0 4px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '28px', color: 'rgba(0,0,0,0.25)' }}>inventory_2</span>
+                                </div>
+                                <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(0,0,0,0.5)' }}>Persisted</p>
+                                <p style={{ fontSize: '18px', fontWeight: 900, color: 'rgba(0,0,0,0.4)' }}>{summary?.conditionally_persisted || 0}</p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {/* Zones 4+5 wrapper (span 5) */}
+                    <div style={{ gridColumn: isDesktop ? 'span 5' : isTablet ? 'span 2' : 'span 1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                        {/* Zone 4 — Real-time Audit Feed */}
+                        <div className="privacy-card" style={{ padding: '24px', height: '280px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexShrink: 0 }}>
+                                <h3 style={{ fontSize: '13px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#0D0D0D' }}>Real-time Audit</h3>
+                                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'rgba(0,0,0,0.3)' }}>sync</span>
+                            </div>
+                            <div style={{ flex: 1, overflowY: 'auto' }}>
+                                {events.length > 0 ? events.map(e => (
+                                    <div key={e.id} style={{ display: 'flex', gap: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)', marginBottom: '12px' }}>
+                                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#6C63FF', width: '40px', flexShrink: 0, fontFamily: 'JetBrains Mono, monospace' }}>{e.timestamp}</span>
+                                        <div style={{ flex: 1, borderLeft: `3px solid ${e.color}`, paddingLeft: '8px' }}>
+                                            <p style={{ fontSize: '12px', fontWeight: 700, color: '#0D0D0D', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{e.type}</p>
+                                            <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.45)', marginTop: '2px' }}>{e.message}</p>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.3)', textAlign: 'center', padding: '24px' }}>Listening for events...</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Zone 5 — Compliance Export */}
+                        <div className="privacy-card" style={{ padding: '24px', background: 'linear-gradient(135deg, rgba(255,255,255,0.6), rgba(108,99,255,0.05))', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '40px', color: '#6C63FF', marginBottom: '12px' }}>file_export</span>
+                            <h3 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0D0D0D', marginBottom: '8px' }}>Compliance Reporting</h3>
+                            <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.45)', marginBottom: '24px', maxWidth: '280px', lineHeight: 1.6 }}>
+                                Generate cryptographic proof of data deletion for legal and regulatory audits.
+                            </p>
+                            <button
+                                onClick={handleExportPDF}
+                                style={{ width: '100%', background: '#6C63FF', color: 'white', border: 'none', borderRadius: '999px', padding: '14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontFamily: "'Be Vietnam Pro', sans-serif", transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}
+                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 16px rgba(108,99,255,0.3)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1" }}>verified_user</span>
+                                Export Compliance PDF
+                            </button>
+                            <p style={{ marginTop: '12px', fontSize: '11px', color: 'rgba(0,0,0,0.4)' }}>
+                                Also available:{' '}
+                                <span onClick={handleExportTripCSV} style={{ color: '#6C63FF', fontWeight: 600, cursor: 'pointer' }}>
+                                    Export Trips CSV
+                                </span>
+                            </p>
+                        </div>
+
+                    </div>
+
                 </div>
-            </div>
-            <div style={{ marginTop: '8px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 800 }}>#{session.tripId.slice(0, 8)}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>{session.status}</div>
-            </div>
-        </div>
-    );
-}
 
-function MetricTile({ label, value, color, icon }) {
-    return (
-        <div style={{ padding: '16px', background: 'rgba(255,255,255,0.4)', borderRadius: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                {icon && <span>{icon}</span>}
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{label}</span>
+                {/* Status Footer Ticker */}
+                <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,0,0,0.05)', height: '40px', display: 'flex', alignItems: 'center', paddingLeft: '32px', gap: '40px' }}>
+                    {[
+                        { dot: '#00F5A0', label: 'System Online' },
+                        { dot: null, label: 'Privacy Engine Active' },
+                        { dot: null, label: 'MEI Framework v1.0' },
+                    ].map(({ dot, label }) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {dot && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: dot, display: 'inline-block' }} />}
+                            <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', fontFamily: "'Be Vietnam Pro', sans-serif" }}>{label}</span>
+                        </div>
+                    ))}
+                </div>
+
             </div>
-            <div style={{ fontSize: '24px', fontWeight: 900, color }}>{value}</div>
-        </div>
+        </>
     );
 }
