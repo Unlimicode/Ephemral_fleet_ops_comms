@@ -911,3 +911,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/ManagerPrivacyDashboardPage.jsx`
 - **What changed:** Complete render rewrite using Stitch-inspired bento grid — 4 stat tiles (active sessions, message buffers, complaint windows, sessions destroyed today), minimization rate hero metric, live session monitor with per-trip status dots, data lifecycle flow nodes, real-time audit event feed, compliance export card. Logic fixes: removed dead ManagerLayout import, fixed isMobile to < 768, added socket auth token, fixed vehicle_reg field in CSV export, added overview endpoint fetch with 10s polling, replaced resize listener with useWindowWidth hook.
 - **Why:** Sprint 19 privacy dashboard redesign — aligns with dispatch page design language, surfaces all 6 dashboard endpoints as readable operational proof panels for research presentation
+
+### [Sprint 19] — ManagerDriversPage redesign
+- **Date:** 2026-03-23
+- **Files modified:** `frontend/src/pages/manager/ManagerDriversPage.jsx`
+- **What changed:** Complete render rewrite — 4 stat tiles (total, available, on trip, offline), glass driver roster table with avatar initials coloured by availability status, status badge pills, deactivate action, Add Driver modal and Deactivate confirmation modal both using glass card overlay. Removed password field from form (backend generates it server-side). Removed unused imports.
+- **Why:** Sprint 19 manager pages redesign — consistent with dispatch and privacy dashboard design language
