@@ -917,3 +917,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/manager/ManagerDriversPage.jsx`
 - **What changed:** Complete render rewrite — 4 stat tiles (total, available, on trip, offline), glass driver roster table with avatar initials coloured by availability status, status badge pills, deactivate action, Add Driver modal and Deactivate confirmation modal both using glass card overlay. Removed password field from form (backend generates it server-side). Removed unused imports.
 - **Why:** Sprint 19 manager pages redesign — consistent with dispatch and privacy dashboard design language
+
+### [Sprint 19] — Fix missing success toasts on dispatch assign and complete
+- **Date:** 2026-03-23
+- **Files modified:** `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- **What changed:** Added `addToast('Trip assigned successfully.', 'success')` after `fetchData()` in `handleAssign`; added `addToast('Trip marked as complete.', 'success')` after `fetchData()` in `handleComplete`
+- **Why:** Both handlers silently succeeded with no user feedback — only errors produced toasts, leaving the manager with no confirmation that the action completed
