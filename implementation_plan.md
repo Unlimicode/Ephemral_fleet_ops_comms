@@ -923,3 +923,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/manager/ManagerDispatchPage.jsx`
 - **What changed:** Added `addToast('Trip assigned successfully.', 'success')` after `fetchData()` in `handleAssign`; added `addToast('Trip marked as complete.', 'success')` after `fetchData()` in `handleComplete`
 - **Why:** Both handlers silently succeeded with no user feedback — only errors produced toasts, leaving the manager with no confirmation that the action completed
+
+### [Sprint 19] — ManagerVehiclesPage redesign
+- **Date:** 2026-03-23
+- **Files modified:** `frontend/src/pages/manager/ManagerVehiclesPage.jsx`
+- **What changed:** Complete render rewrite — 3 stat tiles (total `local_shipping`, available `check_circle`, deployed `sensors`), glass vehicle inventory table with registration in JetBrains Mono, vehicle details (type + capacity), status pills, assigned driver column, context-aware actions (Remove for available, more_horiz for deployed). Add Vehicle modal with registration/type/capacity inputs. Delete confirmation modal with deployed-vehicle warning and disabled Remove button when vehicle is in use. Removed unused imports (ManagerLayout, GlassCard, PageWrapper, StatCard), added useWindowWidth hook.
+- **Why:** Sprint 19 manager pages redesign — completes vehicle inventory page with consistent glass morphism design language matching dispatch, drivers, and privacy dashboard pages
