@@ -930,6 +930,12 @@ without a test-environment guard.
 - **What changed:** Complete render rewrite — filter tabs with live counts, bento grid of complaint cards, expanded investigation workspace (2-col span) showing message archive and notes textarea, status-colour coded cards, escalated cards with red left border accent, category pills, status select dropdown per card, Notify Driver action, glass background with geo shapes consistent with other manager pages.
 - **Why:** Sprint 19 manager pages redesign — consistent design language across all manager pages
 
+### [Sprint 19] — ManagerAuditPage redesign
+- **Date:** 2026-03-23
+- **Files modified:** `frontend/src/pages/manager/ManagerAuditPage.jsx`
+- **What changed:** Complete render rewrite — 4 stat tiles (total logs, security events, compliance score, action types), glass audit table with search, action type filter, date range filters, colour-coded action badges, actor role pills, paginated load more, Export CSV button. Background consistent with all other manager pages.
+- **Why:** Sprint 19 manager pages redesign — all 6 manager pages now consistent
+
 ### [Sprint 19] — ManagerVehiclesPage redesign
 - **Date:** 2026-03-23
 - **Files modified:** `frontend/src/pages/manager/ManagerVehiclesPage.jsx`
