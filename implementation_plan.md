@@ -924,6 +924,12 @@ without a test-environment guard.
 - **What changed:** Added `addToast('Trip assigned successfully.', 'success')` after `fetchData()` in `handleAssign`; added `addToast('Trip marked as complete.', 'success')` after `fetchData()` in `handleComplete`
 - **Why:** Both handlers silently succeeded with no user feedback — only errors produced toasts, leaving the manager with no confirmation that the action completed
 
+### [Sprint 19] — ManagerComplaintsPage redesign
+- **Date:** 2026-03-23
+- **Files modified:** `frontend/src/pages/manager/ManagerComplaintsPage.jsx`
+- **What changed:** Complete render rewrite — filter tabs with live counts, bento grid of complaint cards, expanded investigation workspace (2-col span) showing message archive and notes textarea, status-colour coded cards, escalated cards with red left border accent, category pills, status select dropdown per card, Notify Driver action, glass background with geo shapes consistent with other manager pages.
+- **Why:** Sprint 19 manager pages redesign — consistent design language across all manager pages
+
 ### [Sprint 19] — ManagerVehiclesPage redesign
 - **Date:** 2026-03-23
 - **Files modified:** `frontend/src/pages/manager/ManagerVehiclesPage.jsx`

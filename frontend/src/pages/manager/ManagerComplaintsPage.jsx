@@ -1,16 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios.js';
-import ManagerLayout from '../../components/layout/ManagerLayout.jsx';
-import GlassCard from '../../components/layout/GlassCard.jsx';
-import PageWrapper from '../../components/layout/PageWrapper.jsx';
 import { useToast } from '../../components/Toast.jsx';
-
-const CATEGORIES = {
-    service_quality: { label: 'Service Quality', color: '#3B82F6' },
-    driver_behaviour: { label: 'Driver Behaviour', color: '#F59E0B' },
-    privacy_concern: { label: 'Privacy Concern', color: '#EF4444' },
-    other: { label: 'Other', color: '#6B6B6B' }
-};
+import useWindowWidth from '../../hooks/useWindowWidth.js';
 
 const STATUSES = ['open', 'under_investigation', 'resolved', 'escalated'];
 
@@ -22,7 +13,11 @@ export default function ManagerComplaintsPage() {
     const [expandedComplaintId, setExpandedComplaintId] = useState(null);
     const [messages, setMessages] = useState({});
     const [loadingMessages, setLoadingMessages] = useState({});
+    const [localNotes, setLocalNotes] = useState({});
     const { addToast } = useToast();
+    const width = useWindowWidth();
+    const isMobile = width < 768;
+    const isTablet = width >= 768 && width < 1024;
 
     const fetchComplaints = useCallback(async () => {
         try {
@@ -104,232 +99,356 @@ export default function ManagerComplaintsPage() {
         return true;
     });
 
-    const openCount = (complaints || []).filter(c => c.status === 'open').length;
+    const statusColor = (status) => {
+        if (status === 'open') return '#F59E0B';
+        if (status === 'under_investigation') return '#6C63FF';
+        if (status === 'resolved') return '#00F5A0';
+        if (status === 'escalated') return '#E05A5A';
+        return '#A0A0A0';
+    };
 
-    if (error && complaints.length === 0) {
-        return (
-            <PageWrapper>
-                <div style={{ textAlign: 'center', padding: '100px' }}>
-                    <h2 style={{ color: '#EF4444' }}>Failed to load complaints</h2>
-                    <button onClick={fetchComplaints} style={btnSecondaryStyle}>Retry</button>
-                </div>
-            </PageWrapper>
-        );
-    }
+    const statusLabel = (status) => {
+        if (status === 'under_investigation') return 'Under Investigation';
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    };
 
-    return (
-        <PageWrapper>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-                <h1 className="kinetic-text reveal-up" style={{ fontSize: '24px', fontWeight: 800, color: '#0D0D0D' }}>Complaints</h1>
-                <span style={{
-                    background: '#EF4444', color: '#FFF',
-                    padding: '2px 10px', borderRadius: '50px',
-                    fontSize: '12px', fontWeight: 700
-                }}>
-                    {openCount} Open
-                </span>
-            </div>
+    const categoryLabel = (cat) => {
+        if (!cat) return 'Other';
+        return cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    };
 
-            {/* Filter Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-                {['All', 'Open', 'Under Investigation', 'Resolved', 'Escalated'].map(t => (
-                    <button
-                        key={t}
-                        onClick={() => setFilter(t)}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: '10px',
-                            border: 'none',
-                            background: filter === t ? '#0D0D0D' : 'rgba(255,255,255,0.5)',
-                            color: filter === t ? '#FFF' : '#6B6B6B',
-                            fontWeight: 600,
-                            fontSize: '13px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            whiteSpace: 'nowrap'
-                        }}
-                    >
-                        {t}
-                    </button>
-                ))}
-            </div>
+    const formatDate = (iso) => {
+        if (!iso) return '';
+        return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    };
 
-            {/* Complaint List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: '60px', opacity: 0.5 }}>
-                        <div className="spinner" style={{ margin: '0 auto 12px' }} />
-                        Loading complaints...
-                    </div>
-                ) : filteredComplaints.length === 0 ? (
-                    <GlassCard style={{ textAlign: 'center', padding: '60px', opacity: 0.5 }}>
-                        No complaints found.
-                    </GlassCard>
-                ) : filteredComplaints.map(c => (
-                    <ComplaintCard
-                        key={c.complaint_id}
-                        complaint={c}
-                        isExpanded={expandedComplaintId === c.complaint_id}
-                        onToggle={() => toggleMessages(c.complaint_id, c.status)}
-                        onStatusUpdate={status => handleStatusUpdate(c.complaint_id, status)}
-                        onSaveNotes={notes => handleSaveNotes(c.complaint_id, notes)}
-                        onNotify={() => handleNotifyDriver(c.complaint_id)}
-                        messages={messages[c.complaint_id]}
-                        isLoadingMessages={loadingMessages[c.complaint_id]}
-                    />
-                ))}
-            </div>
-        </PageWrapper>
-    );
-}
-
-function ComplaintCard({ complaint, isExpanded, onToggle, onStatusUpdate, onSaveNotes, onNotify, messages, isLoadingMessages }) {
-    const cat = CATEGORIES[complaint.category] || CATEGORIES.other;
-    const [localNotes, setLocalNotes] = useState(complaint.investigation_notes || '');
+    const tabCounts = {
+        'All': complaints.length,
+        'Open': complaints.filter(c => c.status === 'open').length,
+        'Under Investigation': complaints.filter(c => c.status === 'under_investigation').length,
+        'Resolved': complaints.filter(c => c.status === 'resolved').length,
+        'Escalated': complaints.filter(c => c.status === 'escalated').length,
+    };
 
     return (
-        <GlassCard style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                <div>
-                    <div style={{ fontSize: '12px', color: '#6B6B6B', marginBottom: '4px' }}>
-                        Trip: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{complaint.trip_id}</span> • {new Date(complaint.created_at).toLocaleDateString()}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: '4px', background: cat.color + '20', color: cat.color, fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', margin: '4px' }}>
-                            {cat.label}
-                        </span>
-                        <StatusBadge status={complaint.status} />
-                    </div>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '1440px', margin: '0 auto', padding: isMobile ? '16px' : isTablet ? '16px 24px' : '20px 32px', fontFamily: "'Be Vietnam Pro', sans-serif" }}>
+            <style>{`
+                .complaint-card {
+                    background: rgba(255,255,255,0.55);
+                    backdrop-filter: blur(40px) saturate(180%);
+                    -webkit-backdrop-filter: blur(40px) saturate(180%);
+                    border: 1px solid rgba(255,255,255,0.7);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+                    border-radius: 2rem;
+                    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+                }
+                .complaint-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 16px 48px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95);
+                }
+                .micro-label {
+                    font-size: 10px;
+                    letter-spacing: 0.2em;
+                    text-transform: uppercase;
+                }
+                .notes-textarea:focus {
+                    border-color: rgba(108,99,255,0.4) !important;
+                    outline: none;
+                }
+                @keyframes float-slow {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    50% { transform: translateY(-30px) rotate(8deg); }
+                }
+                @keyframes float-reverse {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    50% { transform: translateY(20px) rotate(-6deg); }
+                }
+                .geo-float-1 { animation: float-slow 11s ease-in-out infinite; }
+                .geo-float-2 { animation: float-reverse 9s ease-in-out infinite; }
+            `}</style>
+
+            {/* Fixed Background */}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                <div style={{
+                    position: 'absolute', inset: 0, opacity: 0.4,
+                    backgroundImage: 'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)',
+                    backgroundSize: '80px 80px'
+                }} />
+                <div className="geo-float-1" style={{ position: 'absolute', top: '15%', left: '3%', color: 'rgba(108,99,255,0.10)' }}>
+                    <div style={{ width: 0, height: 0, borderLeft: '60px solid transparent', borderRight: '60px solid transparent', borderBottom: '104px solid currentColor', transform: 'scale(2) rotate(12deg)' }} />
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0D0D0D' }}>
-                    {complaint.organisation || 'Independent Client'}
+                <div className="geo-float-2" style={{ position: 'absolute', bottom: '10%', right: '6%', color: 'rgba(108,99,255,0.08)' }}>
+                    <div style={{ width: 0, height: 0, borderLeft: '60px solid transparent', borderRight: '60px solid transparent', borderBottom: '104px solid currentColor', transform: 'scale(1.5) rotate(-15deg)' }} />
                 </div>
             </div>
 
-            <p style={{ fontSize: '15px', color: '#1F2937', lineHeight: '1.6', marginBottom: '20px' }}>
-                {complaint.description}
-            </p>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-                {complaint.status !== 'resolved' && (
-                    <button
-                        onClick={onToggle}
-                        style={btnSecondaryStyle}
-                    >
-                        {isExpanded ? 'Hide Details' : 'View Messages'}
-                    </button>
-                )}
-
-                <div style={{ display: 'flex', gap: '6px' }}>
-                    <select
-                        value={complaint.status}
-                        onChange={e => onStatusUpdate(e.target.value)}
-                        style={{ ...inputStyle, padding: '8px 12px' }}
-                    >
-                        {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                    </select>
-                </div>
-
-                <button
-                    onClick={onNotify}
-                    style={{ ...btnSecondaryStyle, color: '#3B82F6', borderColor: 'rgba(59,130,246,0.2)' }}
-                >
-                    Notify Driver
-                </button>
+            {/* Header */}
+            <div style={{ marginBottom: '40px' }}>
+                <p className="micro-label" style={{ color: '#6C63FF', fontWeight: 700, marginBottom: '8px' }}>Central Operations</p>
+                <h1 style={{ fontSize: isMobile ? '36px' : '56px', fontWeight: 900, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#0D0D0D', margin: 0 }}>
+                    Complaint Hub
+                </h1>
             </div>
 
-            {isExpanded && (
-                <div style={{ marginTop: '24px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '24px' }}>
-                    {/* Notes Section */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: 600, color: '#4B5563', display: 'block', marginBottom: '8px' }}>Investigation Notes</label>
-                        <textarea
-                            value={localNotes}
-                            onChange={e => setLocalNotes(e.target.value)}
-                            onBlur={() => onSaveNotes(localNotes)}
-                            placeholder="Add internal investigation notes..."
-                            style={{
-                                width: '100%', minHeight: '100px',
-                                padding: '12px', borderRadius: '10px',
-                                border: '1px solid rgba(0,0,0,0.1)',
-                                background: 'rgba(255,255,255,0.5)',
-                                fontSize: '14px', fontFamily: 'inherit'
-                            }}
-                        />
-                        <p style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '4px' }}>Auto-saves on blur.</p>
-                    </div>
-
-                    {/* Messages Section */}
-                    {complaint.status === 'under_investigation' ? (
-                        <div>
-                            <div style={{
-                                background: 'rgba(245,158,11,0.1)',
-                                borderLeft: '4px solid #F59E0B',
-                                padding: '12px 16px',
-                                borderRadius: '4px',
-                                marginBottom: '16px',
-                                fontSize: '13px'
-                            }}>
-                                ⚠️ <strong>Logged Access:</strong> You are viewing preserved communication records. This access has been logged to the audit trail.
-                            </div>
-
-                            {isLoadingMessages ? (
-                                <p style={{ opacity: 0.5, fontSize: '14px' }}>Loading messages...</p>
-                            ) : messages && messages.length > 0 ? (
-                                <div style={{ background: 'rgba(0,0,0,0.02)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    {messages.map((m, idx) => (
-                                        <div key={idx} style={{
-                                            maxWidth: '80%',
-                                            alignSelf: m.role === 'driver' ? 'flex-start' : 'flex-end',
-                                            padding: '8px 12px',
-                                            borderRadius: '12px',
-                                            background: m.role === 'driver' ? '#FFF' : '#3B82F6',
-                                            color: m.role === 'driver' ? '#111827' : '#FFF',
-                                            fontSize: '13px',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                                        }}>
-                                            <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '2px', textTransform: 'uppercase', fontWeight: 700 }}>{m.role}</div>
-                                            {m.text}
-                                            <div style={{ fontSize: '9px', opacity: 0.5, marginTop: '4px', textAlign: 'right' }}>{new Date(m.timestamp).toLocaleTimeString()}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p style={{ opacity: 0.5, fontSize: '14px' }}>No messages were exchanged during this trip.</p>
-                            )}
+            {/* Loading State */}
+            {loading && (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: '24px' }}>
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="complaint-card" style={{ padding: '28px', height: '200px', background: 'rgba(255,255,255,0.4)' }}>
+                            <div style={{ height: '12px', width: '40%', background: 'rgba(0,0,0,0.06)', borderRadius: '6px', marginBottom: '16px' }} />
+                            <div style={{ height: '20px', width: '70%', background: 'rgba(0,0,0,0.06)', borderRadius: '6px', marginBottom: '12px' }} />
+                            <div style={{ height: '14px', width: '90%', background: 'rgba(0,0,0,0.06)', borderRadius: '6px', marginBottom: '8px' }} />
+                            <div style={{ height: '14px', width: '60%', background: 'rgba(0,0,0,0.06)', borderRadius: '6px' }} />
                         </div>
-                    ) : (
-                        <p style={{ opacity: 0.5, fontSize: '13px', fontStyle: 'italic' }}>
-                            Message contents are only accessible when status is "under investigation".
-                        </p>
-                    )}
+                    ))}
                 </div>
             )}
-        </GlassCard>
+
+            {/* Error State */}
+            {error && complaints.length === 0 && (
+                <div className="complaint-card" style={{ padding: '48px', textAlign: 'center', borderLeft: '3px solid #E05A5A' }}>
+                    <p style={{ fontSize: '15px', fontWeight: 600, color: '#E05A5A', marginBottom: '16px' }}>Failed to load complaints</p>
+                    <button
+                        onClick={fetchComplaints}
+                        style={{ background: '#E05A5A', color: 'white', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
+
+            {/* Main Content */}
+            {!loading && !error && (
+                <>
+                    {/* Filter Tabs */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '40px' }}>
+                        {['All', 'Open', 'Under Investigation', 'Resolved', 'Escalated'].map(tab => {
+                            const isActive = filter === tab;
+                            return (
+                                <button
+                                    key={tab}
+                                    onClick={() => setFilter(tab)}
+                                    style={isActive ? {
+                                        background: '#6C63FF', color: 'white', borderRadius: '999px',
+                                        padding: '10px 20px', fontWeight: 700, fontSize: '13px',
+                                        border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif"
+                                    } : {
+                                        background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(20px)',
+                                        border: '1px solid rgba(255,255,255,0.8)', color: 'rgba(0,0,0,0.6)',
+                                        borderRadius: '999px', padding: '10px 20px', fontWeight: 600,
+                                        fontSize: '13px', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif"
+                                    }}
+                                >
+                                    {tab}
+                                    <span style={isActive ? {
+                                        background: 'rgba(255,255,255,0.2)', color: 'white',
+                                        borderRadius: '999px', padding: '2px 8px', fontSize: '11px', marginLeft: '6px'
+                                    } : {
+                                        background: 'rgba(0,0,0,0.06)', borderRadius: '999px',
+                                        padding: '2px 8px', fontSize: '11px', marginLeft: '6px'
+                                    }}>
+                                        {tabCounts[tab]}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Bento Grid */}
+                    {filteredComplaints.length === 0 ? (
+                        <div className="complaint-card" style={{ padding: '48px', textAlign: 'center' }}>
+                            <p style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(0,0,0,0.3)' }}>
+                                No complaints{filter !== 'All' ? ` · ${filter}` : ''}
+                            </p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: '24px' }}>
+                            {filteredComplaints.map(c => {
+                                const isExpanded = expandedComplaintId === c.complaint_id && c.status === 'under_investigation';
+
+                                if (isExpanded) {
+                                    return (
+                                        <div
+                                            key={c.complaint_id}
+                                            className="complaint-card"
+                                            style={{ gridColumn: isMobile ? 'span 1' : 'span 2', padding: '32px' }}
+                                        >
+                                            {/* Expanded Header */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                                                <span className="micro-label" style={{ color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>
+                                                    #{c.complaint_id.slice(0, 8)}
+                                                </span>
+                                                <span style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '4px 12px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>
+                                                    Under Investigation
+                                                </span>
+                                            </div>
+                                            <h2 style={{ fontSize: '22px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0D0D0D', margin: '0 0 4px 0' }}>
+                                                {c.organisation || 'Independent Client'}
+                                            </h2>
+                                            <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', margin: 0 }}>{formatDate(c.created_at)}</p>
+
+                                            {/* Two Column Body */}
+                                            <div style={{
+                                                display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '24px',
+                                                borderTop: '1px solid rgba(0,0,0,0.06)', marginTop: '24px', paddingTop: '24px'
+                                            }}>
+                                                {/* Left — Message Archive */}
+                                                <div>
+                                                    <p className="micro-label" style={{ color: '#6C63FF', fontWeight: 700, marginBottom: '16px' }}>Message Archive</p>
+                                                    {loadingMessages[c.complaint_id] ? (
+                                                        <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)' }}>Loading messages…</p>
+                                                    ) : messages[c.complaint_id] && messages[c.complaint_id].length > 0 ? (
+                                                        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                                            {messages[c.complaint_id].map((m, idx) => (
+                                                                m.role === 'driver' ? (
+                                                                    <div key={idx} style={{ background: 'rgba(108,99,255,0.06)', borderRadius: '16px', padding: '12px 16px', marginBottom: '10px', marginLeft: '16px' }}>
+                                                                        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: '#6C63FF', marginBottom: '4px', margin: '0 0 4px 0' }}>Driver</p>
+                                                                        <p style={{ fontSize: '13px', color: '#0D0D0D', margin: '0 0 4px 0' }}>{m.text}</p>
+                                                                        <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.35)', margin: 0 }}>{new Date(m.timestamp).toLocaleTimeString()}</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div key={idx} style={{ background: 'rgba(255,255,255,0.5)', borderRadius: '16px', padding: '12px 16px', marginBottom: '10px' }}>
+                                                                        <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '4px', margin: '0 0 4px 0' }}>Client</p>
+                                                                        <p style={{ fontSize: '13px', color: '#0D0D0D', margin: '0 0 4px 0' }}>{m.text}</p>
+                                                                        <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.35)', margin: 0 }}>{new Date(m.timestamp).toLocaleTimeString()}</p>
+                                                                    </div>
+                                                                )
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.35)', textAlign: 'center', padding: '24px' }}>
+                                                            No message archive available
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Right — Investigation Notes + Actions */}
+                                                <div>
+                                                    <p className="micro-label" style={{ color: '#6C63FF', fontWeight: 700, marginBottom: '16px' }}>Investigation Notes</p>
+                                                    <textarea
+                                                        className="notes-textarea"
+                                                        value={localNotes[c.complaint_id] !== undefined ? localNotes[c.complaint_id] : (c.investigation_notes || '')}
+                                                        onChange={e => setLocalNotes(prev => ({ ...prev, [c.complaint_id]: e.target.value }))}
+                                                        onBlur={() => handleSaveNotes(c.complaint_id, localNotes[c.complaint_id] !== undefined ? localNotes[c.complaint_id] : (c.investigation_notes || ''))}
+                                                        placeholder="Add internal investigation notes…"
+                                                        style={{
+                                                            width: '100%', background: 'rgba(255,255,255,0.5)',
+                                                            border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px',
+                                                            padding: '16px', fontSize: '13px', outline: 'none',
+                                                            minHeight: '140px', resize: 'none', boxSizing: 'border-box',
+                                                            fontFamily: "'Be Vietnam Pro', sans-serif"
+                                                        }}
+                                                    />
+                                                    <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                                                        <button
+                                                            onClick={() => handleNotifyDriver(c.complaint_id)}
+                                                            style={{ flex: 1, background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                        >
+                                                            Notify Driver
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setExpandedComplaintId(null)}
+                                                            style={{ background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.6)', borderRadius: '999px', padding: '12px 16px', fontSize: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                        >
+                                                            Close
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Bottom Row — Category + Status */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                                <span style={{ background: 'rgba(255,255,255,0.6)', borderRadius: '999px', padding: '4px 14px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(0,0,0,0.5)' }}>
+                                                    {categoryLabel(c.category)}
+                                                </span>
+                                                <select
+                                                    value={c.status}
+                                                    onChange={e => handleStatusUpdate(c.complaint_id, e.target.value)}
+                                                    style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                >
+                                                    {STATUSES.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                /* Standard card */
+                                return (
+                                    <div
+                                        key={c.complaint_id}
+                                        className="complaint-card"
+                                        style={{ padding: '28px', ...(c.status === 'escalated' ? { borderLeft: '3px solid #E05A5A' } : {}) }}
+                                    >
+                                        {/* Header Row */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div>
+                                                <span className="micro-label" style={{ color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>
+                                                    #{c.complaint_id.slice(0, 8)}
+                                                </span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                                                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: statusColor(c.status), display: 'inline-block', flexShrink: 0 }} />
+                                                    <span style={{ fontSize: '11px', fontWeight: 700, color: statusColor(c.status), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                                        {statusLabel(c.status)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <span style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)' }}>{formatDate(c.created_at)}</span>
+                                        </div>
+
+                                        {/* Organisation */}
+                                        <h2 style={{ fontSize: '20px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0D0D0D', margin: '8px 0 12px 0' }}>
+                                            {c.organisation || 'Independent Client'}
+                                        </h2>
+
+                                        {/* Description */}
+                                        <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.6)', lineHeight: 1.5, marginBottom: '16px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                                            {c.description}
+                                        </p>
+
+                                        {/* Category + Status */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                            <span style={{ background: 'rgba(255,255,255,0.6)', borderRadius: '999px', padding: '4px 14px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(0,0,0,0.5)' }}>
+                                                {categoryLabel(c.category)}
+                                            </span>
+                                            <select
+                                                value={c.status}
+                                                onChange={e => handleStatusUpdate(c.complaint_id, e.target.value)}
+                                                style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                            >
+                                                {STATUSES.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                                            </select>
+                                        </div>
+
+                                        {/* Footer */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+                                            <div>
+                                                {c.status === 'under_investigation' && (
+                                                    <button
+                                                        onClick={() => { setExpandedComplaintId(c.complaint_id); toggleMessages(c.complaint_id, c.status); }}
+                                                        style={{ background: 'rgba(108,99,255,0.1)', color: '#6C63FF', borderRadius: '999px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                    >
+                                                        View Investigation
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div>
+                                                {c.status === 'escalated' && (
+                                                    <button
+                                                        style={{ background: '#E05A5A', color: 'white', borderRadius: '999px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                    >
+                                                        Review Now
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
     );
 }
-
-function StatusBadge({ status }) {
-    const colors = {
-        open: { bg: 'rgba(239,68,68,0.1)', fg: '#EF4444' },
-        under_investigation: { bg: 'rgba(59,130,246,0.1)', fg: '#3B82F6' },
-        resolved: { bg: 'rgba(16,185,129,0.1)', fg: '#10B981' },
-        escalated: { bg: 'rgba(245,158,11,0.1)', fg: '#F59E0B' }
-    };
-    const c = colors[status] || colors.open;
-    return (
-        <span style={{
-            fontSize: '11px', fontWeight: 700,
-            padding: '2px 8px', borderRadius: '50px',
-            background: c.bg, color: c.fg,
-            textTransform: 'uppercase',
-            margin: '4px',
-            display: 'inline-block'
-        }}>
-            {status.replace('_', ' ')}
-        </span>
-    );
-}
-
-const inputStyle = { padding: '12px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.5)', fontSize: '14px' };
-const btnSecondaryStyle = { padding: '8px 16px', background: 'transparent', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' };
