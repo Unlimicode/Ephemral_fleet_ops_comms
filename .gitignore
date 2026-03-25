@@ -84,3 +84,14 @@ debug*.log
 
 # Auto-generated ngrok env
 frontend/.env.local
+
+# Accidental shell expansion files
+n.family
+{
+
+# Backend test output artefacts
+backend/*.txt
+
+# Frontend lint output artefacts
+frontend/*.txt
+frontend/lint*.json
