@@ -24,7 +24,9 @@ app.use(cors({
     const isLocalNetwork = /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin) ||
       /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/.test(origin) ||
       /^http:\/\/172\.(1[6-9]|2\d|3[01])\.\d+\.\d+:\d+$/.test(origin);
-    const isAllowed = origin === process.env.CLIENT_ORIGIN;
+    const isAllowed = origin === process.env.CLIENT_ORIGIN ||
+      (process.env.CLIENT_ORIGIN?.includes('vercel.app') &&
+       origin?.endsWith('-ian-lemashons-projects.vercel.app'));
     if (isLocalhost || isLocalNetwork || isAllowed) {
       callback(null, true);
     } else {
