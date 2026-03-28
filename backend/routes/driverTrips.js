@@ -116,12 +116,14 @@ router.patch('/:tripId/reject', requireAuth(['driver']), async (req, res) => {
         }
 
         const updateResult = await query(
-            `UPDATE trips 
-             SET assigned_driver_id = NULL, vehicle_id = NULL, status = 'pending' 
-             WHERE id = $1 
+            `UPDATE trips
+             SET assigned_driver_id = NULL, vehicle_id = NULL, status = 'pending'
+             WHERE id = $1
              RETURNING *`,
             [tripId]
         );
+
+        emitDashboardEvent('trip_rejected', { tripId });
 
         await setSession(`driver:availability:${driverId}`, { status: 'available', updated_at: new Date().toISOString() });
 

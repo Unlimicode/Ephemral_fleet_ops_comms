@@ -67,6 +67,7 @@ export default function ManagerDispatchPage() {
         socket.on('connect', () => setSocketConnected(true));
         socket.on('disconnect', () => setSocketConnected(false));
         socket.on('trip_assigned', fetchData);
+        socket.on('trip_rejected', fetchData);
         socket.on('session_created', fetchData);
         socket.on('session_destroyed', fetchData);
         socket.on('complaint_filed', fetchData);
@@ -101,6 +102,7 @@ export default function ManagerDispatchPage() {
     const pendingTrips     = trips.filter(t => t.status === 'pending');
     const assignedTrips    = trips.filter(t => t.status === 'accepted' || t.status === 'assigned');
     const activeTrips      = trips.filter(t => t.status === 'in_progress');
+    const completedTrips   = trips.filter(t => t.status === 'completed').slice(0, 10);
     const availableDrivers = drivers.filter(d => d.availability_status === 'available');
     const deployedVehicles = activeTrips.length;
 
@@ -449,6 +451,43 @@ export default function ManagerDispatchPage() {
                             </div>
 
                         </div>
+
+                        {/* Recent Completed */}
+                        {completedTrips.length > 0 && (
+                            <div style={{ marginTop: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                    <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '18px', fontWeight: 800, color: '#0D0D0D', letterSpacing: '-0.02em' }}>Recent Completed</h2>
+                                    <span style={{ background: 'rgba(0,245,160,0.1)', color: '#00A86B', borderRadius: '999px', padding: '4px 12px', fontSize: '12px', fontWeight: 700 }}>{completedTrips.length}</span>
+                                </div>
+                                <div className="dispatch-card" style={{ padding: '0', overflow: 'hidden' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                                                {['Trip ID', 'Client', 'Route', 'Driver', 'Vehicle', 'Completed'].map(h => (
+                                                    <th key={h} style={{ padding: '12px 20px', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', textAlign: 'left' }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {completedTrips.map((t, i) => (
+                                                <tr key={t.id} style={{ borderBottom: i < completedTrips.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none', transition: 'background 0.2s' }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.5)'}
+                                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                    <td style={{ padding: '14px 20px', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace', color: 'rgba(0,0,0,0.5)' }}>{t.id.slice(0, 8).toUpperCase()}</td>
+                                                    <td style={{ padding: '14px 20px', fontSize: '13px', fontWeight: 600, color: '#0D0D0D' }}>{t.client_first_name || '—'}</td>
+                                                    <td style={{ padding: '14px 20px', fontSize: '12px', color: 'rgba(0,0,0,0.55)' }}>{t.pickup_location} → {t.destination}</td>
+                                                    <td style={{ padding: '14px 20px', fontSize: '13px', fontWeight: 600, color: '#0D0D0D' }}>{t.driver_name || '—'}</td>
+                                                    <td style={{ padding: '14px 20px', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace', color: 'rgba(0,0,0,0.4)' }}>{t.vehicle_reg || '—'}</td>
+                                                    <td style={{ padding: '14px 20px', fontSize: '11px', color: 'rgba(0,0,0,0.4)', fontFamily: 'JetBrains Mono, monospace' }}>
+                                                        {t.updated_at ? new Date(t.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + new Date(t.updated_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Status Footer Ticker */}
                         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,0,0,0.05)', height: '40px', display: 'flex', alignItems: 'center', paddingLeft: '32px', gap: '40px' }}>

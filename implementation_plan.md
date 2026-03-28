@@ -1019,3 +1019,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/ManagerPrivacyDashboardPage.jsx`
 - **What changed:** Added `expandedTripId` and `tripDetail` state; added `fetchTripDetail` handler calling `GET /dashboard/trips/:tripId`; added `TTLCountdown` inline component (live countdown with colour shift green→amber→red at 50%/25% thresholds); Zone 2 trip rows are now clickable — clicking expands a session key panel below showing driver, client, message buffer, and complaint window keys with live TTL countdowns or "Destroyed" label; added Data Outcome Ratio bar in Zone 1 after pill badges showing wiped vs persisted split with gradient progress bar
 - **Why:** Privacy dashboard showed session dot indicators but no actionable detail — drill-down lets the manager see exact session TTLs per trip; ratio bar makes the data minimization claim visible at a glance
+
+### [Sprint 19] — Trip rejection socket event and completed trips history table
+- **Date:** 2026-03-28
+- **Files modified:** `backend/routes/driverTrips.js`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- **What changed:** Added `emitDashboardEvent('trip_rejected', { tripId })` in driverTrips.js reject handler after the UPDATE query; added `socket.on('trip_rejected', fetchData)` to ManagerDispatchPage alongside existing listeners; added `completedTrips` derived value (last 10 completed trips); added "Recent Completed" glass table below the bento grid showing Trip ID, Client, Route, Driver, Vehicle, Completed columns with hover row highlight — only renders when completed trips exist
+- **Why:** Dispatch page did not refresh when a driver rejected a trip, leaving the manager with stale data; completed trips had no visibility on the dispatch view — the table provides a quick glance at recent history without navigating away
