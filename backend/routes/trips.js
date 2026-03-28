@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../config/db.js';
+import pool from '../config/db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
@@ -57,33 +58,72 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
         return res.status(400).json({ error: 'driver_id and vehicle_id are required' });
     }
 
+    const client = await pool.connect();
     try {
-        const result = await query(
-            `UPDATE trips 
-             SET assigned_driver_id = $1, vehicle_id = $2, status = 'accepted' 
-             WHERE id = $3 
+        await client.query('BEGIN');
+
+        // 1. Trip status guard — must be pending
+        const tripCheck = await client.query(
+            'SELECT id FROM trips WHERE id = $1 AND status = $2',
+            [tripId, 'pending']
+        );
+        if (tripCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'Trip is not in pending status and cannot be assigned.' });
+        }
+
+        // 2. Driver conflict check — not already on an active trip
+        const driverConflict = await client.query(
+            `SELECT id FROM trips WHERE assigned_driver_id = $1 AND status IN ('accepted', 'in_progress')`,
+            [driver_id]
+        );
+        if (driverConflict.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'This driver is already assigned to an active trip.' });
+        }
+
+        // 3. Vehicle conflict check — not already deployed on an active trip
+        const vehicleConflict = await client.query(
+            `SELECT id FROM trips WHERE vehicle_id = $1 AND status IN ('accepted', 'in_progress')`,
+            [vehicle_id]
+        );
+        if (vehicleConflict.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'This vehicle is already deployed on an active trip.' });
+        }
+
+        // 4. Assign
+        const result = await client.query(
+            `UPDATE trips
+             SET assigned_driver_id = $1, vehicle_id = $2, status = 'accepted'
+             WHERE id = $3
              RETURNING *`,
             [driver_id, vehicle_id, tripId]
         );
 
         if (result.rows.length === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: 'Trip not found' });
         }
 
-        const trip = result.rows[0];
-
-        await query(
+        await client.query(
             `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
              VALUES ($1, $2, $3, $4, $5)`,
             ['TRIP_ASSIGNED', req.user.id, 'fleet_manager', tripId, { driver_id, vehicle_id }]
         );
 
+        await client.query('COMMIT');
+
+        const trip = result.rows[0];
         emitDashboardEvent('trip_assigned', { trip_id: tripId, driver_id });
 
         return res.status(200).json(trip);
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('[trips] assign error:', err);
         return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
+    } finally {
+        client.release();
     }
 });
 

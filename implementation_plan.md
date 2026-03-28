@@ -1025,3 +1025,9 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/driverTrips.js`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
 - **What changed:** Added `emitDashboardEvent('trip_rejected', { tripId })` in driverTrips.js reject handler after the UPDATE query; added `socket.on('trip_rejected', fetchData)` to ManagerDispatchPage alongside existing listeners; added `completedTrips` derived value (last 10 completed trips); added "Recent Completed" glass table below the bento grid showing Trip ID, Client, Route, Driver, Vehicle, Completed columns with hover row highlight — only renders when completed trips exist
 - **Why:** Dispatch page did not refresh when a driver rejected a trip, leaving the manager with stale data; completed trips had no visibility on the dispatch view — the table provides a quick glance at recent history without navigating away
+
+### [Sprint 19] — Assignment conflict checks and transaction guard
+- **Date:** 2026-03-28
+- **Files modified:** `backend/routes/trips.js`, `backend/tests/driverTrips.test.js`
+- **What changed:** `PATCH /:tripId/assign` now runs inside a `BEGIN/COMMIT` transaction using a dedicated pool client; three pre-assignment guards added: (1) trip status must be `pending`, (2) driver must not be on an `accepted` or `in_progress` trip, (3) vehicle must not be deployed on an `accepted` or `in_progress` trip — all violations return 409; `pool` imported as default alongside existing `query` named export; `driverTrips.test.js` `beforeAll` updated to provision two separate vehicles (`V-TEST-DRV-A` / `V-TEST-DRV-B`) so each trip assignment uses a distinct vehicle, reflecting the new constraint
+- **Why:** Assign endpoint previously had no guards — a manager could double-assign a driver or vehicle to concurrent trips; the vehicle conflict exposed a test setup deficiency (both test trips shared one vehicle) which was corrected in the test infrastructure without changing any assertions

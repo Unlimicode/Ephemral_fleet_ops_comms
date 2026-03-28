@@ -50,7 +50,7 @@ describe('Driver Trips & Availability API', () => {
     let managerToken;
     let driverA_Id, driverB_Id;
     let driverA_Token, driverB_Token;
-    let vehicleId;
+    let vehicleId, vehicleBId;
     let tripA_Id, tripB_Id;
 
     beforeAll(async () => {
@@ -84,11 +84,16 @@ describe('Driver Trips & Availability API', () => {
         const loginB = await request(app).post('/api/drivers/auth/login').send({ email: 'driverb@test.com', password: 'driverpass' });
         driverB_Token = loginB.body.token;
 
-        // 4. Setup Vehicle
+        // 4. Setup Vehicles (two required — conflict check prevents same vehicle on two active trips)
         const vehicleResult = await pool.query(
-            "INSERT INTO vehicles (registration_number, type, capacity) VALUES ('V-TEST-DRV', 'sedan', 4) RETURNING id"
+            "INSERT INTO vehicles (registration_number, type, capacity) VALUES ('V-TEST-DRV-A', 'sedan', 4) RETURNING id"
         );
         vehicleId = vehicleResult.rows[0].id;
+
+        const vehicleBResult = await pool.query(
+            "INSERT INTO vehicles (registration_number, type, capacity) VALUES ('V-TEST-DRV-B', 'sedan', 4) RETURNING id"
+        );
+        vehicleBId = vehicleBResult.rows[0].id;
 
         // 5. Create Trips
         const tripAResult = await pool.query(
@@ -103,9 +108,9 @@ describe('Driver Trips & Availability API', () => {
         );
         tripB_Id = tripBResult.rows[0].id;
 
-        // Assign Trips
+        // Assign Trips (each trip gets its own vehicle)
         await request(app).patch(`/api/trips/${tripA_Id}/assign`).set('Authorization', `Bearer ${managerToken}`).send({ driver_id: driverA_Id, vehicle_id: vehicleId });
-        await request(app).patch(`/api/trips/${tripB_Id}/assign`).set('Authorization', `Bearer ${managerToken}`).send({ driver_id: driverB_Id, vehicle_id: vehicleId });
+        await request(app).patch(`/api/trips/${tripB_Id}/assign`).set('Authorization', `Bearer ${managerToken}`).send({ driver_id: driverB_Id, vehicle_id: vehicleBId });
     });
 
     afterAll(async () => {
@@ -114,7 +119,7 @@ describe('Driver Trips & Availability API', () => {
 
         // Cleanup
         await pool.query('DELETE FROM trips WHERE id IN ($1, $2)', [tripA_Id, tripB_Id]);
-        await pool.query('DELETE FROM vehicles WHERE id = $1', [vehicleId]);
+        await pool.query('DELETE FROM vehicles WHERE id IN ($1, $2)', [vehicleId, vehicleBId]);
         await pool.query('DELETE FROM drivers WHERE id IN ($1, $2)', [driverA_Id, driverB_Id]);
 
         await pool.end();
