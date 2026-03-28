@@ -971,3 +971,9 @@ without a test-environment guard.
 - **Files modified:** `backend/socket/io.js`
 - **What changed:** Added `credentials: true` to the Socket.IO server CORS config
 - **Why:** Without `credentials: true` on the server side, the browser rejects the WebSocket upgrade when `withCredentials: true` is set on the client — meaning the `client_session` HttpOnly cookie never reaches `socket.handshake.headers.cookie` in production, causing all client socket auth to fail
+
+### [Sprint 19] — Fix force-complete endpoint
+- **Date:** 2026-03-28
+- **Files modified:** `backend/routes/trips.js`
+- **What changed:** Status check now accepts `accepted` and `in_progress` (was `in_progress` only); added driver availability reset to `available` when `assigned_driver_id` present; added `sendEmail` call to notify client on force-complete (guarded by `NODE_ENV !== 'test'`, wrapped in try/catch); fixed error response to use `err.message` instead of `err.stack`
+- **Why:** Managers could not force-complete trips that were assigned but not yet started (`accepted`); driver was left unavailable in Redis after force-complete; client received no email notification; stack traces were being leaked in error responses

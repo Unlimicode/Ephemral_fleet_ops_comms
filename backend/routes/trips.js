@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import { setSession, deleteSession } from '../config/redisHelpers.js';
+import { sendEmail } from '../config/mailer.js';
 
 const router = Router();
 
@@ -171,8 +172,8 @@ router.patch('/:tripId/force-complete', requireAuth(['fleet_manager']), async (r
 
     try {
         const tripCheck = await query(
-            'SELECT id FROM trips WHERE id = $1 AND status = $2',
-            [tripId, 'in_progress']
+            'SELECT id, assigned_driver_id, client_corporate_email FROM trips WHERE id = $1 AND status = ANY($2::text[])',
+            [tripId, ['accepted', 'in_progress']]
         );
         if (tripCheck.rows.length === 0) return res.status(404).json({ error: 'Trip not found or not in progress' });
 
@@ -183,7 +184,25 @@ router.patch('/:tripId/force-complete', requireAuth(['fleet_manager']), async (r
 
         await deleteSession(`session:trip:${tripId}:driver`);
         await deleteSession(`session:trip:${tripId}:client`);
+
+        const { assigned_driver_id, client_corporate_email } = tripCheck.rows[0];
+        if (assigned_driver_id) {
+            await setSession(`driver:availability:${assigned_driver_id}`, { status: 'available', updated_at: new Date().toISOString() });
+        }
+
         await setSession(`complaint:window:${tripId}`, { active: true }, 86400);
+
+        if (process.env.NODE_ENV !== 'test') {
+            try {
+                await sendEmail({
+                    to: client_corporate_email,
+                    subject: 'Your trip is complete — you have 24 hours to submit a complaint',
+                    text: `Your trip has been completed.\n\nYou have a 24-hour window to file a complaint if needed. After this window, all communication records will no longer be accessible.\n\nLink: ${process.env.CLIENT_ORIGIN}/booking`,
+                });
+            } catch (mailErr) {
+                console.error('[trips] force-complete email failed:', mailErr.message);
+            }
+        }
 
         const io = getIo();
         if (io) {
@@ -205,7 +224,7 @@ router.patch('/:tripId/force-complete', requireAuth(['fleet_manager']), async (r
         return res.status(200).json(result.rows[0]);
     } catch (err) {
         console.error('[trips] force-complete error:', err.message, err.stack);
-        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
+        return res.status(500).json({ error: 'Internal server error', details: err.message });
     }
 });
 
