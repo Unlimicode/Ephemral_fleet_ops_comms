@@ -122,6 +122,45 @@ router.patch('/drivers/:driverId/deactivate', requireAuth(['fleet_manager']), as
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PATCH /drivers/:driverId/reactivate — Reactivate a deactivated driver
+// ─────────────────────────────────────────────────────────────────────────────
+router.patch('/drivers/:driverId/reactivate', requireAuth(['fleet_manager']), async (req, res) => {
+    const { driverId } = req.params;
+    const fleetManagerId = req.user.id;
+
+    try {
+        const checkDriver = await pool.query(
+            'SELECT id, active_status, full_name FROM drivers WHERE id = $1 AND fleet_manager_id = $2',
+            [driverId, fleetManagerId]
+        );
+        if (checkDriver.rows.length === 0) {
+            return res.status(404).json({ error: 'Driver not found' });
+        }
+
+        const driver = checkDriver.rows[0];
+        if (driver.active_status === true) {
+            return res.status(400).json({ error: 'Driver is already active' });
+        }
+
+        await pool.query('UPDATE drivers SET active_status = true WHERE id = $1', [driverId]);
+
+        await setSession(`driver:availability:${driverId}`, { status: 'available', updated_at: new Date().toISOString() }, 86400);
+
+        await pool.query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['DRIVER_REACTIVATED', fleetManagerId, 'fleet_manager', driverId, { driver_name: driver.full_name }]
+        );
+
+        return res.status(200).json({ message: 'Driver reactivated successfully.' });
+
+    } catch (err) {
+        console.error('[roster] PATCH /reactivate error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /drivers - Fleet Manager Roster Visualization
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/drivers', requireAuth(['fleet_manager']), async (req, res) => {

@@ -14,6 +14,7 @@ export default function ManagerDriversPage() {
     const [error, setError] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+    const [showReactivateModal, setShowReactivateModal] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState(null);
     const [newDriver, setNewDriver] = useState({ full_name: '', work_email: '', password: '', employee_id: '' });
     const [formError, setFormError] = useState('');
@@ -53,6 +54,20 @@ export default function ManagerDriversPage() {
             fetchDrivers();
         } catch (err) {
             setFormError(err.response?.data?.error || 'Failed to add driver.');
+        }
+    }
+
+    async function handleReactivate() {
+        if (!selectedDriver) return;
+        try {
+            await api.patch(`/roster/drivers/${selectedDriver.driver_id}/reactivate`);
+            addToast('Driver reactivated successfully.', 'success');
+            setShowReactivateModal(false);
+            setSelectedDriver(null);
+            fetchDrivers();
+        } catch (err) {
+            console.error('Failed to reactivate driver:', err);
+            addToast('Failed to reactivate driver.', 'error');
         }
     }
 
@@ -288,7 +303,14 @@ export default function ManagerDriversPage() {
                                                                 Deactivate
                                                             </button>
                                                         ) : (
-                                                            <span style={{ fontSize: '13px', color: 'rgba(0,0,0,0.3)', fontWeight: 500 }}>Inactive</span>
+                                                            <button
+                                                                onClick={() => { setSelectedDriver(d); setShowReactivateModal(true); }}
+                                                                style={{ fontSize: '13px', fontWeight: 600, color: '#00A86B', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px', borderRadius: '999px', transition: 'background 0.2s', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,168,107,0.08)'; }}
+                                                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                                                            >
+                                                                Reactivate
+                                                            </button>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -384,6 +406,38 @@ export default function ManagerDriversPage() {
                                     style={{ background: '#E05A5A', color: 'white', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
                                 >
                                     Deactivate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* REACTIVATE MODAL */}
+                {showReactivateModal && selectedDriver && (
+                    <div
+                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+                        onClick={e => { if (e.target === e.currentTarget) { setShowReactivateModal(false); setSelectedDriver(null); } }}
+                    >
+                        <div className="driver-card driver-card-modal" style={{ padding: '32px', width: '100%', maxWidth: '380px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(0,168,107,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#00A86B' }}>check_circle</span>
+                            </div>
+                            <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '18px', fontWeight: 900, letterSpacing: '-0.02em', color: '#0D0D0D' }}>Reactivate Driver?</h2>
+                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.5)', marginTop: '8px', marginBottom: '24px', lineHeight: 1.6 }}>
+                                <strong>{selectedDriver.full_name}</strong> will be restored to active status and marked as available.
+                            </p>
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                                <button
+                                    onClick={() => { setShowReactivateModal(false); setSelectedDriver(null); }}
+                                    style={{ background: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.6)', borderRadius: '999px', padding: '10px 20px', fontSize: '13px', fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleReactivate}
+                                    style={{ background: '#00A86B', color: 'white', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                >
+                                    Reactivate
                                 </button>
                             </div>
                         </div>

@@ -1007,3 +1007,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/driver/DriverNotificationsPage.jsx`
 - **What changed:** Complete rewrite from stub — fetches `GET /drivers/notifications` on mount, renders shimmer skeletons while loading, empty state with icon, notification list with per-type icon circles (trip_assigned/complaint_review/default), unread badge in header, purple left border on unread cards, "Mark read" button calls `PATCH /drivers/notifications/:id/read` and updates local state, `formatTimeAgo` helper, arch-grid + geo-shape background consistent with other driver pages
 - **Why:** Page was a non-functional placeholder — now fully wired to the notifications API added in the previous sprint
+
+### [Sprint 19] — Driver reactivation endpoint and UI
+- **Date:** 2026-03-28
+- **Files modified:** `backend/routes/roster.js`, `frontend/src/pages/manager/ManagerDriversPage.jsx`
+- **What changed:** Added `PATCH /roster/drivers/:driverId/reactivate` — ownership check, already-active guard, sets `active_status = true`, resets Redis availability to `available` with 24h TTL, writes `DRIVER_REACTIVATED` audit log; frontend: added `showReactivateModal` state, `handleReactivate` handler, replaced "Inactive" span with green "Reactivate" button for inactive drivers, added green-accented confirmation modal
+- **Why:** No way existed to restore a deactivated driver — deactivation was irreversible from the UI
