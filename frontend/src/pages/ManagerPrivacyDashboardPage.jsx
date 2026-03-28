@@ -40,6 +40,8 @@ export default function ManagerPrivacyDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const socketRef = useRef(null);
+    const [expandedTripId, setExpandedTripId] = useState(null);
+    const [tripDetail, setTripDetail] = useState({});
 
     const fetchSessions = useCallback(async () => {
         try {
@@ -204,6 +206,15 @@ export default function ManagerPrivacyDashboardPage() {
         }
     };
 
+    const fetchTripDetail = async (tripId) => {
+        try {
+            const res = await api.get(`/dashboard/trips/${tripId}`);
+            setTripDetail(prev => ({ ...prev, [tripId]: res.data }));
+        } catch (err) {
+            console.error('Failed to fetch trip detail', err);
+        }
+    };
+
     const handleExportTripCSV = async () => {
         try {
             const [tripsRes, complaintsRes] = await Promise.all([
@@ -240,6 +251,22 @@ export default function ManagerPrivacyDashboardPage() {
         } catch (err) {
             console.error('Trip CSV export failed', err);
         }
+    };
+
+    const TTLCountdown = ({ ttlSeconds }) => {
+        const [timeLeft, setTimeLeft] = useState(ttlSeconds);
+        useEffect(() => {
+            if (ttlSeconds <= 0) return;
+            const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+            return () => clearInterval(timer);
+        }, [ttlSeconds]);
+        const h = Math.floor(timeLeft / 3600);
+        const m = Math.floor((timeLeft % 3600) / 60);
+        const s = timeLeft % 60;
+        const display = h > 0 ? `${h}h ${m}m ${s}s` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+        const pct = timeLeft / ttlSeconds;
+        const color = pct > 0.5 ? '#00F5A0' : pct > 0.25 ? '#F59E0B' : '#E05A5A';
+        return <span style={{ fontSize: '12px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color }}>{display}</span>;
     };
 
     if (loading && !summary && sessions.length === 0) {
@@ -422,6 +449,29 @@ export default function ManagerPrivacyDashboardPage() {
                                     </span>
                                 ))}
                             </div>
+                            {(() => {
+                                const wiped = summary?.data_wiped || 0;
+                                const persisted = summary?.conditionally_persisted || 0;
+                                const ratioTotal = wiped + persisted;
+                                return (
+                                    <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                        <p style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(0,0,0,0.45)', marginBottom: '12px' }}>Data Outcome Ratio</p>
+                                        {ratioTotal === 0 ? (
+                                            <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.3)', fontStyle: 'italic' }}>No completed trips yet</p>
+                                        ) : (
+                                            <>
+                                                <div style={{ width: '100%', height: '8px', borderRadius: '999px', background: 'rgba(0,0,0,0.08)', position: 'relative', overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', borderRadius: '999px', background: 'linear-gradient(90deg, #00F5A0, #00D4FF)', width: `${(wiped / ratioTotal * 100).toFixed(1)}%`, transition: 'width 0.8s ease' }} />
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                                                    <span style={{ fontSize: '11px', color: '#00A86B', fontWeight: 600 }}>{wiped} auto-wiped</span>
+                                                    <span style={{ fontSize: '11px', color: '#F59E0B', fontWeight: 600 }}>{persisted} persisted</span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
 
@@ -432,22 +482,58 @@ export default function ManagerPrivacyDashboardPage() {
                             <span style={{ background: 'rgba(0,245,160,0.15)', color: '#00A86B', borderRadius: '999px', padding: '4px 12px', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>Real-Time</span>
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto' }}>
-                            {overviewTrips.length > 0 ? overviewTrips.map(trip => (
-                                <div key={trip.trip_id} style={{ background: 'rgba(255,255,255,0.5)', borderRadius: '20px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.7)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(108,99,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#6C63FF' }}>route</span>
+                            {overviewTrips.length > 0 ? overviewTrips.map(t => (
+                                <div key={t.trip_id}>
+                                    <div
+                                        style={{ background: 'rgba(255,255,255,0.5)', borderRadius: '20px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.7)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                                        onClick={() => { const isExpanded = expandedTripId === t.trip_id; setExpandedTripId(isExpanded ? null : t.trip_id); if (!isExpanded) fetchTripDetail(t.trip_id); }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.72)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.5)'}
+                                    >
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(108,99,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#6C63FF' }}>route</span>
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ fontSize: '13px', fontWeight: 700, color: '#0D0D0D', fontFamily: 'JetBrains Mono, monospace' }}>#{t.trip_id.slice(0, 8)}</p>
+                                            <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {t.pickup_location} → {t.destination}
+                                            </p>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                            <span title="Driver Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.driver_session_active ? '#00F5A0' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                            <span title="Client Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.client_session_active ? '#6C63FF' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                            <span title="Complaint Window" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.complaint_window_active ? '#F59E0B' : t.complaint_filed ? '#E05A5A' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                        </div>
                                     </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#0D0D0D', fontFamily: 'JetBrains Mono, monospace' }}>#{trip.trip_id.slice(0, 8)}</p>
-                                        <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.45)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            {trip.pickup_location} → {trip.destination}
-                                        </p>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                                        <span title="Driver Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: trip.driver_session_active ? '#00F5A0' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
-                                        <span title="Client Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: trip.client_session_active ? '#6C63FF' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
-                                        <span title="Complaint Window" style={{ width: '12px', height: '12px', borderRadius: '50%', background: trip.complaint_window_active ? '#F59E0B' : trip.complaint_filed ? '#E05A5A' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
-                                    </div>
+                                    {expandedTripId === t.trip_id && (
+                                        <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '12px', padding: '16px', marginTop: '8px', marginBottom: '4px' }}>
+                                            <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: '12px' }}>Session Keys</p>
+                                            {tripDetail[t.trip_id] ? (
+                                                [
+                                                    { key: 'driver', label: 'Driver Session', color: '#00F5A0' },
+                                                    { key: 'client', label: 'Client Session', color: '#6C63FF' },
+                                                    { key: 'message_buffer', label: 'Message Buffer', color: '#00D4FF' },
+                                                    { key: 'complaint_window', label: 'Complaint Window', color: '#F59E0B' },
+                                                ].map(({ key, label, color }) => {
+                                                    const session = tripDetail[t.trip_id]?.sessions?.[key];
+                                                    return (
+                                                        <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, display: 'inline-block' }} />
+                                                                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{label}</span>
+                                                            </div>
+                                                            {session?.active
+                                                                ? <TTLCountdown ttlSeconds={session.ttl_seconds || 0} />
+                                                                : <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Destroyed</span>
+                                                            }
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>Loading session keys...</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )) : (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>

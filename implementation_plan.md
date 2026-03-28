@@ -1013,3 +1013,9 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/roster.js`, `frontend/src/pages/manager/ManagerDriversPage.jsx`
 - **What changed:** Added `PATCH /roster/drivers/:driverId/reactivate` — ownership check, already-active guard, sets `active_status = true`, resets Redis availability to `available` with 24h TTL, writes `DRIVER_REACTIVATED` audit log; frontend: added `showReactivateModal` state, `handleReactivate` handler, replaced "Inactive" span with green "Reactivate" button for inactive drivers, added green-accented confirmation modal
 - **Why:** No way existed to restore a deactivated driver — deactivation was irreversible from the UI
+
+### [Sprint 19] — Privacy dashboard: TTL countdowns, per-trip session drill-down, data outcome ratio
+- **Date:** 2026-03-28
+- **Files modified:** `frontend/src/pages/ManagerPrivacyDashboardPage.jsx`
+- **What changed:** Added `expandedTripId` and `tripDetail` state; added `fetchTripDetail` handler calling `GET /dashboard/trips/:tripId`; added `TTLCountdown` inline component (live countdown with colour shift green→amber→red at 50%/25% thresholds); Zone 2 trip rows are now clickable — clicking expands a session key panel below showing driver, client, message buffer, and complaint window keys with live TTL countdowns or "Destroyed" label; added Data Outcome Ratio bar in Zone 1 after pill badges showing wiped vs persisted split with gradient progress bar
+- **Why:** Privacy dashboard showed session dot indicators but no actionable detail — drill-down lets the manager see exact session TTLs per trip; ratio bar makes the data minimization claim visible at a glance
