@@ -1001,3 +1001,9 @@ without a test-environment guard.
 - **Files modified:** `backend/database/schema.sql`, `backend/database/migrations/001_driver_notifications.sql`, `backend/utils/sendPushNotification.js`, `backend/routes/drivers.js`
 - **What changed:** Added `driver_notifications` table to schema and migration file; `sendPushNotification` now inserts a notification record (driver_id, title, body, type, trip_id) before the per-subscription push loop, wrapped in its own try/catch so DB failure never blocks push delivery; added `GET /drivers/notifications` and `PATCH /drivers/notifications/:id/read` endpoints
 - **Why:** DriverNotificationsPage was a stub with no data — notifications are now persisted on every push send and retrievable via API; the migration file lets the live Supabase DB be updated independently of the seed script
+
+### [Sprint 19] — Build DriverNotificationsPage
+- **Date:** 2026-03-28
+- **Files modified:** `frontend/src/pages/driver/DriverNotificationsPage.jsx`
+- **What changed:** Complete rewrite from stub — fetches `GET /drivers/notifications` on mount, renders shimmer skeletons while loading, empty state with icon, notification list with per-type icon circles (trip_assigned/complaint_review/default), unread badge in header, purple left border on unread cards, "Mark read" button calls `PATCH /drivers/notifications/:id/read` and updates local state, `formatTimeAgo` helper, arch-grid + geo-shape background consistent with other driver pages
+- **Why:** Page was a non-functional placeholder — now fully wired to the notifications API added in the previous sprint
