@@ -74,6 +74,10 @@ export default function BookingLandingPage() {
     const [complaintWindowSeconds, setComplaintWindowSeconds] = useState(null);
     const [complaintProgress, setComplaintProgress] = useState(null);
     const [descFocused, setDescFocused] = useState(false);
+    const [showEditForm, setShowEditForm] = useState(false);
+    const [editForm, setEditForm] = useState({ pickup_location: '', destination: '', pickup_time: '', flight_number: '' });
+    const [editLoading, setEditLoading] = useState(false);
+    const [editError, setEditError] = useState('');
 
     const authStarted = useRef(false);
     // Initial Auth & Session Hydration
@@ -143,6 +147,25 @@ export default function BookingLandingPage() {
             setComplaintStatus({ loading: false, success: true, error: false });
         } catch {
             setComplaintStatus({ loading: false, success: false, error: true });
+        }
+    };
+
+    const handleEditSubmit = async () => {
+        setEditLoading(true);
+        setEditError('');
+        try {
+            const payload = {};
+            if (editForm.pickup_location.trim()) payload.pickup_location = editForm.pickup_location.trim();
+            if (editForm.destination.trim()) payload.destination = editForm.destination.trim();
+            if (editForm.pickup_time) payload.pickup_time = editForm.pickup_time;
+            if (editForm.flight_number.trim()) payload.flight_number = editForm.flight_number.trim();
+            await api.patch(`/bookings/${tripId}`, payload);
+            setShowEditForm(false);
+            fetchBooking();
+        } catch (err) {
+            setEditError(err.response?.data?.error || 'Failed to update booking');
+        } finally {
+            setEditLoading(false);
         }
     };
 
@@ -254,6 +277,25 @@ export default function BookingLandingPage() {
                             style={{ width: getProgressWidth() }}
                         />
                     </div>
+
+                    {isPending && (
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                onClick={() => {
+                                    setEditForm({
+                                        pickup_location: booking.pickup_location,
+                                        destination: booking.destination,
+                                        pickup_time: booking.pickup_time ? new Date(booking.pickup_time).toISOString().slice(0, 16) : '',
+                                        flight_number: booking.flight_number || '',
+                                    });
+                                    setShowEditForm(true);
+                                }}
+                                style={{ background: 'rgba(108,99,255,0.1)', color: '#6C63FF', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                            >
+                                Edit Booking
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Driver Card */}
@@ -535,6 +577,65 @@ export default function BookingLandingPage() {
                     </div>
                 )}
             </main>
+
+            {showEditForm && isPending && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+                    <div className="glass-card-dark" style={{ padding: '32px', maxWidth: '440px', width: '100%', borderRadius: '24px', position: 'relative' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'white', marginBottom: '24px' }}>Update Booking</h3>
+
+                        <label style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'block' }}>Pickup Location</label>
+                        <input
+                            value={editForm.pickup_location}
+                            onChange={e => setEditForm(f => ({ ...f, pickup_location: e.target.value }))}
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' }}
+                        />
+
+                        <label style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'block' }}>Destination</label>
+                        <input
+                            value={editForm.destination}
+                            onChange={e => setEditForm(f => ({ ...f, destination: e.target.value }))}
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' }}
+                        />
+
+                        <label style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'block' }}>Pickup Time</label>
+                        <input
+                            type="datetime-local"
+                            value={editForm.pickup_time}
+                            onChange={e => setEditForm(f => ({ ...f, pickup_time: e.target.value }))}
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' }}
+                        />
+
+                        <label style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'block' }}>Flight Number</label>
+                        <input
+                            value={editForm.flight_number}
+                            onChange={e => setEditForm(f => ({ ...f, flight_number: e.target.value }))}
+                            placeholder="Optional"
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' }}
+                        />
+
+                        {editError && (
+                            <p style={{ fontSize: '12px', color: '#EF4444', fontWeight: 600, marginBottom: '16px' }}>{editError}</p>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => { setShowEditForm(false); setEditError(''); }}
+                                className="glass-card"
+                                style={{ padding: '10px 20px', borderRadius: '999px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleEditSubmit}
+                                disabled={editLoading}
+                                style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', opacity: editLoading ? 0.7 : 1 }}
+                            >
+                                {editLoading ? 'Saving…' : 'Update'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

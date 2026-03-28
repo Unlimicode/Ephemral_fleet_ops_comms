@@ -989,3 +989,9 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/bookings.js`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
 - **What changed:** Added `PATCH /:tripId` to bookings router — `requireClientAuth`, ownership check, `pending`-only guard, dynamic UPDATE for `pickup_location`, `destination`, `pickup_time`, `flight_number` with validation, `booking_updated` dashboard event, `BOOKING_UPDATED` audit log entry; added `socket.on('booking_updated', fetchData)` to ManagerDispatchPage
 - **Why:** Clients had no way to correct booking details after submission; managers receive real-time notification of any changes via dashboard socket
+
+### [Sprint 19] — Client booking edit form
+- **Date:** 2026-03-28
+- **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** Added edit state (`showEditForm`, `editForm`, `editLoading`, `editError`); added `handleEditSubmit` handler that PATCHes only non-empty fields; added "Edit Booking" button in trip details card (visible only when `status === 'pending'`); added modal overlay with fields for pickup_location, destination, pickup_time, flight_number, error display, cancel and update buttons
+- **Why:** Clients had no way to correct booking details after submission — the edit form closes automatically on success and triggers a booking refresh
