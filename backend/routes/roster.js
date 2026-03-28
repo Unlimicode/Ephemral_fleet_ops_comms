@@ -3,7 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import pool from '../config/db.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import transporter from '../config/mailer.js';
+import { sendEmail } from '../config/mailer.js';
 import { getSession, setSession } from '../config/redisHelpers.js';
 
 const router = express.Router();
@@ -51,11 +51,10 @@ router.post('/drivers', requireAuth(['fleet_manager']), async (req, res) => {
 
         // Physically transport credentials out-of-bands masking payload evaluation from REST API outputs natively.
         if (process.env.NODE_ENV !== 'test') {
-            await transporter.sendMail({
-                from: process.env.MAIL_FROM || '"SwiftLink Ops" <noreply@fleetops.dev>',
+            await sendEmail({
                 to: work_email,
                 subject: 'Your Fleet Ops Driver Account',
-                text: `Hello ${full_name},\n\nYour driver account has been provisioned.\nLogin Email: ${work_email}\nTemporary Password: ${temporaryPassword}`
+                text: `Hello ${full_name},\n\nYour driver account has been provisioned.\nLogin Email: ${work_email}\nTemporary Password: ${temporaryPassword}`,
             });
         }
 

@@ -8,7 +8,7 @@ import { encrypt, decrypt } from '../utils/encryption.js';
 import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import { sendPushNotification } from '../utils/sendPushNotification.js';
-import transporter from '../config/mailer.js';
+import { sendEmail } from '../config/mailer.js';
 
 const router = express.Router();
 
@@ -362,11 +362,10 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
                         resolved: 'Resolved',
                         escalated: 'Escalated'
                     };
-                    await transporter.sendMail({
-                        from: `"Fleet Ops" <${process.env.MAIL_FROM || process.env.MAIL_USER}>`,
+                    await sendEmail({
                         to: tripEmail.rows[0].client_corporate_email,
                         subject: `Complaint Status Update — ${statusLabels[status] || status}`,
-                        text: `Your complaint (ref: ${complaintId}) has been updated to: ${statusLabels[status] || status}.\n\nSwiftLink Corporate Transport`
+                        text: `Your complaint (ref: ${complaintId}) has been updated to: ${statusLabels[status] || status}.\n\nSwiftLink Corporate Transport`,
                     });
                 }
             } catch (mailErr) {

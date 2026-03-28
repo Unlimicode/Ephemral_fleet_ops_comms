@@ -3,7 +3,7 @@ import { query } from '../config/db.js';
 import { setSession, getSession, deleteSession, extendSession } from '../config/redisHelpers.js';
 import client from '../config/redis.js';
 import crypto from 'crypto';
-import transporter from '../config/mailer.js';
+import { sendEmail } from '../config/mailer.js';
 import jwt from 'jsonwebtoken';
 import { requireClientAuth } from '../middleware/clientAuth.js';
 
@@ -63,8 +63,7 @@ router.post('/', async (req, res) => {
 
         if (process.env.NODE_ENV !== 'test') {
             try {
-                await transporter.sendMail({
-                    from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
+                await sendEmail({
                     to: client_corporate_email,
                     subject: 'Fleet Ops: Your Booking Confirmation & Access Link',
                     text: `Hello ${firstName},\n\nYour trip has been successfully requested and is pending driver assignment.\n\nYou can track and manage your trip securely using this one-time access link:\n${magicLink}\n\nThis link acts as your secure key. Do not share it with anyone.`,
@@ -320,8 +319,7 @@ router.post('/:tripId/request-new-link', async (req, res) => {
 
         if (process.env.NODE_ENV !== 'test') {
             try {
-                await transporter.sendMail({
-                    from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
+                await sendEmail({
                     to: client_corporate_email,
                     subject: 'Fleet Ops: New Booking Access Link',
                     text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,

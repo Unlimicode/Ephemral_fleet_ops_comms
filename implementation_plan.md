@@ -953,3 +953,9 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/bookings.js`
 - **What changed:** Wrapped both `transporter.sendMail` calls (booking confirmation and magic link recovery) in their own `try/catch` blocks with `console.error` logging
 - **Why:** SMTP failure was falling through to the outer `catch` and returning a 500, making a successful booking appear to have failed from the manager's perspective — trip row and Redis token were already written at that point
+
+### [Sprint 19] — Switch from SMTP to Resend HTTP API
+- **Date:** 2026-03-28
+- **Files modified:** `backend/config/mailer.js`, `backend/routes/bookings.js`, `backend/routes/driverTrips.js`, `backend/routes/complaints.js`, `backend/routes/roster.js`, `backend/server.js`, `backend/package.json`
+- **What changed:** Replaced nodemailer SMTP transport with Resend HTTP API; new `sendEmail({ to, subject, text })` helper in mailer.js; all four route files updated to import and call `sendEmail` instead of `transporter.sendMail`; removed `from` field from call sites (centralised in mailer.js); removed `transporter.verify()` startup check from server.js; added `test_placeholder` fallback key so Resend constructor doesn't throw at module load time in CI (sendEmail is never called in tests due to existing NODE_ENV guards)
+- **Why:** Railway blocks outbound SMTP connections on port 587/465 — Resend HTTP API bypasses this restriction entirely
