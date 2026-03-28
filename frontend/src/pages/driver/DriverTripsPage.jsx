@@ -31,8 +31,17 @@ export default function DriverTripsPage({ defaultTab }) {
 
     useEffect(() => {
         fetchTrips();
-        const interval = setInterval(fetchTrips, 20000);
-        return () => clearInterval(interval);
+        const interval = setInterval(fetchTrips, 5000);
+
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') fetchTrips();
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
     }, [fetchTrips]);
 
     const handleAccept = async (tripId) => {

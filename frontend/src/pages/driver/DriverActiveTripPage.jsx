@@ -28,6 +28,17 @@ export default function DriverActiveTripPage() {
 
     useEffect(() => {
         fetchTrip();
+        const interval = setInterval(fetchTrip, 10000);
+
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') fetchTrip();
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
     }, [fetchTrip]);
 
     const handleStartTrip = async () => {

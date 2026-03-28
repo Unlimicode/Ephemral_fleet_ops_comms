@@ -41,7 +41,15 @@ export default function useChat({ tripId, token, role }) {
             socket.disconnect();
         });
 
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible' && socketRef.current && !socketRef.current.connected) {
+                socketRef.current.connect();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+
         return () => {
+            document.removeEventListener('visibilitychange', handleVisibility);
             socket.disconnect();
         };
     }, [tripId, token, role]);

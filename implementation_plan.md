@@ -1055,3 +1055,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`, `backend/routes/complaints.js`
 - **What changed:** BookingLandingPage: `handleEditSubmit` now resets `editForm` to empty values and calls `setShowEditForm(false)` after a successful PATCH so the form closes cleanly; added `visibilitychange` useEffect that calls `fetchBooking()` when the tab becomes visible again to recover from background stale state; complaints.js `PATCH /:complaintId/status`: replaced single-table `SELECT client_corporate_email FROM trips` with a JOIN query that also fetches `investigation_notes` from complaints, and included notes in the status update email body when they exist
 - **Why:** Edit form stayed populated and open after a successful save; tabs returning from background showed stale booking state until the next poll; status update emails lacked investigation context for clients; notification INSERT was already unconditional in sendPushNotification.js — no change required
+
+### [Sprint 19] — Polling and visibility reconnect for driver pages and useChat
+- **Date:** 2026-03-28
+- **Files modified:** `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`, `frontend/src/hooks/useChat.js`
+- **What changed:** DriverTripsPage: poll interval reduced from 20 000 ms to 5 000 ms, visibilitychange listener added to refetch on tab focus; DriverActiveTripPage: added setInterval(fetchTrip, 10 000) and visibilitychange listener (page previously had no polling at all — fetch-once only); useChat: visibilitychange listener calls socket.connect() when tab becomes visible and socket exists but is disconnected
+- **Why:** Driver trip list was slow to reflect new assignments; active trip page showed stale status if left open; chat socket had no mechanism to recover after a background disconnect
