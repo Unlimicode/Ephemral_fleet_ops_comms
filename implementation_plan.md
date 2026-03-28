@@ -1031,3 +1031,9 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/trips.js`, `backend/tests/driverTrips.test.js`
 - **What changed:** `PATCH /:tripId/assign` now runs inside a `BEGIN/COMMIT` transaction using a dedicated pool client; three pre-assignment guards added: (1) trip status must be `pending`, (2) driver must not be on an `accepted` or `in_progress` trip, (3) vehicle must not be deployed on an `accepted` or `in_progress` trip — all violations return 409; `pool` imported as default alongside existing `query` named export; `driverTrips.test.js` `beforeAll` updated to provision two separate vehicles (`V-TEST-DRV-A` / `V-TEST-DRV-B`) so each trip assignment uses a distinct vehicle, reflecting the new constraint
 - **Why:** Assign endpoint previously had no guards — a manager could double-assign a driver or vehicle to concurrent trips; the vehicle conflict exposed a test setup deficiency (both test trips shared one vehicle) which was corrected in the test infrastructure without changing any assertions
+
+### [Sprint 19] — Fix assign loading state, error field, and fetchData await
+- **Date:** 2026-03-28
+- **Files modified:** `frontend/src/components/BookingCard.jsx`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- **What changed:** BookingCard: added `assigning` state, `handleAssign` made async with `setAssigning(true/false)` wrapping `onAssign` in try/finally, button disabled and shows "Assigning..." during request, opacity drops to 0.6 when disabled; ManagerDispatchPage: `fetchData()` now awaited in `handleAssign` so toast fires after data refreshes, both catch blocks changed from `data?.message` to `data?.error || data?.message` to match the backend `{ error }` response shape
+- **Why:** Button allowed double-submits with no feedback; 409 conflict errors from the new assignment checks showed generic "Assignment failed." instead of the specific reason; toast was firing before the trip list had refreshed

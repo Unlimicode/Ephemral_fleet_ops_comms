@@ -3,14 +3,20 @@ import { useState } from 'react';
 export default function BookingCard({ booking, drivers, vehicles, onAssign, index = 0 }) {
     const [selectedDriver, setSelectedDriver] = useState('');
     const [selectedVehicle, setSelectedVehicle] = useState('');
+    const [assigning, setAssigning] = useState(false);
 
     const isPending = booking.status === 'pending';
     const statusColor = isPending ? 'rgba(255,180,0,0.15)' : 'rgba(0,245,160,0.15)';
     const statusText = isPending ? '#B8860B' : '#00A86B';
 
-    const handleAssign = () => {
+    const handleAssign = async () => {
         if (selectedDriver && selectedVehicle) {
-            onAssign(booking.id, selectedDriver, selectedVehicle);
+            setAssigning(true);
+            try {
+                await onAssign(booking.id, selectedDriver, selectedVehicle);
+            } finally {
+                setAssigning(false);
+            }
         }
     };
 
@@ -86,16 +92,16 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
             <button
                 className="glass-button"
                 onClick={handleAssign}
-                disabled={!selectedDriver || !selectedVehicle}
+                disabled={!selectedDriver || !selectedVehicle || assigning}
                 style={{
                     width: '100%', padding: '12px', borderRadius: '12px',
                     color: '#F5EDE3', fontSize: '14px', fontWeight: 600,
-                    cursor: (!selectedDriver || !selectedVehicle) ? 'not-allowed' : 'pointer',
-                    opacity: (!selectedDriver || !selectedVehicle) ? 0.5 : 1,
+                    cursor: (!selectedDriver || !selectedVehicle || assigning) ? 'not-allowed' : 'pointer',
+                    opacity: (!selectedDriver || !selectedVehicle || assigning) ? 0.6 : 1,
                     display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px'
                 }}
             >
-                Assign Trip →
+                {assigning ? 'Assigning...' : 'Assign Trip →'}
             </button>
         </div>
     );

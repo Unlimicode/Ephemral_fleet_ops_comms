@@ -82,10 +82,10 @@ export default function ManagerDispatchPage() {
     const handleAssign = async (tripId, driverId, vehicleId) => {
         try {
             await api.patch(`/trips/${tripId}/assign`, { driver_id: driverId, vehicle_id: vehicleId });
-            fetchData();
+            await fetchData();
             addToast('Trip assigned successfully.', 'success');
         } catch (err) {
-            addToast(err.response?.data?.message || 'Assignment failed.', 'error');
+            addToast(err.response?.data?.error || err.response?.data?.message || 'Assignment failed.', 'error');
         }
     };
 
@@ -95,7 +95,7 @@ export default function ManagerDispatchPage() {
             fetchData();
             addToast('Trip marked as complete.', 'success');
         } catch (err) {
-            addToast(err.response?.data?.message || 'Failed to complete trip.', 'error');
+            addToast(err.response?.data?.error || err.response?.data?.message || 'Failed to complete trip.', 'error');
         }
     };
 
