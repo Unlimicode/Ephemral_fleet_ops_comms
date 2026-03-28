@@ -29,6 +29,17 @@ export async function sendPushNotification(driverId, payload) {
 
     if (result.rows.length === 0) return;
 
+    // Persist notification record once per send attempt (before per-subscription loop)
+    try {
+        await query(
+            `INSERT INTO driver_notifications (driver_id, title, body, type, trip_id)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [driverId, payload.title, payload.body, payload.type, payload.tripId || null]
+        );
+    } catch (dbErr) {
+        console.error('[push] Failed to persist notification record:', dbErr.message);
+    }
+
     for (const row of result.rows) {
         const pushSubscription = {
             endpoint: row.endpoint,

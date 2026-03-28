@@ -995,3 +995,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
 - **What changed:** Added edit state (`showEditForm`, `editForm`, `editLoading`, `editError`); added `handleEditSubmit` handler that PATCHes only non-empty fields; added "Edit Booking" button in trip details card (visible only when `status === 'pending'`); added modal overlay with fields for pickup_location, destination, pickup_time, flight_number, error display, cancel and update buttons
 - **Why:** Clients had no way to correct booking details after submission — the edit form closes automatically on success and triggers a booking refresh
+
+### [Sprint 19] — Driver notifications persistence and API
+- **Date:** 2026-03-28
+- **Files modified:** `backend/database/schema.sql`, `backend/database/migrations/001_driver_notifications.sql`, `backend/utils/sendPushNotification.js`, `backend/routes/drivers.js`
+- **What changed:** Added `driver_notifications` table to schema and migration file; `sendPushNotification` now inserts a notification record (driver_id, title, body, type, trip_id) before the per-subscription push loop, wrapped in its own try/catch so DB failure never blocks push delivery; added `GET /drivers/notifications` and `PATCH /drivers/notifications/:id/read` endpoints
+- **Why:** DriverNotificationsPage was a stub with no data — notifications are now persisted on every push send and retrievable via API; the migration file lets the live Supabase DB be updated independently of the seed script

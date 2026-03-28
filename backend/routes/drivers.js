@@ -131,4 +131,33 @@ router.get('/availability', requireAuth(['fleet_manager']), async (req, res) => 
     }
 });
 
+// ── GET /notifications — Driver notification history ──────────────────────────
+router.get('/notifications', requireAuth(['driver']), async (req, res) => {
+    try {
+        const result = await query(
+            'SELECT * FROM driver_notifications WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 50',
+            [req.user.id]
+        );
+        return res.status(200).json({ notifications: result.rows });
+    } catch (err) {
+        console.error('[drivers] notifications error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── PATCH /notifications/:notificationId/read — Mark notification as read ─────
+router.patch('/notifications/:notificationId/read', requireAuth(['driver']), async (req, res) => {
+    const { notificationId } = req.params;
+    try {
+        await query(
+            'UPDATE driver_notifications SET read = true WHERE id = $1 AND driver_id = $2',
+            [notificationId, req.user.id]
+        );
+        return res.status(200).json({ message: 'Marked as read' });
+    } catch (err) {
+        console.error('[drivers] mark-read error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;
