@@ -941,3 +941,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/manager/ManagerVehiclesPage.jsx`
 - **What changed:** Complete render rewrite — 3 stat tiles (total `local_shipping`, available `check_circle`, deployed `sensors`), glass vehicle inventory table with registration in JetBrains Mono, vehicle details (type + capacity), status pills, assigned driver column, context-aware actions (Remove for available, more_horiz for deployed). Add Vehicle modal with registration/type/capacity inputs. Delete confirmation modal with deployed-vehicle warning and disabled Remove button when vehicle is in use. Removed unused imports (ManagerLayout, GlassCard, PageWrapper, StatCard), added useWindowWidth hook.
 - **Why:** Sprint 19 manager pages redesign — completes vehicle inventory page with consistent glass morphism design language matching dispatch, drivers, and privacy dashboard pages
+
+### [Sprint 19] — Standardise mailer from addresses, add TLS options
+- **Date:** 2026-03-28
+- **Files modified:** `backend/config/mailer.js`, `backend/routes/roster.js`, `backend/routes/complaints.js`
+- **What changed:** `mailer.js`: added `tls: { rejectUnauthorized: false }` for port 587 compatibility; `roster.js`: replaced hardcoded `from` with `process.env.MAIL_FROM || '"SwiftLink Ops" <noreply@fleetops.dev>'`; `complaints.js`: changed display name from "SwiftLink Ops" to "Fleet Ops" to match all other senders
+- **Why:** roster.js had a fully hardcoded from address ignoring MAIL_FROM env var; complaints.js used an inconsistent display name; TLS option needed for Ethereal/dev SMTP on port 587

@@ -363,7 +363,7 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
                         escalated: 'Escalated'
                     };
                     await transporter.sendMail({
-                        from: `"SwiftLink Ops" <${process.env.MAIL_FROM || process.env.MAIL_USER}>`,
+                        from: `"Fleet Ops" <${process.env.MAIL_FROM || process.env.MAIL_USER}>`,
                         to: tripEmail.rows[0].client_corporate_email,
                         subject: `Complaint Status Update — ${statusLabels[status] || status}`,
                         text: `Your complaint (ref: ${complaintId}) has been updated to: ${statusLabels[status] || status}.\n\nSwiftLink Corporate Transport`
