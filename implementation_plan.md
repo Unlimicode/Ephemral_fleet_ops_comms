@@ -977,3 +977,9 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/trips.js`
 - **What changed:** Status check now accepts `accepted` and `in_progress` (was `in_progress` only); added driver availability reset to `available` when `assigned_driver_id` present; added `sendEmail` call to notify client on force-complete (guarded by `NODE_ENV !== 'test'`, wrapped in try/catch); fixed error response to use `err.message` instead of `err.stack`
 - **Why:** Managers could not force-complete trips that were assigned but not yet started (`accepted`); driver was left unavailable in Redis after force-complete; client received no email notification; stack traces were being leaked in error responses
+
+### [Sprint 19] — Fix message archive field names in ManagerComplaintsPage
+- **Date:** 2026-03-28
+- **Files modified:** `frontend/src/pages/manager/ManagerComplaintsPage.jsx`
+- **What changed:** Changed `m.role` to `m.from` and `m.text` to `m.content` in the message archive render loop
+- **Why:** The Socket.IO relay stores messages as `{ from, content, timestamp }`. The frontend was reading `m.role` (always undefined → every message rendered as "Client") and `m.text` (always undefined → blank body). All messages now display with correct sender attribution and content

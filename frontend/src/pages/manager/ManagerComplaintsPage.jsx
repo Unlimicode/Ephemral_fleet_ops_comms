@@ -300,16 +300,16 @@ export default function ManagerComplaintsPage() {
                                                     ) : messages[c.complaint_id] && messages[c.complaint_id].length > 0 ? (
                                                         <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                                             {messages[c.complaint_id].map((m, idx) => (
-                                                                m.role === 'driver' ? (
+                                                                m.from === 'driver' ? (
                                                                     <div key={idx} style={{ background: 'rgba(108,99,255,0.06)', borderRadius: '16px', padding: '12px 16px', marginBottom: '10px', marginLeft: '16px' }}>
                                                                         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: '#6C63FF', marginBottom: '4px', margin: '0 0 4px 0' }}>Driver</p>
-                                                                        <p style={{ fontSize: '13px', color: '#0D0D0D', margin: '0 0 4px 0' }}>{m.text}</p>
+                                                                        <p style={{ fontSize: '13px', color: '#0D0D0D', margin: '0 0 4px 0' }}>{m.content}</p>
                                                                         <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.35)', margin: 0 }}>{new Date(m.timestamp).toLocaleTimeString()}</p>
                                                                     </div>
                                                                 ) : (
                                                                     <div key={idx} style={{ background: 'rgba(255,255,255,0.5)', borderRadius: '16px', padding: '12px 16px', marginBottom: '10px' }}>
                                                                         <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '4px', margin: '0 0 4px 0' }}>Client</p>
-                                                                        <p style={{ fontSize: '13px', color: '#0D0D0D', margin: '0 0 4px 0' }}>{m.text}</p>
+                                                                        <p style={{ fontSize: '13px', color: '#0D0D0D', margin: '0 0 4px 0' }}>{m.content}</p>
                                                                         <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.35)', margin: 0 }}>{new Date(m.timestamp).toLocaleTimeString()}</p>
                                                                     </div>
                                                                 )
