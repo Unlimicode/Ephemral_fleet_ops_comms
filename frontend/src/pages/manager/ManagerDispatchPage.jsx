@@ -70,6 +70,7 @@ export default function ManagerDispatchPage() {
         socket.on('session_created', fetchData);
         socket.on('session_destroyed', fetchData);
         socket.on('complaint_filed', fetchData);
+        socket.on('booking_updated', fetchData);
 
         return () => {
             clearInterval(pollInterval);

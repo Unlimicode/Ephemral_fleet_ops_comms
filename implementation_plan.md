@@ -983,3 +983,9 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/manager/ManagerComplaintsPage.jsx`
 - **What changed:** Changed `m.role` to `m.from` and `m.text` to `m.content` in the message archive render loop
 - **Why:** The Socket.IO relay stores messages as `{ from, content, timestamp }`. The frontend was reading `m.role` (always undefined → every message rendered as "Client") and `m.text` (always undefined → blank body). All messages now display with correct sender attribution and content
+
+### [Sprint 19] — Client booking update endpoint
+- **Date:** 2026-03-28
+- **Files modified:** `backend/routes/bookings.js`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- **What changed:** Added `PATCH /:tripId` to bookings router — `requireClientAuth`, ownership check, `pending`-only guard, dynamic UPDATE for `pickup_location`, `destination`, `pickup_time`, `flight_number` with validation, `booking_updated` dashboard event, `BOOKING_UPDATED` audit log entry; added `socket.on('booking_updated', fetchData)` to ManagerDispatchPage
+- **Why:** Clients had no way to correct booking details after submission; managers receive real-time notification of any changes via dashboard socket

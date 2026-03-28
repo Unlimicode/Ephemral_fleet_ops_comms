@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { sendEmail } from '../config/mailer.js';
 import jwt from 'jsonwebtoken';
 import { requireClientAuth } from '../middleware/clientAuth.js';
+import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 
 const router = Router();
 
@@ -378,6 +379,91 @@ router.get('/status', async (req, res) => {
         return res.status(200).json(tripResult.rows[0]);
     } catch (err) {
         console.error('[bookings] status error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── PATCH /:tripId — Client updates booking details (pending only) ────────────
+router.patch('/:tripId', requireClientAuth, async (req, res) => {
+    const { tripId } = req.params;
+
+    // 1. Verify trip belongs to this client
+    if (req.client.trip_id !== tripId) {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    try {
+        // 2. Fetch current status
+        const tripCheck = await query(
+            'SELECT status FROM trips WHERE id = $1',
+            [tripId]
+        );
+        if (tripCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+        if (tripCheck.rows[0].status !== 'pending') {
+            return res.status(403).json({ error: 'Booking can only be updated while pending' });
+        }
+
+        // 3. Validate and collect allowed fields
+        const { pickup_location, destination, pickup_time, flight_number } = req.body;
+        const updates = {};
+
+        if (pickup_location !== undefined) {
+            if (typeof pickup_location !== 'string' || !pickup_location.trim()) {
+                return res.status(400).json({ error: 'pickup_location must be a non-empty string' });
+            }
+            updates.pickup_location = pickup_location.trim();
+        }
+        if (destination !== undefined) {
+            if (typeof destination !== 'string' || !destination.trim()) {
+                return res.status(400).json({ error: 'destination must be a non-empty string' });
+            }
+            updates.destination = destination.trim();
+        }
+        if (pickup_time !== undefined) {
+            const dt = new Date(pickup_time);
+            if (isNaN(dt.getTime()) || dt <= new Date()) {
+                return res.status(400).json({ error: 'pickup_time must be a valid future date' });
+            }
+            updates.pickup_time = dt.toISOString();
+        }
+        if (flight_number !== undefined) {
+            updates.flight_number = flight_number;
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided for update' });
+        }
+
+        // 4. Build dynamic UPDATE
+        const fields = Object.keys(updates);
+        const setClauses = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+        const values = fields.map(f => updates[f]);
+        values.push(tripId);
+
+        const result = await query(
+            `UPDATE trips SET ${setClauses} WHERE id = $${values.length} RETURNING *`,
+            values
+        );
+
+        // 5. Notify dashboard
+        emitDashboardEvent('booking_updated', {
+            tripId,
+            ...updates,
+        });
+
+        // 6. Audit log
+        await query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['BOOKING_UPDATED', req.client.client_corporate_email, 'client', tripId, JSON.stringify(updates)]
+        );
+
+        return res.status(200).json(result.rows[0]);
+
+    } catch (err) {
+        console.error('[bookings] PATCH error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
