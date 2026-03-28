@@ -388,6 +388,10 @@ router.patch('/:complaintId/notes', requireAuth(['fleet_manager']), async (req, 
     const { complaintId } = req.params;
     const { notes } = req.body;
 
+    if (notes === undefined || typeof notes !== 'string' || !notes.trim()) {
+        return res.status(400).json({ error: 'notes must be a non-empty string' });
+    }
+
     try {
         await pool.query(
             `UPDATE complaints SET investigation_notes = $1 WHERE id = $2`,

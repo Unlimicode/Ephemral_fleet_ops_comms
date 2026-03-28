@@ -7,6 +7,7 @@ export default function BookingHistoryPage() {
     const token = searchParams.get('token');
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -19,7 +20,7 @@ export default function BookingHistoryPage() {
                 });
                 setHistory(res.data);
             } catch {
-                console.error('History fetch error');
+                setError('Failed to load booking history. Please check your link and try again.');
             } finally {
                 setLoading(false);
             }
@@ -28,6 +29,7 @@ export default function BookingHistoryPage() {
     }, [token]);
 
     if (loading) return <div style={{ padding: '80px', textAlign: 'center' }}>Loading history...</div>;
+    if (error) return <div style={{ padding: '80px', textAlign: 'center', color: '#D32F2F' }}>{error}</div>;
 
     return (
         <div style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '40px 24px' }}>

@@ -5,6 +5,7 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
     const navigate = useNavigate();
     const [isDeclining, setIsDeclining] = useState(false);
     const [declineReason, setDeclineReason] = useState('');
+    const [accepting, setAccepting] = useState(false);
 
     const statusMap = {
         accepted: { bg: 'rgba(255,180,0,0.15)', text: '#B8860B', label: 'Assigned', pulse: false },
@@ -99,12 +100,12 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                     }}>
                         Decline ✗
                     </button>
-                    <button className="glass-button" onClick={() => onAccept(trip.id)} style={{
+                    <button className="glass-button" onClick={async () => { setAccepting(true); try { await onAccept(trip.id); } finally { setAccepting(false); } }} disabled={accepting} style={{
                         flex: 2, padding: '12px', borderRadius: '12px',
                         color: '#F5EDE3', fontSize: '14px', fontWeight: 600,
-                        cursor: 'pointer'
+                        cursor: accepting ? 'not-allowed' : 'pointer', opacity: accepting ? 0.6 : 1
                     }}>
-                        Accept ✓
+                        {accepting ? 'Accepting...' : 'Accept ✓'}
                     </button>
                 </div>
             )}

@@ -14,6 +14,7 @@ export default function ManagerComplaintsPage() {
     const [messages, setMessages] = useState({});
     const [loadingMessages, setLoadingMessages] = useState({});
     const [localNotes, setLocalNotes] = useState({});
+    const [actionLoading, setActionLoading] = useState(false);
     const { addToast } = useToast();
     const width = useWindowWidth();
     const isMobile = width < 768;
@@ -38,13 +39,16 @@ export default function ManagerComplaintsPage() {
     }, [fetchComplaints]);
 
     async function handleStatusUpdate(complaintId, status) {
+        setActionLoading(true);
         try {
             await api.patch(`/complaints/${complaintId}/status`, { status });
             addToast(`Status updated to ${status.replace('_', ' ')}.`, 'success');
-            fetchComplaints();
+            await fetchComplaints();
         } catch (err) {
             console.error('Failed to update status:', err);
             addToast('Failed to update status.', 'error');
+        } finally {
+            setActionLoading(false);
         }
     }
 
@@ -59,12 +63,15 @@ export default function ManagerComplaintsPage() {
     }
 
     async function handleNotifyDriver(complaintId) {
+        setActionLoading(true);
         try {
             await api.post(`/complaints/${complaintId}/notify-driver`);
             addToast('Driver has been notified of the review.', 'success');
         } catch (err) {
             console.error('Failed to notify driver:', err);
             addToast('Failed to notify driver.', 'error');
+        } finally {
+            setActionLoading(false);
         }
     }
 
@@ -342,9 +349,10 @@ export default function ManagerComplaintsPage() {
                                                     <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                                                         <button
                                                             onClick={() => handleNotifyDriver(c.complaint_id)}
-                                                            style={{ flex: 1, background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                            disabled={actionLoading}
+                                                            style={{ flex: 1, background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', border: 'none', cursor: actionLoading ? 'not-allowed' : 'pointer', opacity: actionLoading ? 0.6 : 1, fontFamily: "'Be Vietnam Pro', sans-serif" }}
                                                         >
-                                                            Notify Driver
+                                                            {actionLoading ? 'Notifying...' : 'Notify Driver'}
                                                         </button>
                                                         <button
                                                             onClick={() => setExpandedComplaintId(null)}
@@ -364,7 +372,8 @@ export default function ManagerComplaintsPage() {
                                                 <select
                                                     value={c.status}
                                                     onChange={e => handleStatusUpdate(c.complaint_id, e.target.value)}
-                                                    style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                    disabled={actionLoading}
+                                                    style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: actionLoading ? 'not-allowed' : 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
                                                 >
                                                     {STATUSES.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
                                                 </select>
@@ -414,7 +423,8 @@ export default function ManagerComplaintsPage() {
                                             <select
                                                 value={c.status}
                                                 onChange={e => handleStatusUpdate(c.complaint_id, e.target.value)}
-                                                style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                disabled={actionLoading}
+                                                style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: actionLoading ? 'not-allowed' : 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
                                             >
                                                 {STATUSES.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
                                             </select>

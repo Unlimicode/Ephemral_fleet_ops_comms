@@ -39,7 +39,7 @@ export default function DriverTripsPage({ defaultTab }) {
         try {
             await api.patch(`/driver/trips/${tripId}/accept`, { response: 'accepted' });
             addToast('Trip accepted successfully.', 'success');
-            fetchTrips();
+            await fetchTrips();
         } catch {
             addToast('Failed to accept trip.', 'error');
         }
@@ -49,7 +49,7 @@ export default function DriverTripsPage({ defaultTab }) {
         try {
             await api.patch(`/driver/trips/${tripId}/accept`, { response: 'rejected', reason });
             addToast('Trip declined and returned to dispatch.', 'success');
-            fetchTrips();
+            await fetchTrips();
         } catch {
             addToast('Failed to decline trip.', 'error');
         }

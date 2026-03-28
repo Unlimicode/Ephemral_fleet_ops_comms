@@ -27,6 +27,7 @@ export default function SwiftlinkHomePage() {
     });
     const [bookingStatus, setBookingStatus] = useState({ loading: false, success: false, error: null, email: '' });
     const [contactSent, setContactSent] = useState(false);
+    const [contactError, setContactError] = useState(null);
     const [lifecyclePhase, setLifecyclePhase] = useState(0);
     const [sessionTime, setSessionTime] = useState('01:42:17');
 
@@ -156,11 +157,12 @@ export default function SwiftlinkHomePage() {
 
     const handleContactSubmit = async (e) => {
         e.preventDefault();
+        setContactError(null);
         try {
             await api.post('/contact', contactForm);
             setContactSent(true);
         } catch {
-            console.error('Contact error');
+            setContactError('Failed to send enquiry. Please try again.');
         }
     };
 
@@ -578,6 +580,7 @@ export default function SwiftlinkHomePage() {
                                     <button type="submit" className="btn-premium btn-dark" style={{ gridColumn: isMobile ? 'auto' : '1 / -1', width: '100%', padding: 18, borderRadius: 14, fontSize: 16 }}>
                                         Send Enquiry ✓
                                     </button>
+                                    {contactError && <p style={{ gridColumn: isMobile ? 'auto' : '1 / -1', color: '#D32F2F', fontSize: 14, margin: 0 }}>{contactError}</p>}
                                 </form>
                             ) : (
                                 <div style={{ textAlign: 'center', padding: '24px 0' }}>
