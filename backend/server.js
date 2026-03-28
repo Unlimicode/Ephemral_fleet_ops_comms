@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { connect as connectDb } from './config/db.js';
 import { connect as connectRedis } from './config/redis.js';
 import router from './routes/index.js';
+import transporter from './config/mailer.js';
 const PORT = process.env.PORT || 3001;
 
 export const app = express();
@@ -50,7 +51,12 @@ registerDashboardNamespace(getIo());
   await connectDb();
   await connectRedis();
 
-  console.log('[mailer] Resend HTTP API configured.');
+  try {
+    await transporter.verify();
+    console.log('[mailer] SMTP ready');
+  } catch (err) {
+    console.error('[mailer] SMTP configuration error - emails will not deliver:', err.message);
+  }
 
   httpServer.listen(PORT, () =>
     console.log(`[server] listening on http://localhost:${PORT}`)

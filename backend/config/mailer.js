@@ -1,15 +1,25 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 'test_placeholder');
+const transporter = nodemailer.createTransport({
+  host: process.env.MAIL_HOST,
+  port: Number(process.env.MAIL_PORT),
+  secure: false,
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
 
 export const sendEmail = async ({ to, subject, text }) => {
-  const { error } = await resend.emails.send({
-    from: process.env.MAIL_FROM || 'SwiftLink <onboarding@resend.dev>',
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
     to,
     subject,
     text,
   });
-  if (error) throw new Error(error.message);
 };
 
-export default resend;
+export default transporter;
