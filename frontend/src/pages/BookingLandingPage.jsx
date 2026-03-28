@@ -130,6 +130,17 @@ export default function BookingLandingPage() {
         }
     }, [tripId, fetchBooking, pollInterval]);
 
+    // Refetch on tab focus to recover from background stale state
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                fetchBooking();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
+    }, [tripId]);
+
     // Live Countdown for Complaint Window
     useEffect(() => {
         if (complaintWindowSeconds === null || complaintWindowSeconds <= 0) return;
@@ -160,6 +171,7 @@ export default function BookingLandingPage() {
             if (editForm.pickup_time) payload.pickup_time = editForm.pickup_time;
             if (editForm.flight_number.trim()) payload.flight_number = editForm.flight_number.trim();
             await api.patch(`/bookings/${tripId}`, payload);
+            setEditForm({ pickup_location: '', destination: '', pickup_time: '', flight_number: '' });
             setShowEditForm(false);
             fetchBooking();
         } catch (err) {

@@ -1049,3 +1049,9 @@ without a test-environment guard.
 - **Files modified:** `backend/config/mailer.js`, `backend/server.js`, `backend/package.json`
 - **What changed:** Removed `resend` package; installed `@getbrevo/brevo` v3; rewrote mailer.js to use `BrevoClient` with `client.transactionalEmails.sendTransacEmail()`; replaced SMTP verify log in server.js with Brevo confirmation message
 - **Why:** Resend requires a verified sending domain; Brevo HTTP API sends to any recipient email without domain verification, unblocking dev/test flows
+
+### [Sprint 19] — Form reset, visibility reconnect, notes in status email, notification storage
+- **Date:** 2026-03-28
+- **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`, `backend/routes/complaints.js`
+- **What changed:** BookingLandingPage: `handleEditSubmit` now resets `editForm` to empty values and calls `setShowEditForm(false)` after a successful PATCH so the form closes cleanly; added `visibilitychange` useEffect that calls `fetchBooking()` when the tab becomes visible again to recover from background stale state; complaints.js `PATCH /:complaintId/status`: replaced single-table `SELECT client_corporate_email FROM trips` with a JOIN query that also fetches `investigation_notes` from complaints, and included notes in the status update email body when they exist
+- **Why:** Edit form stayed populated and open after a successful save; tabs returning from background showed stale booking state until the next poll; status update emails lacked investigation context for clients; notification INSERT was already unconditional in sendPushNotification.js — no change required

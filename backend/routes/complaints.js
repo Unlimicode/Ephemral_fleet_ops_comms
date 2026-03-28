@@ -352,8 +352,10 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
         if (process.env.NODE_ENV !== 'test') {
             try {
                 const tripEmail = await pool.query(
-                    'SELECT client_corporate_email FROM trips WHERE id = $1',
-                    [updatedResult.rows[0].trip_id]
+                    `SELECT t.client_corporate_email, c.investigation_notes
+                     FROM trips t JOIN complaints c ON t.id = c.trip_id
+                     WHERE c.id = $1`,
+                    [complaintId]
                 );
                 if (tripEmail.rows.length > 0 && tripEmail.rows[0].client_corporate_email) {
                     const statusLabels = {
@@ -362,10 +364,11 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
                         resolved: 'Resolved',
                         escalated: 'Escalated'
                     };
+                    const investigationNotes = tripEmail.rows[0].investigation_notes;
                     await sendEmail({
                         to: tripEmail.rows[0].client_corporate_email,
                         subject: `Complaint Status Update — ${statusLabels[status] || status}`,
-                        text: `Your complaint (ref: ${complaintId}) has been updated to: ${statusLabels[status] || status}.\n\nSwiftLink Corporate Transport`,
+                        text: `Your complaint (ID: ${complaintId.slice(0, 8).toUpperCase()}) status has been updated to: ${status.replace(/_/g, ' ')}.${investigationNotes ? '\n\nInvestigation Notes:\n' + investigationNotes : ''}\n\nLog in to SwiftLink to view your booking details.`,
                     });
                 }
             } catch (mailErr) {
