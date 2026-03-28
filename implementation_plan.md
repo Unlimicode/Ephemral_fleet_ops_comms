@@ -947,3 +947,9 @@ without a test-environment guard.
 - **Files modified:** `backend/config/mailer.js`, `backend/routes/roster.js`, `backend/routes/complaints.js`
 - **What changed:** `mailer.js`: added `tls: { rejectUnauthorized: false }` for port 587 compatibility; `roster.js`: replaced hardcoded `from` with `process.env.MAIL_FROM || '"SwiftLink Ops" <noreply@fleetops.dev>'`; `complaints.js`: changed display name from "SwiftLink Ops" to "Fleet Ops" to match all other senders
 - **Why:** roster.js had a fully hardcoded from address ignoring MAIL_FROM env var; complaints.js used an inconsistent display name; TLS option needed for Ethereal/dev SMTP on port 587
+
+### [Sprint 19] — Isolate sendMail in bookings routes
+- **Date:** 2026-03-28
+- **Files modified:** `backend/routes/bookings.js`
+- **What changed:** Wrapped both `transporter.sendMail` calls (booking confirmation and magic link recovery) in their own `try/catch` blocks with `console.error` logging
+- **Why:** SMTP failure was falling through to the outer `catch` and returning a 500, making a successful booking appear to have failed from the manager's perspective — trip row and Redis token were already written at that point

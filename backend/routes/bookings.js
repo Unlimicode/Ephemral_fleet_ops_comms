@@ -62,12 +62,16 @@ router.post('/', async (req, res) => {
         const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}`;
 
         if (process.env.NODE_ENV !== 'test') {
-            await transporter.sendMail({
-                from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
-                to: client_corporate_email,
-                subject: 'Fleet Ops: Your Booking Confirmation & Access Link',
-                text: `Hello ${firstName},\n\nYour trip has been successfully requested and is pending driver assignment.\n\nYou can track and manage your trip securely using this one-time access link:\n${magicLink}\n\nThis link acts as your secure key. Do not share it with anyone.`,
-            });
+            try {
+                await transporter.sendMail({
+                    from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
+                    to: client_corporate_email,
+                    subject: 'Fleet Ops: Your Booking Confirmation & Access Link',
+                    text: `Hello ${firstName},\n\nYour trip has been successfully requested and is pending driver assignment.\n\nYou can track and manage your trip securely using this one-time access link:\n${magicLink}\n\nThis link acts as your secure key. Do not share it with anyone.`,
+                });
+            } catch (mailErr) {
+                console.error('[mailer] Booking confirmation email failed:', mailErr.message);
+            }
         }
 
         // 6. Return success response (token explicitly omitted)
@@ -315,12 +319,16 @@ router.post('/:tripId/request-new-link', async (req, res) => {
         const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}`;
 
         if (process.env.NODE_ENV !== 'test') {
-            await transporter.sendMail({
-                from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
-                to: client_corporate_email,
-                subject: 'Fleet Ops: New Booking Access Link',
-                text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,
-            });
+            try {
+                await transporter.sendMail({
+                    from: process.env.MAIL_FROM || '"Fleet Ops" <noreply@fleetops.dev>',
+                    to: client_corporate_email,
+                    subject: 'Fleet Ops: New Booking Access Link',
+                    text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,
+                });
+            } catch (mailErr) {
+                console.error('[mailer] Recovery email failed:', mailErr.message);
+            }
         }
 
         return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
