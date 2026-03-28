@@ -50,7 +50,7 @@ registerDashboardNamespace(getIo());
   await connectDb();
   await connectRedis();
 
-  console.log('[mailer] Resend HTTP API ready');
+  console.log('[mailer] Brevo HTTP API configured');
 
   httpServer.listen(PORT, () =>
     console.log(`[server] listening on http://localhost:${PORT}`)

@@ -1,18 +1,16 @@
-import { Resend } from 'resend';
+import { BrevoClient } from '@getbrevo/brevo';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 'test_placeholder');
+const client = new BrevoClient({
+    apiKey: process.env.BREVO_API_KEY || 'test_placeholder'
+});
 
 export const sendEmail = async ({ to, subject, text }) => {
-  const { error } = await resend.emails.send({
-    from: process.env.MAIL_FROM || 'onboarding@resend.dev',
-    to,
-    subject,
-    text,
-  });
-  if (error) {
-    console.error('[mailer] Resend error:', error.message);
-    throw new Error(error.message);
-  }
+    await client.transactionalEmails.sendTransacEmail({
+        sender: { email: process.env.MAIL_FROM || 'noreply@swiftlink.app', name: 'SwiftLink' },
+        to: [{ email: to }],
+        subject,
+        textContent: text
+    });
 };
 
-export default resend;
+export default client;
