@@ -965,3 +965,9 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/bookings.js`
 - **What changed:** Changed `sameSite` on `client_session` cookie from `'strict'` to `'none'` in production, `'strict'` in dev
 - **Why:** `sameSite: 'strict'` causes the browser to refuse the cookie when the client follows a magic link from their email client — a cross-site navigation — meaning the session is never established on Vercel/Railway deployments. `'none'` (requires `secure: true`) allows cross-origin cookie delivery; `credentials: true` was already set in CORS config
+
+### [Sprint 19] — Fix Socket.IO CORS for cross-origin cookie delivery
+- **Date:** 2026-03-28
+- **Files modified:** `backend/socket/io.js`
+- **What changed:** Added `credentials: true` to the Socket.IO server CORS config
+- **Why:** Without `credentials: true` on the server side, the browser rejects the WebSocket upgrade when `withCredentials: true` is set on the client — meaning the `client_session` HttpOnly cookie never reaches `socket.handshake.headers.cookie` in production, causing all client socket auth to fail

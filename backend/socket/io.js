@@ -12,7 +12,10 @@ let io;
  */
 export function initIo(httpServer) {
     io = new Server(httpServer, {
-        cors: { origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' },
+        cors: {
+            origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+            credentials: true
+        },
     });
 
 
