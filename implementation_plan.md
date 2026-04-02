@@ -1061,3 +1061,25 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/driver/DriverTripsPage.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`, `frontend/src/hooks/useChat.js`
 - **What changed:** DriverTripsPage: poll interval reduced from 20 000 ms to 5 000 ms, visibilitychange listener added to refetch on tab focus; DriverActiveTripPage: added setInterval(fetchTrip, 10 000) and visibilitychange listener (page previously had no polling at all — fetch-once only); useChat: visibilitychange listener calls socket.connect() when tab becomes visible and socket exists but is disconnected
 - **Why:** Driver trip list was slow to reflect new assignments; active trip page showed stale status if left open; chat socket had no mechanism to recover after a background disconnect
+
+### [Sprint 19] — Keep 3s poll until in_progress, fix visibilitychange stale closure
+- **Date:** 2026-04-01
+- **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** `pollInterval` now stays at 3 000 ms for `pending` and `accepted` statuses, only relaxing to 10 000 ms once the trip reaches `in_progress`; visibilitychange useEffect dependency array corrected from `[tripId]` to `[tripId, fetchBooking]` to prevent stale closure
+- **Why:** With the old logic the poll slowed to 10s as soon as a driver was assigned (`accepted`), meaning clients could wait up to 10s before the chat channel appeared; the stale closure meant that if `tripId` changed while the tab was backgrounded the refetch on focus would use an outdated callback
+
+### [Sprint 20] — Bug fixes batch
+- **Date:** 2026-03-28
+- **Files modified:** 
+  - `frontend/src/pages/BookingLandingPage.jsx`
+  - `frontend/src/pages/SwiftlinkHomePage.jsx`
+  - `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+  - `frontend/src/components/layout/ManagerLayout.jsx`
+  - `backend/routes/bookings.js`
+- **What changed:**
+  - BookingLandingPage: poll stays at 3s through accepted status; stale closure fix on visibilitychange; recovery error reads .error first; recovery posts to /bookings/recover (no tripId needed); geo triangle pointerEvents none on mobile
+  - SwiftlinkHomePage: bookingForm resets to empty after successful submission
+  - ManagerDispatchPage: visibilitychange listener added for immediate refetch on tab focus
+  - ManagerLayout: bell icon now navigates to complaints page on click
+  - bookings.js: new POST /recover endpoint — email-only recovery, no tripId required
+- **Why:** Sprint 20 functional bug fixes — form reset, auto-connect, recovery flow, mobile z-index, nav

@@ -36,6 +36,7 @@ export default function ManagerDispatchPage() {
     const [error, setError] = useState('');
     const [confirmingTripId, setConfirmingTripId] = useState(null);
     const [socketConnected, setSocketConnected] = useState(false);
+    const [completing, setCompleting] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -79,6 +80,14 @@ export default function ManagerDispatchPage() {
         };
     }, [fetchData, token]);
 
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') fetchData();
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
+    }, [fetchData]);
+
     const handleAssign = async (tripId, driverId, vehicleId) => {
         try {
             await api.patch(`/trips/${tripId}/assign`, { driver_id: driverId, vehicle_id: vehicleId });
@@ -90,12 +99,15 @@ export default function ManagerDispatchPage() {
     };
 
     const handleComplete = async (tripId) => {
+        setCompleting(true);
         try {
             await api.patch(`/trips/${tripId}/force-complete`);
-            fetchData();
+            await fetchData();
             addToast('Trip marked as complete.', 'success');
         } catch (err) {
             addToast(err.response?.data?.error || err.response?.data?.message || 'Failed to complete trip.', 'error');
+        } finally {
+            setCompleting(false);
         }
     };
 
@@ -267,7 +279,7 @@ export default function ManagerDispatchPage() {
                                                         </div>
                                                         {confirmingTripId === trip.id ? (
                                                             <div style={{ display: 'flex', gap: '8px' }}>
-                                                                <button onClick={() => { handleComplete(trip.id); setConfirmingTripId(null); }} style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '999px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Confirm</button>
+                                                                <button onClick={async () => { await handleComplete(trip.id); setConfirmingTripId(null); }} disabled={completing} style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '999px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: completing ? 'not-allowed' : 'pointer', opacity: completing ? 0.6 : 1 }}>{completing ? 'Completing...' : 'Confirm'}</button>
                                                                 <button onClick={() => setConfirmingTripId(null)} style={{ background: 'rgba(0,0,0,0.08)', color: '#0D0D0D', border: 'none', borderRadius: '999px', padding: '6px 14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
                                                             </div>
                                                         ) : (
@@ -399,7 +411,7 @@ export default function ManagerDispatchPage() {
                                     ) : (
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
                                             {activeTrips.map(trip => (
-                                                <ActiveTripCard key={trip.id} trip={trip} onComplete={() => setConfirmingTripId(trip.id)} isConfirming={confirmingTripId === trip.id} onConfirm={() => { handleComplete(trip.id); setConfirmingTripId(null); }} onCancel={() => setConfirmingTripId(null)} />
+                                                <ActiveTripCard key={trip.id} trip={trip} onComplete={() => setConfirmingTripId(trip.id)} isConfirming={confirmingTripId === trip.id} onConfirm={async () => { await handleComplete(trip.id); setConfirmingTripId(null); }} onCancel={() => setConfirmingTripId(null)} completing={completing} />
                                             ))}
                                         </div>
                                     )}

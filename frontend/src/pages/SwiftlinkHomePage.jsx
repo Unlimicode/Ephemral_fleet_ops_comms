@@ -150,6 +150,16 @@ export default function SwiftlinkHomePage() {
             const pickup_time = `${bookingForm.date}T${bookingForm.time}:00Z`;
             await api.post('/bookings', { ...bookingForm, pickup_time });
             setBookingStatus({ loading: false, success: true, error: null, email: bookingForm.client_corporate_email });
+            setBookingForm({
+                client_first_name: '',
+                client_corporate_email: '',
+                pickup_location: '',
+                destination: '',
+                date: '',
+                time: '',
+                flight_number: '',
+                special_requirements: ''
+            });
         } catch {
             setBookingStatus({ loading: false, success: false, error: 'Failed to request transfer.', email: '' });
         }

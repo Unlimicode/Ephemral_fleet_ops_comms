@@ -172,7 +172,11 @@ export default function ManagerLayout() {
                             {/* Divider */}
                             {isDesktop && <div style={{ width: '1px', height: '24px', background: 'rgba(0,0,0,0.1)' }} />}
                             {/* Notification Bell */}
-                            <div className="relative cursor-pointer opacity-70 hover:opacity-100 transition-opacity">
+                            <div
+                                className="relative cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+                                onClick={() => navigate('/manager/complaints')}
+                                title={complaintCount > 0 ? `${complaintCount} open complaints` : 'Complaints'}
+                            >
                                 🔔
                                 {complaintCount > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#EF4444] rounded-full" />}
                             </div>

@@ -212,6 +212,74 @@ router.get('/history', requireClientAuth, async (req, res) => {
     }
 });
 
+// ── POST /recover — Magic Link Recovery (no tripId required) ─────────────────
+// Public endpoint. Looks up the most recent active trip by email alone so that
+// clients whose link has expired (and therefore have no valid session or tripId)
+// can still recover access.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/recover', async (req, res) => {
+    const { client_corporate_email } = req.body;
+
+    if (!client_corporate_email) {
+        return res.status(400).json({ error: 'Email is required for recovery' });
+    }
+
+    try {
+        // 1. Rate limit — max 3 per hour per email
+        const rateLimitKey = `ratelimit:recovery:email:${client_corporate_email}`;
+        const currentCount = await client.incr(rateLimitKey);
+        if (currentCount === 1) {
+            await client.expire(rateLimitKey, 3600);
+        }
+        if (currentCount > 3) {
+            return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+        }
+
+        // 2. Find the most recent active trip for this email
+        const tripResult = await query(
+            `SELECT id, client_first_name FROM trips
+             WHERE client_corporate_email = $1 AND status NOT IN ('completed')
+             ORDER BY created_at DESC LIMIT 1`,
+            [client_corporate_email]
+        );
+
+        // Privacy-preserving: same response whether match or not
+        if (tripResult.rows.length === 0) {
+            return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
+        }
+
+        const { id: tripId, client_first_name: firstName } = tripResult.rows[0];
+
+        // 3. Generate token and store in Redis with 24h TTL
+        const token = crypto.randomBytes(32).toString('hex');
+        await setSession(
+            `booking_access_token:${token}`,
+            { client_corporate_email, trip_id: tripId },
+            86400
+        );
+
+        const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}`;
+
+        if (process.env.NODE_ENV !== 'test') {
+            try {
+                await sendEmail({
+                    to: client_corporate_email,
+                    subject: 'Fleet Ops: New Booking Access Link',
+                    text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,
+                });
+            } catch (mailErr) {
+                console.error('[mailer] Recovery email failed:', mailErr.message);
+            }
+        }
+
+        return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
+
+    } catch (err) {
+        console.error('[bookings] recover error:', err);
+        return res.status(500).json({ error: 'Internal server error during recovery' });
+    }
+});
+
 // ── GET /:tripId — View Booking Details (Protected) ──────────────────────────
 // Protected explicit hydration channel for client app usage.
 // PRIVACY/SECURITY ARCHITECTURE:

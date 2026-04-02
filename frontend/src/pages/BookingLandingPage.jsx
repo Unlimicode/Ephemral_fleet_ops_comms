@@ -120,7 +120,7 @@ export default function BookingLandingPage() {
         }
     }, [tripId]);
 
-    const pollInterval = (!booking?.status || booking.status === 'pending') ? 3000 : 10000;
+    const pollInterval = (!booking?.status || booking.status === 'pending' || booking.status === 'accepted') ? 3000 : 10000;
 
     useEffect(() => {
         if (tripId) {
@@ -139,7 +139,7 @@ export default function BookingLandingPage() {
         };
         document.addEventListener('visibilitychange', handleVisibility);
         return () => document.removeEventListener('visibilitychange', handleVisibility);
-    }, [tripId]);
+    }, [tripId, fetchBooking]);
 
     // Live Countdown for Complaint Window
     useEffect(() => {
@@ -184,10 +184,10 @@ export default function BookingLandingPage() {
     const handleRequestNewLink = async () => {
         if (!recoveryEmail) return;
         try {
-            await api.post(`/bookings/${tripId}/request-new-link`, { client_corporate_email: recoveryEmail });
+            await api.post('/bookings/recover', { client_corporate_email: recoveryEmail });
             setRecoverySent(true);
         } catch (err) {
-            setRecoveryError(err.response?.data?.message || 'Failed to send link. Please try again.');
+            setRecoveryError(err.response?.data?.error || err.response?.data?.message || 'Failed to send link. Please try again.');
         }
     };
 
@@ -229,11 +229,11 @@ export default function BookingLandingPage() {
             {/* Background elements */}
             <div className="fixed inset-0 arch-grid opacity-40 pointer-events-none z-0" style={{ backgroundSize: '60px 60px', backgroundImage: 'linear-gradient(to right, rgba(13,13,13,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(13,13,13,0.05) 1px, transparent 1px)' }} />
 
-            <div className="fixed top-[10%] right-[-5%] z-[-2] animate-float-slow text-primary/10">
-                <div className="w-[100px] h-[100px] bg-currentColor" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+            <div className="fixed top-[10%] right-[-5%] z-[-2] animate-float-slow text-primary/10" style={{ pointerEvents: 'none' }}>
+                <div className="w-[100px] h-[100px] bg-currentColor" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)', pointerEvents: 'none' }} />
             </div>
-            <div className="fixed bottom-[5%] left-[-8%] z-[-2] animate-float-reverse text-bg-dark/5">
-                <div className="w-[100px] h-[100px] bg-currentColor" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+            <div className="fixed bottom-[5%] left-[-8%] z-[-2] animate-float-reverse text-bg-dark/5" style={{ pointerEvents: 'none' }}>
+                <div className="w-[100px] h-[100px] bg-currentColor" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)', pointerEvents: 'none' }} />
             </div>
 
             {/* Sticky Top Bar */}
