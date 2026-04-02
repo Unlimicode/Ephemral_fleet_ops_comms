@@ -44,7 +44,7 @@ export default function LoginPage() {
             login(res.data.token, role, res.data.user);
             navigate(role === 'fleet_manager' ? '/manager/dispatch' : '/driver/trips');
         } catch (err) {
-            setError(err.response?.data?.message || 'Invalid credentials. Please try again.');
+            setError(err.response?.data?.error || err.response?.data?.message || 'Invalid credentials. Please try again.');
         } finally {
             setLoading(false);
         }

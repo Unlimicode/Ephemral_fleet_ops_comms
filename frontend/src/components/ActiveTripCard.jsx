@@ -1,4 +1,4 @@
-export default function ActiveTripCard({ trip, onComplete, isConfirming, onConfirm, onCancel }) {
+export default function ActiveTripCard({ trip, onComplete, isConfirming, onConfirm, onCancel, completing = false }) {
     return (
         <div className="glass-card session-pulse" style={{ padding: '24px', overflow: 'visible' }}>
             <style>{`@keyframes confirmFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
@@ -36,13 +36,15 @@ export default function ActiveTripCard({ trip, onComplete, isConfirming, onConfi
                 }}>
                     <button
                         onClick={onConfirm}
+                        disabled={completing}
                         style={{
                             flex: 1, padding: '12px', borderRadius: '999px', border: 'none',
                             background: '#6C63FF', color: '#FFF',
-                            fontSize: '14px', fontWeight: 700, cursor: 'pointer'
+                            fontSize: '14px', fontWeight: 700, cursor: completing ? 'not-allowed' : 'pointer',
+                            opacity: completing ? 0.6 : 1
                         }}
                     >
-                        Confirm
+                        {completing ? 'Completing...' : 'Confirm'}
                     </button>
                     <button
                         onClick={onCancel}

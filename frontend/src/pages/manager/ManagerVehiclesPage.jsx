@@ -12,6 +12,7 @@ export default function ManagerVehiclesPage() {
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [newVehicle, setNewVehicle] = useState({ registration_number: '', type: 'Sedan', capacity: 4 });
     const [formError, setFormError] = useState('');
+    const [formLoading, setFormLoading] = useState(false);
     const { addToast } = useToast();
     const width = useWindowWidth();
     const isMobile = width < 768;
@@ -37,29 +38,35 @@ export default function ManagerVehiclesPage() {
     async function handleAddVehicle(e) {
         e.preventDefault();
         setFormError('');
+        setFormLoading(true);
         try {
             await api.post('/vehicles', newVehicle);
             addToast('Vehicle added successfully.', 'success');
             setShowAddModal(false);
             setNewVehicle({ registration_number: '', type: 'Sedan', capacity: 4 });
-            fetchVehicles();
+            await fetchVehicles();
         } catch (err) {
             setFormError(err.response?.data?.error || 'Failed to add vehicle.');
+        } finally {
+            setFormLoading(false);
         }
     }
 
     async function handleDelete() {
         if (!selectedVehicle) return;
+        setFormLoading(true);
         try {
             await api.delete(`/vehicles/${selectedVehicle.vehicle_id}`);
             addToast('Vehicle removed from inventory.', 'success');
             setShowDeleteModal(false);
             setSelectedVehicle(null);
-            fetchVehicles();
+            await fetchVehicles();
         } catch (err) {
             const msg = err.response?.data?.error || 'Failed to remove vehicle.';
             addToast(msg, 'error');
             setShowDeleteModal(false);
+        } finally {
+            setFormLoading(false);
         }
     }
 
@@ -348,9 +355,10 @@ export default function ManagerVehiclesPage() {
                                     </button>
                                     <button
                                         type="submit"
-                                        style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                        disabled={formLoading}
+                                        style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: formLoading ? 'not-allowed' : 'pointer', opacity: formLoading ? 0.6 : 1, fontFamily: "'Be Vietnam Pro', sans-serif" }}
                                     >
-                                        Add Vehicle
+                                        {formLoading ? 'Adding...' : 'Add Vehicle'}
                                     </button>
                                 </div>
                             </form>
@@ -386,10 +394,10 @@ export default function ManagerVehiclesPage() {
                                 </button>
                                 <button
                                     onClick={handleDelete}
-                                    disabled={selectedVehicle.deployment_status === 'deployed'}
-                                    style={{ background: '#E05A5A', color: 'white', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: selectedVehicle.deployment_status === 'deployed' ? 'not-allowed' : 'pointer', opacity: selectedVehicle.deployment_status === 'deployed' ? 0.5 : 1, fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                    disabled={selectedVehicle.deployment_status === 'deployed' || formLoading}
+                                    style={{ background: '#E05A5A', color: 'white', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: (selectedVehicle.deployment_status === 'deployed' || formLoading) ? 'not-allowed' : 'pointer', opacity: (selectedVehicle.deployment_status === 'deployed' || formLoading) ? 0.5 : 1, fontFamily: "'Be Vietnam Pro', sans-serif" }}
                                 >
-                                    Remove
+                                    {formLoading ? 'Removing...' : 'Remove'}
                                 </button>
                             </div>
                         </div>

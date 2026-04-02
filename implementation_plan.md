@@ -1083,3 +1083,17 @@ without a test-environment guard.
   - ManagerLayout: bell icon now navigates to complaints page on click
   - bookings.js: new POST /recover endpoint — email-only recovery, no tripId required
 - **Why:** Sprint 20 functional bug fixes — form reset, auto-connect, recovery flow, mobile z-index, nav
+
+### [Sprint 20] — Audit fix batch 2
+- **Date:** 2026-03-28
+- **Files modified:**
+  - `frontend/src/components/ActiveTripCard.jsx`
+  - `frontend/src/pages/LoginPage.jsx`
+  - `frontend/src/pages/manager/ManagerDriversPage.jsx`
+  - `frontend/src/pages/manager/ManagerVehiclesPage.jsx`
+- **What changed:**
+  - ActiveTripCard: completing prop wired to Confirm button disabled/loading state
+  - LoginPage: error field reads .error before .message
+  - ManagerDriversPage: fetchDrivers awaited after add/reactivate/deactivate
+  - ManagerVehiclesPage: formLoading state added, buttons disabled during mutations, fetchVehicles awaited
+- **Why:** Sprint 20 audit fixes — loading states, await consistency, error field alignment

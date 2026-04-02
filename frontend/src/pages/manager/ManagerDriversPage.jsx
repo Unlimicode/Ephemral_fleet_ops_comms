@@ -51,7 +51,7 @@ export default function ManagerDriversPage() {
             addToast('Driver added successfully.', 'success');
             setShowAddModal(false);
             setNewDriver({ full_name: '', work_email: '', password: '', employee_id: '' });
-            fetchDrivers();
+            await fetchDrivers();
         } catch (err) {
             setFormError(err.response?.data?.error || 'Failed to add driver.');
         }
@@ -64,7 +64,7 @@ export default function ManagerDriversPage() {
             addToast('Driver reactivated successfully.', 'success');
             setShowReactivateModal(false);
             setSelectedDriver(null);
-            fetchDrivers();
+            await fetchDrivers();
         } catch (err) {
             console.error('Failed to reactivate driver:', err);
             addToast('Failed to reactivate driver.', 'error');
@@ -78,7 +78,7 @@ export default function ManagerDriversPage() {
             addToast('Driver deactivated and sessions revoked.', 'success');
             setShowDeactivateModal(false);
             setSelectedDriver(null);
-            fetchDrivers();
+            await fetchDrivers();
         } catch (err) {
             console.error('Failed to deactivate driver:', err);
             addToast('Failed to deactivate driver.', 'error');
