@@ -174,7 +174,7 @@ router.get('/:tripId/status', requireClientAuth, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `SELECT id AS complaint_id, status, category, created_at
+            `SELECT id AS complaint_id, status, category, created_at, investigation_notes
              FROM complaints WHERE trip_id = $1
              ORDER BY created_at DESC LIMIT 1`,
             [tripId]

@@ -202,4 +202,33 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     }
 });
 
+// ── GET /:tripId/complaint — Driver complaint visibility ──────────────────────
+router.get('/:tripId/complaint', requireAuth(['driver']), async (req, res) => {
+    const { tripId } = req.params;
+    const driverId = req.user.id;
+
+    try {
+        const tripCheck = await query(
+            'SELECT id FROM trips WHERE id = $1 AND assigned_driver_id = $2',
+            [tripId, driverId]
+        );
+
+        if (tripCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+
+        const complaintResult = await query(
+            `SELECT id, category, status, description, investigation_notes, created_at
+             FROM complaints WHERE trip_id = $1
+             ORDER BY created_at DESC LIMIT 1`,
+            [tripId]
+        );
+
+        return res.status(200).json({ complaint: complaintResult.rows[0] || null });
+    } catch (err) {
+        console.error('[driverTrips] complaint fetch error:', err.message);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;

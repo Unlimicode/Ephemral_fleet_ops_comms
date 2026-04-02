@@ -12,6 +12,7 @@ export default function DriverActiveTripPage() {
     const { token } = useAuth();
     const [trip, setTrip] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [complaint, setComplaint] = useState(null);
 
     const fetchTrip = useCallback(async () => {
         try {
@@ -28,7 +29,8 @@ export default function DriverActiveTripPage() {
 
     useEffect(() => {
         fetchTrip();
-        const interval = setInterval(fetchTrip, 10000);
+        fetchComplaint();
+        const interval = setInterval(() => { fetchTrip(); fetchComplaint(); }, 10000);
 
         const handleVisibility = () => {
             if (document.visibilityState === 'visible') fetchTrip();
@@ -39,7 +41,16 @@ export default function DriverActiveTripPage() {
             clearInterval(interval);
             document.removeEventListener('visibilitychange', handleVisibility);
         };
-    }, [fetchTrip]);
+    }, [fetchTrip, fetchComplaint]);
+
+    const fetchComplaint = useCallback(async () => {
+        try {
+            const res = await api.get(`/driver/trips/${tripId}/complaint`);
+            setComplaint(res.data.complaint);
+        } catch {
+            // complaint may not exist yet — silent fail is correct
+        }
+    }, [tripId]);
 
     const handleStartTrip = async () => {
         try {
@@ -241,6 +252,36 @@ export default function DriverActiveTripPage() {
                     )}
                 </div>
             </section>
+
+            {/* Section 5: Trip Review (complaint visibility) */}
+            {complaint !== null && (
+                <section className="reveal-up stagger-4" style={{ margin: '0 20px' }}>
+                    <div style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: '20px',
+                        padding: '24px',
+                        marginTop: '16px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                            <h3 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', margin: 0 }}>Trip Review</h3>
+                            <span style={{
+                                background: complaint.status === 'under_investigation' ? 'rgba(108,99,255,0.2)' : complaint.status === 'resolved' ? 'rgba(0,245,160,0.15)' : complaint.status === 'escalated' ? 'rgba(224,90,90,0.2)' : 'rgba(245,158,11,0.2)',
+                                color: complaint.status === 'under_investigation' ? '#6C63FF' : complaint.status === 'resolved' ? '#00F5A0' : complaint.status === 'escalated' ? '#E05A5A' : '#F59E0B',
+                                borderRadius: '999px', padding: '4px 12px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em'
+                            }}>{complaint.status.replace(/_/g, ' ')}</span>
+                        </div>
+                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{complaint.category.replace(/_/g, ' ')}</p>
+                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5, marginBottom: complaint.investigation_notes ? '16px' : 0 }}>{complaint.description}</p>
+                        {complaint.investigation_notes && (
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px' }}>
+                                <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>Manager Notes</p>
+                                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, margin: 0 }}>{complaint.investigation_notes}</p>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
                 </>
             )}
         </div>

@@ -442,6 +442,19 @@ export default function BookingLandingPage() {
                                             <p style={{ fontSize: '12px', color: 'rgba(240,242,247,0.5)', lineHeight: 1.5 }}>
                                                 Email updates will be sent as your complaint progresses.
                                             </p>
+
+                                            {complaintProgress.investigation_notes && (
+                                                <div style={{
+                                                    marginTop: '16px',
+                                                    padding: '16px',
+                                                    background: 'rgba(108,99,255,0.08)',
+                                                    borderRadius: '14px',
+                                                    border: '1px solid rgba(108,99,255,0.15)'
+                                                }}>
+                                                    <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>Investigation Notes</p>
+                                                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, margin: 0 }}>{complaintProgress.investigation_notes}</p>
+                                                </div>
+                                            )}
                                         </>
                                     );
                                 })() : (

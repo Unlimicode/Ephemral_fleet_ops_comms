@@ -1097,3 +1097,17 @@ without a test-environment guard.
   - ManagerDriversPage: fetchDrivers awaited after add/reactivate/deactivate
   - ManagerVehiclesPage: formLoading state added, buttons disabled during mutations, fetchVehicles awaited
 - **Why:** Sprint 20 audit fixes — loading states, await consistency, error field alignment
+
+### [Sprint 20] — Investigation notes visibility
+- **Date:** 2026-04-02
+- **Files modified:**
+  - `backend/routes/driverTrips.js`
+  - `backend/routes/complaints.js`
+  - `frontend/src/pages/driver/DriverActiveTripPage.jsx`
+  - `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:**
+  - driverTrips.js: new GET /:tripId/complaint endpoint — driver can see complaint status, category, description, and investigation_notes for their own trips
+  - complaints.js: investigation_notes added to GET /:tripId/status SELECT — field now returned to client on complaint progress poll
+  - DriverActiveTripPage: complaint state + fetchComplaint handler + Section 5 Trip Review card rendering complaint status badge, description, and manager notes
+  - BookingLandingPage: investigation_notes block added below complaint progress stepper, shown when notes are present
+- **Why:** Drivers and clients had no visibility into investigation notes — manager context was written but never surfaced to the relevant parties
