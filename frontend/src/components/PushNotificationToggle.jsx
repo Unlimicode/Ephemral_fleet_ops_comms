@@ -11,7 +11,7 @@ import usePushNotifications from '../hooks/usePushNotifications';
 // registering or removing the subscription.
 export default function PushNotificationToggle({ token }) {
     const { supported, subscribed, subscribe, unsubscribe, loading, error } =
-        usePushNotifications();
+        usePushNotifications(token);
 
     if (!supported) return null;
 

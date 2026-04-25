@@ -48,15 +48,19 @@ export async function sendPushNotification(driverId, payload) {
 
         try {
             await webpush.sendNotification(pushSubscription, JSON.stringify(payload));
+            console.log(`[push] Sent to driver ${driverId} (${row.endpoint.slice(0, 50)}...)`);
         } catch (err) {
             if (err.statusCode === 404 || err.statusCode === 410) {
                 // Subscription is expired or revoked — remove it to prevent repeat failures.
+                // The driver app will re-register the current browser subscription on next
+                // init, restoring delivery.
+                console.warn(`[push] Stale subscription removed for driver ${driverId} (${err.statusCode}) — endpoint: ${row.endpoint.slice(0, 50)}...`);
                 await query(
                     'DELETE FROM push_subscriptions WHERE endpoint = $1',
                     [row.endpoint]
                 );
             } else {
-                console.error('[push] Notification failed for endpoint:', row.endpoint, err.message);
+                console.error('[push] Notification failed for endpoint:', row.endpoint.slice(0, 50), err.message);
             }
         }
     }

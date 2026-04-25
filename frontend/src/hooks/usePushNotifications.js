@@ -15,7 +15,13 @@ function urlBase64ToUint8Array(base64String) {
     return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
-export default function usePushNotifications() {
+// token is optional. When provided, any existing browser subscription is
+// silently re-synced with the backend on init. This handles the case where the
+// browser rotates push subscription keys (after a SW update, browser restart,
+// etc.) and the old endpoint stored in the DB becomes stale. Without re-sync,
+// the backend sends to the stale endpoint, receives a 410, deletes it, and the
+// driver never receives notifications again.
+export default function usePushNotifications(token = null) {
     const supported =
         typeof window !== 'undefined' &&
         'serviceWorker' in navigator &&
@@ -42,8 +48,27 @@ export default function usePushNotifications() {
                 // Register the service worker if not already registered.
                 const reg = await navigator.serviceWorker.register('/sw.js');
 
-                // Check whether a push subscription already exists.
+                // Check whether a push subscription already exists in the browser.
                 const existing = await reg.pushManager.getSubscription();
+
+                // If a browser subscription exists and we have a token, re-register
+                // it with the backend. The backend endpoint is an upsert so this is
+                // safe to call on every init — it corrects the DB if the browser has
+                // rotated its subscription keys since the last registration.
+                if (existing && token) {
+                    try {
+                        await fetch(`${import.meta.env.VITE_API_URL}/push/subscribe`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify(existing),
+                        });
+                    } catch {
+                        // Best-effort — do not block init if the sync request fails.
+                    }
+                }
 
                 if (!cancelled) {
                     setPublicKey(key);
@@ -60,7 +85,7 @@ export default function usePushNotifications() {
         return () => {
             cancelled = true;
         };
-    }, [supported]);
+    }, [supported, token]);
 
     // subscribe accepts a driver auth token so the hook remains decoupled from
     // any specific storage mechanism. The calling component supplies the token

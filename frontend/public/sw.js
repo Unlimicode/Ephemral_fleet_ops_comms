@@ -19,7 +19,10 @@ self.addEventListener('push', (event) => {
         body: data.body,
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-72x72.png',
-        tag: data.tripId || 'fleet-ops-notification',
+        // Include both type and tripId in the tag so different notification types
+        // for the same trip (e.g. trip_assigned vs note_added) are shown as separate
+        // notifications rather than silently replacing each other.
+        tag: data.tripId ? `${data.type || 'notif'}-${data.tripId}` : 'fleet-ops-notification',
         data: {
             tripId: data.tripId,
             type: data.type,
