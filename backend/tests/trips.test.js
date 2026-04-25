@@ -34,6 +34,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
     let driverToken;
     let currentTripId; // Keep track of the trip across sequential tests
 
+    // 30 s: real DB + Redis connect, bcrypt, and HTTP login round-trip
     beforeAll(async () => {
         // 0. Connect to DB and Redis
         await connectDb();
@@ -83,7 +84,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
              RETURNING id`
         );
         vehicleId = vehicleResult.rows[0].id;
-    });
+    }, 30000);
 
     afterAll(async () => {
         // Cleanup test data
