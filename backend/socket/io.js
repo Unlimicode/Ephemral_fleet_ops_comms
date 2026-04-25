@@ -79,6 +79,26 @@ export function initIo(httpServer) {
             socket.emit('session_joined', { tripId, role });
 
             // ─────────────────────────────────────────────────────────────────
+            // RECONNECT HISTORY: replay buffered messages to the joining socket
+            // ─────────────────────────────────────────────────────────────────
+            // The message buffer (`messages:trip:{tripId}`) is the same Redis list
+            // used for conditional persistence. Reading it here lets a reconnecting
+            // driver or client catch up on messages sent while they were offline.
+            // Emitted only to this socket — not broadcast to the room — so connected
+            // participants don't receive duplicate messages.
+            // ─────────────────────────────────────────────────────────────────
+            try {
+                const bufferKey = `messages:trip:${tripId}`;
+                const rawBuffer = await redisClient.lRange(bufferKey, 0, -1);
+                if (rawBuffer && rawBuffer.length > 0) {
+                    const history = rawBuffer.map(msg => JSON.parse(msg));
+                    socket.emit('message_history', history);
+                }
+            } catch (histErr) {
+                console.error('[socket] Failed to emit message history:', histErr.message);
+            }
+
+            // ─────────────────────────────────────────────────────────────────
             // MESSAGE RELAY
             // ─────────────────────────────────────────────────────────────────
             socket.on('send_message', async (data) => {

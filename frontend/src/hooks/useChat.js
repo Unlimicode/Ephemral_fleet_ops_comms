@@ -32,6 +32,13 @@ export default function useChat({ tripId, token, role }) {
 
         socket.on('auth_error', (msg) => setError(msg));
 
+        // message_history fires once on join with all buffered messages.
+        // It replaces the current message list so reconnecting participants
+        // see the full conversation thread without duplicates.
+        socket.on('message_history', (history) => {
+            setMessages(history);
+        });
+
         socket.on('receive_message', (msg) => {
             setMessages(prev => [...prev, msg]);
         });
