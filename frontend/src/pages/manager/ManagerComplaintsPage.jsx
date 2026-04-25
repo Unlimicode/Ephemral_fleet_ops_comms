@@ -3,7 +3,7 @@ import api from '../../api/axios.js';
 import { useToast } from '../../components/Toast.jsx';
 import useWindowWidth from '../../hooks/useWindowWidth.js';
 
-const STATUSES = ['open', 'under_investigation', 'resolved', 'escalated'];
+const STATUSES = ['open', 'under_investigation', 'resolved'];
 
 export default function ManagerComplaintsPage() {
     const [complaints, setComplaints] = useState([]);
@@ -102,7 +102,6 @@ export default function ManagerComplaintsPage() {
         if (filter === 'Open') return c.status === 'open';
         if (filter === 'Under Investigation') return c.status === 'under_investigation';
         if (filter === 'Resolved') return c.status === 'resolved';
-        if (filter === 'Escalated') return c.status === 'escalated';
         return true;
     });
 
@@ -110,7 +109,6 @@ export default function ManagerComplaintsPage() {
         if (status === 'open') return '#F59E0B';
         if (status === 'under_investigation') return '#6C63FF';
         if (status === 'resolved') return '#00F5A0';
-        if (status === 'escalated') return '#E05A5A';
         return '#A0A0A0';
     };
 
@@ -134,7 +132,6 @@ export default function ManagerComplaintsPage() {
         'Open': complaints.filter(c => c.status === 'open').length,
         'Under Investigation': complaints.filter(c => c.status === 'under_investigation').length,
         'Resolved': complaints.filter(c => c.status === 'resolved').length,
-        'Escalated': complaints.filter(c => c.status === 'escalated').length,
     };
 
     return (
@@ -229,7 +226,7 @@ export default function ManagerComplaintsPage() {
                 <>
                     {/* Filter Tabs */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '40px' }}>
-                        {['All', 'Open', 'Under Investigation', 'Resolved', 'Escalated'].map(tab => {
+                        {['All', 'Open', 'Under Investigation', 'Resolved'].map(tab => {
                             const isActive = filter === tab;
                             return (
                                 <button
@@ -372,8 +369,9 @@ export default function ManagerComplaintsPage() {
                                                 <select
                                                     value={c.status}
                                                     onChange={e => handleStatusUpdate(c.complaint_id, e.target.value)}
-                                                    disabled={actionLoading}
-                                                    style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: actionLoading ? 'not-allowed' : 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                    disabled={actionLoading || c.status === 'resolved'}
+                                                    title={c.status === 'resolved' ? 'Resolved complaints cannot be reopened' : undefined}
+                                                    style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: (actionLoading || c.status === 'resolved') ? 'not-allowed' : 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif", opacity: c.status === 'resolved' ? 0.6 : 1 }}
                                                 >
                                                     {STATUSES.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
                                                 </select>
@@ -423,8 +421,9 @@ export default function ManagerComplaintsPage() {
                                             <select
                                                 value={c.status}
                                                 onChange={e => handleStatusUpdate(c.complaint_id, e.target.value)}
-                                                disabled={actionLoading}
-                                                style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: actionLoading ? 'not-allowed' : 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                disabled={actionLoading || c.status === 'resolved'}
+                                                title={c.status === 'resolved' ? 'Resolved complaints cannot be reopened' : undefined}
+                                                style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '999px', padding: '6px 16px', fontSize: '12px', fontWeight: 700, color: statusColor(c.status), outline: 'none', cursor: (actionLoading || c.status === 'resolved') ? 'not-allowed' : 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif", opacity: c.status === 'resolved' ? 0.6 : 1 }}
                                             >
                                                 {STATUSES.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
                                             </select>

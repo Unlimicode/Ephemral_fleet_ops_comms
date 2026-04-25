@@ -2,7 +2,21 @@
   "permissions": {
     "allow": [
       "Bash(npm run:*)",
-      "Bash(\"D:/Programming/Development/Ephemral_fleet_ops_comms/implementation_plan.md\":*)"
+      "Bash(\"D:/Programming/Development/Ephemral_fleet_ops_comms/implementation_plan.md\":*)",
+      "Bash(npm test:*)",
+      "Bash(D:/Programming/Development/Ephemral_fleet_ops_comms/implementation_plan.md:*)",
+      "Bash(npx eslint:*)",
+      "Bash(/d/Programming/Development/Ephemral_fleet_ops_comms/implementation_plan.md:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(\"D:\\\\Programming\\\\Development\\\\Ephemral_fleet_ops_comms\\\\implementation_plan.md\":*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"import\\(''resend''\\).then\\(m => console.log\\(''resend ok:'', Object.keys\\(m\\)\\)\\)\")",
+      "Bash(npm uninstall:*)",
+      "Bash(node:*)",
+      "Bash(npx jest:*)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }

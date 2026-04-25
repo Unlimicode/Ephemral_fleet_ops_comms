@@ -1111,3 +1111,31 @@ without a test-environment guard.
   - DriverActiveTripPage: complaint state + fetchComplaint handler + Section 5 Trip Review card rendering complaint status badge, description, and manager notes
   - BookingLandingPage: investigation_notes block added below complaint progress stepper, shown when notes are present
 - **Why:** Drivers and clients had no visibility into investigation notes — manager context was written but never surfaced to the relevant parties
+
+---
+
+## Final Revisions — Bug Fixes and Error Corrections
+
+### [Final Revisions] — Push notification subscription auto-sync on app open
+- **Date:** 2026-04-25
+- **Files modified:** `frontend/src/hooks/usePushNotifications.js`, `frontend/src/components/PushNotificationToggle.jsx`, `frontend/public/sw.js`, `backend/utils/sendPushNotification.js`
+- **What changed:** usePushNotifications: hook now accepts optional `token` param; `init()` silently re-POSTs any existing browser subscription to the backend on every app open (idempotent upsert) so the DB always reflects the browser's current subscription; PushNotificationToggle: passes its `token` prop to the hook; sendPushNotification: added `console.log` on successful send and `console.warn` (with endpoint truncated) when a 410/404 causes subscription deletion; sw.js: changed notification `tag` from `tripId` to `${type}-${tripId}` so different notification types for the same trip are shown as separate notifications rather than silently replacing each other
+- **Why:** Browser periodically rotates push subscription keys; old endpoint in DB would receive 410 on next send, get deleted silently, leaving no subscription for that driver — all future pushes would return empty result and fire nothing; no logging made this invisible; type+tripId tag prevented notification deduplication across different event types on same trip
+
+### [Final Revisions] — Complaint status transition guards and escalated status removal
+- **Date:** 2026-04-25
+- **Files modified:** `backend/routes/complaints.js`, `frontend/src/pages/manager/ManagerComplaintsPage.jsx`
+- **What changed:** complaints.js: `validStatuses` changed from `['open', 'under_investigation', 'resolved', 'escalated']` to `['open', 'under_investigation', 'resolved']`; added guard returning 409 if `oldStatus === 'resolved'` (terminal state enforcement); ManagerComplaintsPage: `STATUSES` array removes `escalated`; both status select dropdowns now disabled with opacity 0.6 and tooltip when `c.status === 'resolved'`; filter tabs and tabCounts updated to remove Escalated tab; filter function removes Escalated branch
+- **Why:** `resolved` was not enforced as terminal — a manager could re-open a resolved complaint; `escalated` was in the valid status set but is not in the canonical complaint flow (open ↔ under_investigation → resolved); frontend still showed the select as interactive on resolved complaints
+
+### [Final Revisions] — Offline message replay on socket reconnect
+- **Date:** 2026-04-25
+- **Files modified:** `backend/socket/io.js`, `frontend/src/hooks/useChat.js`
+- **What changed:** io.js: after a socket joins a room and passes auth, reads `messages:trip:{tripId}` Redis list (the existing conditional-persistence buffer) and emits a `message_history` event to that socket only — not broadcast to the room; useChat.js: added `message_history` handler that replaces the messages array with the full history so reconnecting participants see the complete conversation thread
+- **Why:** Messages sent while a participant was offline were permanently lost — the Redis buffer existed for complaint archiving but was never read back on reconnect; emitting to the individual socket (not the room) prevents connected participants from receiving duplicate messages
+
+### [Final Revisions] — Immediate driver session revocation on deactivation
+- **Date:** 2026-04-25
+- **Files modified:** `backend/middleware/auth.js`
+- **What changed:** `requireAuth` now imports `query` from db.js; for any token with `role === 'driver'`, adds a DB query (`SELECT active_status FROM drivers WHERE id = $1`) after JWT verification; returns 401 "Account deactivated" if the driver no longer exists or is inactive
+- **Why:** The blocklist-based revocation at deactivation time was silently skipped whenever a trip action (accept/reject/complete) had overwritten the `driver:availability:{id}` session without the token field — so `currentSession.token` was undefined and no blocklist entry was written; the deactivated driver's JWT remained valid for its full 8-hour lifespan; the DB check closes this gap definitively on every request

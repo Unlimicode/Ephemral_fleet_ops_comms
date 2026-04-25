@@ -292,19 +292,25 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
     const { complaintId } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['open', 'under_investigation', 'resolved', 'escalated'];
+    // Canonical status values — 'escalated' is not in the flow
+    const validStatuses = ['open', 'under_investigation', 'resolved'];
     if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: 'Invalid status format provided natively' });
+        return res.status(400).json({ error: 'Invalid status value' });
     }
 
     try {
         const originalStatusQuery = await pool.query(`SELECT status FROM complaints WHERE id = $1`, [complaintId]);
 
         if (originalStatusQuery.rows.length === 0) {
-            return res.status(404).json({ error: 'Complaint not found natively' });
+            return res.status(404).json({ error: 'Complaint not found' });
         }
 
         const oldStatus = originalStatusQuery.rows[0].status;
+
+        // resolved is a terminal state — no transitions out of it
+        if (oldStatus === 'resolved') {
+            return res.status(409).json({ error: 'Resolved complaints cannot be reopened' });
+        }
 
         const updatedResult = await pool.query(
             `UPDATE complaints SET status = $1 WHERE id = $2 RETURNING id, trip_id, category, description, status, created_at`,
