@@ -216,3 +216,91 @@ describe('Privacy Dashboard API', () => {
     });
 
 });
+
+describe('Compliance Report — 10 Data-Minimization Metrics', () => {
+
+    it('returns all 10 metrics as numbers', async () => {
+        const res = await request(app)
+            .get(`${API}/compliance-report`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        const { metrics } = res.body;
+        expect(metrics).toBeDefined();
+
+        const expectedKeys = [
+            'sessions_created',
+            'credentials_issued',
+            'credentials_revoked',
+            'messages_ephemeral_only',
+            'messages_conditionally_persisted',
+            'messages_permanently_wiped',
+            'complaints_filed',
+            'complaint_window_expirations',
+            'audit_trail_entries',
+            'manager_archive_accesses',
+        ];
+        for (const key of expectedKeys) {
+            expect(metrics).toHaveProperty(key);
+            expect(typeof metrics[key]).toBe('number');
+        }
+    });
+
+    it('minimization_rate_percent is between 0 and 100', async () => {
+        const res = await request(app)
+            .get(`${API}/compliance-report`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(typeof res.body.minimization_rate_percent).toBe('number');
+        expect(res.body.minimization_rate_percent).toBeGreaterThanOrEqual(0);
+        expect(res.body.minimization_rate_percent).toBeLessThanOrEqual(100);
+    });
+
+    it('date range filtering returns plausible counts', async () => {
+        const today = new Date().toISOString().split('T')[0];
+        const res = await request(app)
+            .get(`${API}/compliance-report?from=${today}&to=${today}`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(res.body.period.from).toContain(today);
+        expect(res.body.period.to).toContain(today);
+        const { metrics } = res.body;
+        // Counts are non-negative integers
+        for (const val of Object.values(metrics)) {
+            expect(typeof val).toBe('number');
+            expect(val).toBeGreaterThanOrEqual(0);
+        }
+    });
+
+    it('CSV export returns text/csv with all section rows', async () => {
+        const res = await request(app)
+            .get(`${API}/compliance-report?format=csv`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(res.headers['content-type']).toMatch(/text\/csv/);
+        // Session Lifecycle
+        expect(res.text).toContain('Sessions Created');
+        expect(res.text).toContain('Driver Credentials Issued');
+        expect(res.text).toContain('Driver Credentials Revoked');
+        // Data Lifecycle
+        expect(res.text).toContain('Messages Ephemeral Only');
+        expect(res.text).toContain('Messages Conditionally Persisted');
+        expect(res.text).toContain('Messages Permanently Wiped');
+        expect(res.text).toContain('Data Minimization Rate');
+        // Complaints
+        expect(res.text).toContain('Complaints Filed');
+        expect(res.text).toContain('Manager Archive Accesses');
+        // Audit Trail
+        expect(res.text).toContain('Total Entries');
+    });
+
+    it('rejects unauthenticated requests with 401', async () => {
+        await request(app)
+            .get(`${API}/compliance-report`)
+            .expect(401);
+    });
+
+});
