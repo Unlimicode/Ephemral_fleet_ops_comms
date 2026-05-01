@@ -136,9 +136,9 @@ router.get('/overview', requireAuth(['fleet_manager']), async (req, res) => {
         }));
 
         const auditQuery = await query(
-            `SELECT COUNT(*) as count 
-             FROM audit_log 
-             WHERE action_type IN ('TRIP_COMPLETED', 'TRIP_SESSION_DESTROYED')
+            `SELECT COUNT(*) as count
+             FROM audit_log
+             WHERE action_type IN ('TRIP_COMPLETED', 'TRIP_SESSION_DESTROYED', 'DRIVER_DEACTIVATED')
                AND timestamp > (NOW() - INTERVAL '25 hours')`
         );
 
@@ -495,12 +495,38 @@ router.get('/compliance-report', requireAuth(['fleet_manager']), async (req, res
             return res.status(200).send(csv);
         }
 
+        const compliance = {
+            period_from:                    from || null,
+            period_to:                      to   || null,
+            sessions_created:               sessionsCreated,
+            credentials_issued:             credentialsIssued,
+            credentials_revoked:            credentialsRevoked,
+            sessions_destroyed:             credentialsRevoked + deactivationEvents,
+            data_expired:                   messagesWiped,
+            data_conditionally_persisted:   messagesPersisted,
+            minimization_rate_percent:      minimizationRate,
+            preservation_rate_percent:      credentialsRevoked > 0 ? Math.round((messagesPersisted  / credentialsRevoked) * 100) : 0,
+            complaint_window_expirations:   messagesWiped,
+            complaints_filed:               complaintsFiled,
+            complaint_filing_rate_percent:  credentialsRevoked > 0 ? Math.round((complaintsFiled    / credentialsRevoked) * 100) : 0,
+            manager_message_access_events:  archiveAccessEvents,
+            active_complaint_windows:       activeComplaintWindows,
+            audit_entries:                  auditEntries,
+        };
+
         return res.status(200).json({
             generated_at: new Date().toISOString(),
             period: { from: fromTs || 'all time', to: toTs || 'all time' },
             operator: 'SwiftLink Fleet Operations',
             framework: 'Mediated Ephemeral Identity Framework',
             regulatory_basis: 'Kenya Data Protection Act 2019, Section 25 — Data Minimization',
+            architecture_note:
+                'Message content is stored in Redis with TTL enforcement. Permanent storage occurs only when a ' +
+                'complaint is filed within the 24-hour window. This constraint is enforced at the architectural ' +
+                'level — there is no database write for message content except under the complaint-triggered ' +
+                'conditional persistence flow.',
+
+            compliance,
 
             headline: {
                 minimization_rate_percent: minimizationRate,

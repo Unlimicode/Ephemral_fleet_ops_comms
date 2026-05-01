@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import jsPDF from 'jspdf';
 import api from '../../api/axios.js';
 import { useToast } from '../../components/Toast.jsx';
 import useWindowWidth from '../../hooks/useWindowWidth.js';
+import { generateCompliancePDF } from '../../utils/compliancePdf.js';
 
 const ACTION_TYPES = [
     'DRIVER_ADDED', 'DRIVER_DEACTIVATED', 'VEHICLE_ADDED', 'VEHICLE_REMOVED',
@@ -66,7 +66,8 @@ export default function ManagerAuditPage() {
     const [offset, setOffset] = useState(0);
     const [filters, setFilters] = useState({ action_type: '', search: '', from: '', to: '' });
 
-    // Compliance report state
+    // Compliance report panel state
+    const [reportOpen, setReportOpen] = useState(false);
     const [report, setReport] = useState(null);
     const [reportLoading, setReportLoading] = useState(false);
     const [reportError, setReportError] = useState(null);
@@ -176,179 +177,7 @@ export default function ManagerAuditPage() {
 
     const handleExportCompliancePDF = () => {
         if (!report) return;
-
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
-        const margin = 20;
-        const cw = pageW - margin * 2;
-        let y = 20;
-
-        const ensureSpace = (needed) => {
-            if (y + needed > pageH - 18) { doc.addPage(); y = 20; }
-        };
-
-        const rule = (gap = 6) => {
-            ensureSpace(gap + 4);
-            doc.setDrawColor(220, 220, 220);
-            doc.setLineWidth(0.3);
-            doc.line(margin, y, pageW - margin, y);
-            y += gap;
-        };
-
-        const sectionHeading = (text) => {
-            ensureSpace(12);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
-            doc.setTextColor(13, 13, 13);
-            doc.text(text, margin, y);
-            y += 8;
-        };
-
-        const bodyText = (text, size = 10, color = [80, 80, 80]) => {
-            ensureSpace(20);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(size);
-            doc.setTextColor(...color);
-            const lines = doc.splitTextToSize(text, cw);
-            doc.text(lines, margin, y);
-            y += lines.length * (size * 0.42) + 4;
-        };
-
-        const metricRow = (label, value, highlight = false) => {
-            ensureSpace(8);
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(110, 110, 110);
-            doc.text(label, margin + 4, y);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(...(highlight ? [0, 160, 100] : [13, 13, 13]));
-            doc.text(String(value ?? 'N/A'), pageW - margin, y, { align: 'right' });
-            y += 7;
-        };
-
-        const periodFrom = report.period.from === 'all time' ? 'All time' : report.period.from.split('T')[0];
-        const periodTo   = report.period.to   === 'all time' ? 'All time' : report.period.to.split('T')[0];
-        const s3 = report.sections.session_lifecycle;
-        const s4 = report.sections.data_lifecycle;
-        const s5 = report.sections.communication_anonymization;
-        const s6 = report.sections.complaint_investigation;
-        const s7 = report.sections.audit_trail;
-
-        // ── 1. REPORT HEADER ─────────────────────────────────────────────
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
-        doc.setTextColor(13, 13, 13);
-        doc.text('SwiftLink Compliance Report', margin, y); y += 10;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(107, 107, 107);
-        doc.text('Mediated Ephemeral Identity Framework — Data Minimization Evidence', margin, y); y += 6;
-        doc.setFontSize(9);
-        doc.text(`Operator: ${report.operator}`, margin, y); y += 5;
-        doc.text(`Period: ${periodFrom} to ${periodTo}`, margin, y); y += 5;
-        doc.text(`Generated: ${new Date(report.generated_at).toLocaleString()}`, margin, y); y += 5;
-        doc.text(`Regulatory Basis: ${report.regulatory_basis}`, margin, y); y += 5;
-        rule(8);
-
-        // ── 2. EXECUTIVE SUMMARY ─────────────────────────────────────────
-        sectionHeading('2. Executive Summary');
-        bodyText(report.headline.summary);
-        y += 2;
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
-        doc.setTextColor(0, 160, 100);
-        doc.text(`Data Minimization Rate: ${report.headline.minimization_rate_percent}%`, margin + 4, y);
-        y += 8;
-        rule();
-
-        // ── 3. SESSION LIFECYCLE ─────────────────────────────────────────
-        sectionHeading('3. Session Lifecycle Metrics');
-        metricRow('Sessions Created (trips initiated)', s3.sessions_created);
-        metricRow('Driver Credentials Issued', s3.credentials_issued);
-        metricRow('Driver Credentials Revoked on Completion', s3.credentials_revoked);
-        metricRow('Credential Revocation Rate', `${s3.revocation_rate_percent}%`, true);
-        metricRow('Average Session Duration', s3.avg_session_duration_minutes != null ? `${s3.avg_session_duration_minutes} min` : 'N/A');
-        metricRow('Sessions Terminated by Driver Deactivation', s3.deactivation_terminations);
-        rule();
-
-        // ── 4. DATA LIFECYCLE ────────────────────────────────────────────
-        sectionHeading('4. Data Lifecycle Metrics');
-        metricRow('Completed Trips (total)', s4.completed_trips);
-        metricRow('Data Wiped (no complaint → TTL expired)', s4.messages_wiped, true);
-        metricRow('Data Conditionally Preserved (complaint filed)', s4.messages_persisted);
-        metricRow('Active Complaint Windows (live Redis)', s4.active_complaint_windows);
-        metricRow('Data Minimization Rate', `${s4.minimization_rate_percent}%`, true);
-        metricRow('Preservation Rate', `${s4.preservation_rate_percent}%`);
-        rule();
-
-        // ── 5. COMMUNICATION ANONYMIZATION ───────────────────────────────
-        sectionHeading('5. Communication Anonymization');
-        metricRow('Direct Contact Events', s5.direct_contact_events, true);
-        metricRow('Driver-Visible Client Fields', s5.driver_visible_client_fields.join(', '));
-        metricRow('Contact Detail Exposures', s5.contact_detail_exposures, true);
-        y += 2;
-        bodyText(s5.architectural_note, 9);
-        rule();
-
-        // ── 6. COMPLAINT & INVESTIGATION ─────────────────────────────────
-        sectionHeading('6. Complaint & Investigation Metrics');
-        metricRow('Complaints Filed in Period', s6.complaints_filed);
-        metricRow('  — Open', s6.by_status.open);
-        metricRow('  — Under Investigation', s6.by_status.under_investigation);
-        metricRow('  — Resolved', s6.by_status.resolved);
-        metricRow('Manager Message-Access Events', s6.archive_access_events);
-        metricRow('Complaint Filing Rate', `${s6.complaint_filing_rate_percent}%`);
-        metricRow('Average Complaint Resolution Time', s6.avg_resolution_hours != null ? `${s6.avg_resolution_hours} hrs` : 'N/A');
-        rule();
-
-        // ── 7. AUDIT TRAIL COMPLETENESS ──────────────────────────────────
-        sectionHeading('7. Audit Trail Completeness');
-        metricRow('Total Audit Entries in Period', s7.total_entries);
-        metricRow('  — Session Events', s7.by_category.session_events);
-        metricRow('  — Data Access Events', s7.by_category.data_access_events);
-        metricRow('  — Complaint Events', s7.by_category.complaint_events);
-        metricRow('  — System Events', s7.by_category.system_events);
-        y += 2;
-        bodyText(s7.integrity_statement, 9);
-        rule();
-
-        // ── 8. REGULATORY COMPLIANCE STATEMENT ──────────────────────────
-        sectionHeading('8. Regulatory Compliance Statement');
-        bodyText(
-            `This report documents compliance with the Kenya Data Protection Act 2019, Section 25, which requires ` +
-            `that personal data be adequate, relevant, and limited to what is necessary for the purposes for which it is processed. ` +
-            `The Mediated Ephemeral Identity Framework enforces data minimization architecturally: booking session credentials ` +
-            `expire automatically, message content is stored exclusively in Redis with TTL enforcement, and permanent storage ` +
-            `occurs only when a complaint is filed within the 24-hour window. The metrics in this report demonstrate that ` +
-            `${report.headline.minimization_rate_percent}% of completed trips resulted in permanent data erasure — ` +
-            `zero manual intervention required.`
-        );
-        rule();
-
-        // ── 9. ARCHITECTURE NOTE ─────────────────────────────────────────
-        sectionHeading('9. Architecture Note');
-        bodyText(
-            `The privacy controls documented here are not policy-layer mitigations — they are architectural constraints. ` +
-            `Drivers cannot access client contact details because the system never transmits them; the trips table contains ` +
-            `client_first_name only, with no phone number, email, or surname column in the driver-accessible data path. ` +
-            `Messages cannot persist past the TTL unless a complaint is filed because the architecture has no other persistence ` +
-            `path — there is no database write for message content except under the complaint-triggered conditional preservation flow. ` +
-            `This is what distinguishes the Mediated Ephemeral Identity Framework from conventional data-masking approaches ` +
-            `used in commercial ride-hailing platforms.`
-        );
-
-        // ── FOOTER ───────────────────────────────────────────────────────
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(160, 160, 160);
-            doc.text('SwiftLink Fleet Operations — Compliance Report — Confidential', margin, pageH - 8);
-            doc.text(`Page ${i} of ${pageCount}`, pageW - margin, pageH - 8, { align: 'right' });
-        }
-
-        doc.save(`swiftlink-compliance-report-${new Date().toISOString().split('T')[0]}.pdf`);
+        generateCompliancePDF(report);
     };
 
     const formatTimestamp = (iso) => {
@@ -471,6 +300,133 @@ export default function ManagerAuditPage() {
                         </button>
                     </div>
 
+                    {/* Compliance Report Panel — collapsible, above stat tiles */}
+                    <div className="audit-panel" style={{ padding: '28px 32px', marginBottom: '32px' }}>
+                        {/* Toggle header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                            <div>
+                                <h2 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: 900, letterSpacing: '-0.02em', color: '#0D0D0D', margin: 0 }}>
+                                    Data Minimisation Compliance Report
+                                </h2>
+                                <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', fontWeight: 500, margin: '4px 0 0 0' }}>
+                                    Kenya Data Protection Act 2019, s.25 — ephemeral identity framework
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setReportOpen(o => !o)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: reportOpen ? 'rgba(108,99,255,0.08)' : '#6C63FF', color: reportOpen ? '#6C63FF' : 'white', borderRadius: '999px', padding: '10px 22px', fontSize: '13px', fontWeight: 700, border: reportOpen ? '1px solid rgba(108,99,255,0.2)' : 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif", transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                    {reportOpen ? 'expand_less' : 'query_stats'}
+                                </span>
+                                {reportOpen ? 'Collapse' : 'Generate Report'}
+                            </button>
+                        </div>
+
+                        {/* Expanded content */}
+                        {reportOpen && (
+                            <div style={{ marginTop: '24px' }}>
+                                {/* Controls row */}
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap', paddingBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                                    <div>
+                                        <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 700, color: 'rgba(0,0,0,0.4)', margin: '0 0 4px 0' }}>From</p>
+                                        <input type="date" value={reportFrom} onChange={e => setReportFrom(e.target.value)}
+                                            style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', borderRadius: '999px', padding: '10px 20px', fontSize: '12px', fontWeight: 700, color: '#0D0D0D', outline: 'none', fontFamily: "'Be Vietnam Pro', sans-serif" }} />
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 700, color: 'rgba(0,0,0,0.4)', margin: '0 0 4px 0' }}>To</p>
+                                        <input type="date" value={reportTo} onChange={e => setReportTo(e.target.value)}
+                                            style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', borderRadius: '999px', padding: '10px 20px', fontSize: '12px', fontWeight: 700, color: '#0D0D0D', outline: 'none', fontFamily: "'Be Vietnam Pro', sans-serif" }} />
+                                    </div>
+                                    <button onClick={handleGenerateReport} disabled={reportLoading}
+                                        style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: reportLoading ? 'not-allowed' : 'pointer', opacity: reportLoading ? 0.7 : 1, fontFamily: "'Be Vietnam Pro', sans-serif", whiteSpace: 'nowrap' }}>
+                                        {reportLoading ? 'Generating…' : 'Generate'}
+                                    </button>
+                                </div>
+
+                                {/* Skeleton while loading */}
+                                {reportLoading && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '16px', marginTop: '20px' }}>
+                                        {[...Array(6)].map((_, i) => (
+                                            <div key={i} className="audit-stat-card" style={{ padding: '20px', height: '80px', background: 'rgba(255,255,255,0.4)' }}>
+                                                <div style={{ height: '8px', width: '45%', background: 'rgba(0,0,0,0.06)', borderRadius: '4px', marginBottom: '12px' }} />
+                                                <div style={{ height: '24px', width: '35%', background: 'rgba(0,0,0,0.06)', borderRadius: '4px' }} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Error */}
+                                {reportError && !reportLoading && (
+                                    <p style={{ fontSize: '13px', color: '#E05A5A', fontWeight: 600, margin: '16px 0 0 0' }}>{reportError}</p>
+                                )}
+
+                                {/* Report metrics using compliance.* */}
+                                {report && !reportLoading && (() => {
+                                    const c = report.compliance || {};
+                                    const summary = report.headline?.summary ||
+                                        `In this period, SwiftLink processed ${c.sessions_created ?? 0} sessions, revoked ${c.credentials_revoked ?? 0} credentials, and achieved a data minimisation rate of ${c.minimization_rate_percent ?? 0}%.`;
+                                    return (
+                                        <>
+                                            {/* 10-metric grid */}
+                                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: '16px', marginTop: '20px' }}>
+
+                                                {/* Headline metric — full width */}
+                                                <div className="audit-stat-card" style={{ gridColumn: isMobile ? undefined : '1 / -1', padding: '24px', borderLeft: '4px solid #6C63FF' }}>
+                                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#6C63FF', margin: '0 0 8px 0' }}>Data Minimisation Rate</p>
+                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
+                                                        <span style={{ fontSize: isMobile ? '42px' : '56px', fontWeight: 900, color: '#6C63FF', letterSpacing: '-0.04em', lineHeight: 1 }}>{c.minimization_rate_percent ?? 0}%</span>
+                                                        <span style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>of completed trips resulted in permanent data erasure</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* 9 supporting metric cards */}
+                                                {[
+                                                    { label: 'Sessions Created',              value: c.sessions_created ?? 0 },
+                                                    { label: 'Credentials Revoked',           value: c.credentials_revoked ?? 0 },
+                                                    { label: 'Data Wiped Naturally',          value: c.data_expired ?? 0,                   color: '#00A86B' },
+                                                    { label: 'Data Conditionally Preserved',  value: c.data_conditionally_persisted ?? 0 },
+                                                    { label: 'Complaint Window Expirations',  value: c.complaint_window_expirations ?? 0 },
+                                                    { label: 'Manager Message-Access Events', value: c.manager_message_access_events ?? 0,  color: '#F59E0B' },
+                                                    { label: 'Active Complaint Windows',      value: c.active_complaint_windows ?? 0 },
+                                                    { label: 'Total Audit Entries',           value: (c.audit_entries ?? 0).toLocaleString(), color: '#00D4FF' },
+                                                    { label: 'Complaint Filing Rate',         value: `${c.complaint_filing_rate_percent ?? 0}%` },
+                                                ].map(({ label, value, color }) => (
+                                                    <div key={label} className="audit-stat-card" style={{ padding: '20px 24px' }}>
+                                                        <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 700, color: 'rgba(0,0,0,0.35)', margin: '0 0 8px 0', lineHeight: 1.3 }}>{label}</p>
+                                                        <p style={{ fontSize: '28px', fontWeight: 900, color: color || '#0D0D0D', letterSpacing: '-0.03em', margin: 0, lineHeight: 1 }}>{value}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* One-sentence summary */}
+                                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.45)', lineHeight: 1.7, margin: '20px 0 0 0', fontStyle: 'italic' }}>
+                                                {summary}
+                                            </p>
+
+                                            {/* Export Full PDF */}
+                                            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                                <button
+                                                    onClick={handleExportCompliancePDF}
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(108,99,255,0.1)', color: '#6C63FF', borderRadius: '999px', padding: '12px 28px', fontSize: '13px', fontWeight: 700, border: '1px solid rgba(108,99,255,0.2)', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif", whiteSpace: 'nowrap' }}
+                                                >
+                                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>picture_as_pdf</span>
+                                                    Export Full PDF
+                                                </button>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
+
+                                {!report && !reportLoading && !reportError && (
+                                    <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.3)', fontWeight: 500, margin: '20px 0 0 0' }}>
+                                        No report generated yet. Select a date range and click Generate.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Stat Tiles */}
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: '20px', marginBottom: '40px' }}>
                         {/* Total Logs */}
@@ -505,175 +461,6 @@ export default function ManagerAuditPage() {
                             <p style={{ fontSize: '32px', fontWeight: 900, color: '#0D0D0D', letterSpacing: '-0.03em', margin: '8px 0 8px 0' }}>{ACTION_TYPES.length}</p>
                             <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)', margin: 0 }}>tracked events</p>
                         </div>
-                    </div>
-
-                    {/* Compliance Report Panel */}
-                    <div className="audit-panel" style={{ padding: '32px', marginBottom: '32px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
-                            <div>
-                                <h2 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 900, letterSpacing: '-0.02em', color: '#0D0D0D', margin: 0 }}>
-                                    Data Minimization Compliance Report
-                                </h2>
-                                <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.45)', fontWeight: 500, margin: '6px 0 0 0' }}>
-                                    Kenya Data Protection Act 2019, s.25 — select a period then generate.
-                                </p>
-                            </div>
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                                <div>
-                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 700, color: 'rgba(0,0,0,0.4)', margin: '0 0 4px 0' }}>From</p>
-                                    <input type="date" value={reportFrom} onChange={e => setReportFrom(e.target.value)}
-                                        style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', borderRadius: '999px', padding: '10px 20px', fontSize: '12px', fontWeight: 700, color: '#0D0D0D', outline: 'none', fontFamily: "'Be Vietnam Pro', sans-serif" }} />
-                                </div>
-                                <div>
-                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 700, color: 'rgba(0,0,0,0.4)', margin: '0 0 4px 0' }}>To</p>
-                                    <input type="date" value={reportTo} onChange={e => setReportTo(e.target.value)}
-                                        style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', borderRadius: '999px', padding: '10px 20px', fontSize: '12px', fontWeight: 700, color: '#0D0D0D', outline: 'none', fontFamily: "'Be Vietnam Pro', sans-serif" }} />
-                                </div>
-                                <button onClick={handleGenerateReport} disabled={reportLoading}
-                                    style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: reportLoading ? 'not-allowed' : 'pointer', opacity: reportLoading ? 0.7 : 1, fontFamily: "'Be Vietnam Pro', sans-serif", whiteSpace: 'nowrap' }}>
-                                    {reportLoading ? 'Generating…' : 'Generate Report'}
-                                </button>
-                                {report && (
-                                    <button onClick={handleExportCompliancePDF}
-                                        style={{ background: 'rgba(108,99,255,0.1)', color: '#6C63FF', borderRadius: '999px', padding: '12px 24px', fontSize: '13px', fontWeight: 700, border: '1px solid rgba(108,99,255,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'Be Vietnam Pro', sans-serif", whiteSpace: 'nowrap' }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>picture_as_pdf</span>
-                                        Export PDF
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {reportError && (
-                            <p style={{ fontSize: '13px', color: '#E05A5A', fontWeight: 600, margin: '0 0 16px 0' }}>{reportError}</p>
-                        )}
-
-                        {report && (() => {
-                            const s3 = report.sections.session_lifecycle;
-                            const s4 = report.sections.data_lifecycle;
-                            const s5 = report.sections.communication_anonymization;
-                            const s6 = report.sections.complaint_investigation;
-                            const s7 = report.sections.audit_trail;
-                            const periodFrom = report.period.from === 'all time' ? 'All time' : report.period.from.split('T')[0];
-                            const periodTo   = report.period.to   === 'all time' ? 'All time' : report.period.to.split('T')[0];
-                            return (
-                                <>
-                                    {/* Headline */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                                        <span style={{ background: 'rgba(0,245,160,0.12)', color: '#00A86B', borderRadius: '999px', padding: '5px 16px', fontSize: '12px', fontWeight: 800 }}>
-                                            {report.headline.minimization_rate_percent}% data minimized
-                                        </span>
-                                        <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(0,0,0,0.4)' }}>
-                                            {periodFrom} → {periodTo}
-                                        </span>
-                                        <span style={{ fontSize: '10px', color: 'rgba(0,0,0,0.3)', fontWeight: 500 }}>
-                                            Generated {new Date(report.generated_at).toLocaleString()}
-                                        </span>
-                                    </div>
-
-                                    {/* Executive Summary */}
-                                    <div style={{ background: 'rgba(108,99,255,0.04)', border: '1px solid rgba(108,99,255,0.12)', borderRadius: '1rem', padding: '20px 24px', marginBottom: '20px' }}>
-                                        <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#6C63FF', margin: '0 0 8px 0' }}>Executive Summary</p>
-                                        <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.65)', lineHeight: 1.7, margin: 0 }}>
-                                            {report.headline.summary}
-                                        </p>
-                                    </div>
-
-                                    {/* Section 5: Communication Anonymization — assertion strip */}
-                                    <div style={{ background: 'rgba(0,245,160,0.05)', border: '1px solid rgba(0,245,160,0.2)', borderLeft: '3px solid #00D188', borderRadius: '1rem', padding: '14px 24px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#00A86B', whiteSpace: 'nowrap' }}>Communication Anonymization</span>
-                                        {[
-                                            `Direct contact events: ${s5.direct_contact_events}`,
-                                            `Driver-visible fields: First name only`,
-                                            `Contact exposures: ${s5.contact_detail_exposures}`,
-                                        ].map(text => (
-                                            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#00D188' }}>check_circle</span>
-                                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#00A86B' }}>{text}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Sections 3, 4, 6, 7 — 2×2 grid */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr' : 'repeat(2,1fr)', gap: '16px' }}>
-
-                                        {/* Section 3: Session Lifecycle */}
-                                        <ReportSectionCard
-                                            title="Session Lifecycle"
-                                            color="#6C63FF"
-                                            items={[
-                                                { label: 'Sessions Created',    value: s3.sessions_created },
-                                                { label: 'Credentials Issued',  value: s3.credentials_issued },
-                                                { label: 'Credentials Revoked', value: s3.credentials_revoked },
-                                                { label: 'Revocation Rate',     value: `${s3.revocation_rate_percent}%`, highlight: true },
-                                                { label: 'Avg Duration',        value: s3.avg_session_duration_minutes != null ? `${s3.avg_session_duration_minutes}m` : '—' },
-                                                { label: 'Deactivations',       value: s3.deactivation_terminations },
-                                            ]}
-                                        />
-
-                                        {/* Section 4: Data Lifecycle */}
-                                        <div className="audit-stat-card" style={{ padding: '24px' }}>
-                                            <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#00A86B', margin: '0 0 10px 0' }}>Data Lifecycle</p>
-                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '16px' }}>
-                                                <span style={{ fontSize: '48px', fontWeight: 900, color: '#00A86B', letterSpacing: '-0.04em', lineHeight: 1 }}>{s4.minimization_rate_percent}%</span>
-                                                <span style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>data minimized</span>
-                                            </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px 16px' }}>
-                                                {[
-                                                    { label: 'Completed Trips',  value: s4.completed_trips },
-                                                    { label: 'Messages Wiped',   value: s4.messages_wiped, highlight: true },
-                                                    { label: 'Msgs Preserved',   value: s4.messages_persisted },
-                                                    { label: 'Active Windows',   value: s4.active_complaint_windows },
-                                                ].map(({ label, value, highlight }) => (
-                                                    <div key={label}>
-                                                        <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(0,0,0,0.35)', fontWeight: 700, margin: '0 0 3px 0', lineHeight: 1.2 }}>{label}</p>
-                                                        <p style={{ fontSize: '22px', fontWeight: 900, color: highlight ? '#00A86B' : '#0D0D0D', letterSpacing: '-0.03em', margin: 0, lineHeight: 1 }}>{value}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Section 6: Complaint & Investigation */}
-                                        <ReportSectionCard
-                                            title="Complaint & Investigation"
-                                            color="#F59E0B"
-                                            items={[
-                                                { label: 'Filed',           value: s6.complaints_filed },
-                                                { label: 'Open',            value: s6.by_status.open },
-                                                { label: 'Investigating',   value: s6.by_status.under_investigation },
-                                                { label: 'Resolved',        value: s6.by_status.resolved },
-                                                { label: 'Archive Accesses',value: s6.archive_access_events },
-                                                { label: 'Filing Rate',     value: `${s6.complaint_filing_rate_percent}%` },
-                                                ...(s6.avg_resolution_hours != null
-                                                    ? [{ label: 'Avg Resolution', value: `${s6.avg_resolution_hours}h` }]
-                                                    : []),
-                                            ]}
-                                        />
-
-                                        {/* Section 7: Audit Trail */}
-                                        <ReportSectionCard
-                                            title="Audit Trail"
-                                            color="#00D4FF"
-                                            items={[
-                                                { label: 'Total Entries',    value: s7.total_entries.toLocaleString(), highlight: true },
-                                                { label: 'Session Events',   value: s7.by_category.session_events },
-                                                { label: 'Data Access',      value: s7.by_category.data_access_events },
-                                                { label: 'Complaint Events', value: s7.by_category.complaint_events },
-                                                { label: 'System Events',    value: s7.by_category.system_events },
-                                            ]}
-                                            footer={s7.integrity_statement}
-                                        />
-                                    </div>
-                                </>
-                            );
-                        })()}
-
-                        {!report && !reportLoading && (
-                            <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                                <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.3)', fontWeight: 500 }}>
-                                    No report generated yet. Select a date range and click Generate Report.
-                                </p>
-                            </div>
-                        )}
                     </div>
 
                     {/* Audit Table Panel */}
