@@ -6,6 +6,7 @@ import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import { setSession, deleteSession } from '../config/redisHelpers.js';
 import { sendEmail } from '../config/mailer.js';
+import { sendPushNotification } from '../utils/sendPushNotification.js';
 
 const router = Router();
 
@@ -117,10 +118,108 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
         const trip = result.rows[0];
         emitDashboardEvent('trip_assigned', { trip_id: tripId, driver_id });
 
+        if (process.env.NODE_ENV !== 'test') {
+            sendPushNotification(driver_id, {
+                title: 'New Trip Assigned',
+                body: 'You have been assigned a new trip. Open the app to view details.',
+                type: 'trip_assigned',
+                tripId,
+            }).catch(() => {});
+        }
+
         return res.status(200).json(trip);
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('[trips] assign error:', err);
+        return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
+    } finally {
+        client.release();
+    }
+});
+
+// ── PATCH /:tripId/reassign — Reassign Driver & Vehicle (Manager Only) ────────
+router.patch('/:tripId/reassign', requireAuth(['fleet_manager']), async (req, res) => {
+    const { tripId } = req.params;
+    const { driver_id, vehicle_id } = req.body;
+
+    if (!driver_id || !vehicle_id) {
+        return res.status(400).json({ error: 'driver_id and vehicle_id are required' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Trip must be in accepted status
+        const tripCheck = await client.query(
+            'SELECT id, assigned_driver_id FROM trips WHERE id = $1 AND status = $2',
+            [tripId, 'accepted']
+        );
+        if (tripCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'Trip is not in accepted status and cannot be reassigned.' });
+        }
+
+        const oldDriverId = tripCheck.rows[0].assigned_driver_id;
+
+        // 2. New driver conflict — not already on a different active trip
+        const driverConflict = await client.query(
+            `SELECT id FROM trips WHERE assigned_driver_id = $1 AND status IN ('accepted', 'in_progress') AND id != $2`,
+            [driver_id, tripId]
+        );
+        if (driverConflict.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'This driver is already assigned to an active trip.' });
+        }
+
+        // 3. New vehicle conflict
+        const vehicleConflict = await client.query(
+            `SELECT id FROM trips WHERE vehicle_id = $1 AND status IN ('accepted', 'in_progress') AND id != $2`,
+            [vehicle_id, tripId]
+        );
+        if (vehicleConflict.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'This vehicle is already deployed on an active trip.' });
+        }
+
+        // 4. Reassign
+        const result = await client.query(
+            `UPDATE trips SET assigned_driver_id = $1, vehicle_id = $2 WHERE id = $3 RETURNING *`,
+            [driver_id, vehicle_id, tripId]
+        );
+
+        await client.query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['TRIP_REASSIGNED', req.user.id, 'fleet_manager', tripId, { old_driver_id: oldDriverId, new_driver_id: driver_id, vehicle_id }]
+        );
+
+        await client.query('COMMIT');
+
+        const trip = result.rows[0];
+        emitDashboardEvent('trip_reassigned', { trip_id: tripId, old_driver_id: oldDriverId, new_driver_id: driver_id });
+
+        if (process.env.NODE_ENV !== 'test') {
+            if (oldDriverId) {
+                sendPushNotification(oldDriverId, {
+                    title: 'Trip Unassigned',
+                    body: 'Your trip assignment has been cancelled by the fleet manager.',
+                    type: 'trip_unassigned',
+                    tripId,
+                }).catch(() => {});
+            }
+            sendPushNotification(driver_id, {
+                title: 'New Trip Assigned',
+                body: 'You have been assigned a trip. Open the app to view details.',
+                type: 'trip_assigned',
+                tripId,
+            }).catch(() => {});
+        }
+
+        return res.status(200).json(trip);
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('[trips] reassign error:', err);
         return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });
     } finally {
         client.release();

@@ -62,6 +62,11 @@ describe('Driver Trips & Availability API', () => {
         const managerId = managerResult.rows[0].id;
         managerToken = jwt.sign({ id: managerId, role: 'fleet_manager' }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
+        // Defensive cleanup for consecutive test runs
+        await pool.query("DELETE FROM trips WHERE client_corporate_email IN ('clienta@corp.com', 'clientb@corp.com')");
+        await pool.query("DELETE FROM drivers WHERE work_email IN ('drivera@test.com', 'driverb@test.com')");
+        await pool.query("DELETE FROM vehicles WHERE registration_number IN ('V-TEST-DRV-A', 'V-TEST-DRV-B')");
+
         // 2. Setup Drivers
         const hash = await bcrypt.hash('driverpass', 10);
 

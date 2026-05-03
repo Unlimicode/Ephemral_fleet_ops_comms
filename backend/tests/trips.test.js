@@ -30,6 +30,7 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
     let authToken;
     let managerId;
     let driverId;
+    let driverTwoId;
     let vehicleId;
     let driverToken;
     let currentTripId; // Keep track of the trip across sequential tests
@@ -57,15 +58,15 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
         );
 
         // Defensive cleanup for consecutive test runs
-        await pool.query("DELETE FROM trips WHERE client_corporate_email = 'testclient@corp.com'");
+        await pool.query("DELETE FROM trips WHERE client_corporate_email IN ('testclient@corp.com', 'reassign_test_trip@corp.com')");
         await pool.query("DELETE FROM vehicles WHERE registration_number = 'TEST-123'");
-        await pool.query("DELETE FROM drivers WHERE work_email = 'trips_unique_driver@test.com'");
+        await pool.query("DELETE FROM drivers WHERE work_email IN ('trips_unique_driver@test.com', 'reassign_driver_two@test.com')");
 
         // 3. Seed test driver
         const driverHash = await bcrypt.hash('driverpassword', 10);
         const driverResult = await pool.query(
-            `INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status) 
-             VALUES ($1, 'Test Driver', 'trips_unique_driver@test.com', 'EMP-TRIPS-001', $2, true) 
+            `INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status)
+             VALUES ($1, 'Test Driver', 'trips_unique_driver@test.com', 'EMP-TRIPS-001', $2, true)
              RETURNING id`,
             [managerId, driverHash]
         );
@@ -77,10 +78,19 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
             .send({ email: 'trips_unique_driver@test.com', password: 'driverpassword' });
         driverToken = loginRes.body.token;
 
-        // 4. Seed test vehicle
+        // 4. Seed second driver for reassignment tests
+        const d2Result = await pool.query(
+            `INSERT INTO drivers (fleet_manager_id, full_name, work_email, employee_id, password_hash, active_status)
+             VALUES ($1, 'Reassign Driver', 'reassign_driver_two@test.com', 'EMP-TRIPS-002', $2, true)
+             RETURNING id`,
+            [managerId, driverHash]
+        );
+        driverTwoId = d2Result.rows[0].id;
+
+        // 5. Seed test vehicle
         const vehicleResult = await pool.query(
-            `INSERT INTO vehicles (registration_number, type, capacity) 
-             VALUES ('TEST-123', 'Sedan', 4) 
+            `INSERT INTO vehicles (registration_number, type, capacity)
+             VALUES ('TEST-123', 'Sedan', 4)
              RETURNING id`
         );
         vehicleId = vehicleResult.rows[0].id;
@@ -91,7 +101,8 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
         if (currentTripId) {
             await pool.query('DELETE FROM audit_log WHERE target_id = $1', [currentTripId]);
         }
-        await pool.query("DELETE FROM trips WHERE client_corporate_email = 'testclient@corp.com'");
+        await pool.query("DELETE FROM trips WHERE client_corporate_email IN ('testclient@corp.com', 'reassign_test_trip@corp.com')");
+        if (driverTwoId) await pool.query('DELETE FROM drivers WHERE id = $1', [driverTwoId]);
         if (driverId) await pool.query('DELETE FROM drivers WHERE id = $1', [driverId]);
         if (vehicleId) await pool.query('DELETE FROM vehicles WHERE id = $1', [vehicleId]);
 
@@ -140,6 +151,47 @@ describe('Trip Lifecycle & Privacy Guarantees', () => {
         expect(res.body.status).toBe('accepted');
         expect(res.body.assigned_driver_id).toBe(driverId);
         expect(res.body.vehicle_id).toBe(vehicleId);
+    });
+
+    it('Test 2b: Reassign accepted trip to a different driver — 200', async () => {
+        expect(currentTripId).toBeDefined();
+
+        const res = await request(app)
+            .patch(`${TRIPS_API}/${currentTripId}/reassign`)
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({ driver_id: driverTwoId, vehicle_id: vehicleId });
+
+        expect(res.status).toBe(200);
+        expect(res.body.assigned_driver_id).toBe(driverTwoId);
+
+        // Restore original driver so Test 3 (accept) can proceed
+        await pool.query(
+            `UPDATE trips SET assigned_driver_id = $1 WHERE id = $2`,
+            [driverId, currentTripId]
+        );
+    });
+
+    it('Test 2c: Reassign a pending trip — 409', async () => {
+        const pendingRes = await request(app)
+            .post(TRIPS_API)
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({
+                client_corporate_email: 'reassign_test_trip@corp.com',
+                client_first_name: 'Pending',
+                pickup_location: 'X',
+                destination: 'Y',
+                pickup_time: new Date(Date.now() + 86400000).toISOString(),
+            });
+        expect(pendingRes.status).toBe(201);
+        const pendingTripId = pendingRes.body.id;
+
+        const res = await request(app)
+            .patch(`${TRIPS_API}/${pendingTripId}/reassign`)
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({ driver_id: driverId, vehicle_id: vehicleId });
+
+        expect(res.status).toBe(409);
+        await pool.query('DELETE FROM trips WHERE id = $1', [pendingTripId]);
     });
 
     it('Test 3: Ephemeral session creation — Accept trip & verify Redis channels', async () => {
