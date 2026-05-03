@@ -131,6 +131,45 @@ router.get('/availability', requireAuth(['fleet_manager']), async (req, res) => 
     }
 });
 
+// ── GET /me — Driver profile ──────────────────────────────────────────────────
+router.get('/me', requireAuth(['driver']), async (req, res) => {
+    try {
+        const result = await query(
+            `SELECT d.id, d.full_name, d.work_email, d.employee_id, d.active_status,
+                    fm.full_name AS fleet_manager_name,
+                    t.id AS active_trip_id, t.status AS active_trip_status,
+                    t.pickup_location, t.destination
+             FROM drivers d
+             LEFT JOIN fleet_managers fm ON fm.id = d.fleet_manager_id
+             LEFT JOIN trips t ON t.assigned_driver_id = d.id AND t.status IN ('accepted', 'in_progress')
+             WHERE d.id = $1`,
+            [req.user.id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Driver not found' });
+
+        const row = result.rows[0];
+        const availability = await getSession(`driver:availability:${req.user.id}`);
+
+        return res.status(200).json({
+            id: row.id,
+            full_name: row.full_name,
+            work_email: row.work_email,
+            employee_id: row.employee_id,
+            fleet_manager_name: row.fleet_manager_name,
+            availability_status: availability?.status || 'available',
+            active_trip: row.active_trip_id ? {
+                id: row.active_trip_id,
+                status: row.active_trip_status,
+                pickup_location: row.pickup_location,
+                destination: row.destination,
+            } : null,
+        });
+    } catch (err) {
+        console.error('[drivers] me error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ── GET /notifications — Driver notification history ──────────────────────────
 router.get('/notifications', requireAuth(['driver']), async (req, res) => {
     try {
