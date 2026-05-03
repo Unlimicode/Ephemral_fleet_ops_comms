@@ -169,6 +169,16 @@ export default function ManagerComplaintsPage() {
                 }
                 .geo-float-1 { animation: float-slow 11s ease-in-out infinite; }
                 .geo-float-2 { animation: float-reverse 9s ease-in-out infinite; }
+                @keyframes shimmer {
+                    0% { background-position: 200% center; }
+                    100% { background-position: -200% center; }
+                }
+                .complaint-shimmer {
+                    background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0.05) 100%);
+                    background-size: 200% 100%;
+                    animation: shimmer 1.5s infinite linear;
+                    border-radius: 8px;
+                }
             `}</style>
 
             {/* Fixed Background */}
@@ -199,10 +209,10 @@ export default function ManagerComplaintsPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: '24px' }}>
                     {[...Array(6)].map((_, i) => (
                         <div key={i} className="complaint-card" style={{ padding: '28px', height: '200px', background: 'rgba(255,255,255,0.4)' }}>
-                            <div style={{ height: '12px', width: '40%', background: 'rgba(0,0,0,0.06)', borderRadius: '6px', marginBottom: '16px' }} />
-                            <div style={{ height: '20px', width: '70%', background: 'rgba(0,0,0,0.06)', borderRadius: '6px', marginBottom: '12px' }} />
-                            <div style={{ height: '14px', width: '90%', background: 'rgba(0,0,0,0.06)', borderRadius: '6px', marginBottom: '8px' }} />
-                            <div style={{ height: '14px', width: '60%', background: 'rgba(0,0,0,0.06)', borderRadius: '6px' }} />
+                            <div className="complaint-shimmer" style={{ height: '12px', width: '40%', marginBottom: '16px' }} />
+                            <div className="complaint-shimmer" style={{ height: '20px', width: '70%', marginBottom: '12px' }} />
+                            <div className="complaint-shimmer" style={{ height: '14px', width: '90%', marginBottom: '8px' }} />
+                            <div className="complaint-shimmer" style={{ height: '14px', width: '60%' }} />
                         </div>
                     ))}
                 </div>

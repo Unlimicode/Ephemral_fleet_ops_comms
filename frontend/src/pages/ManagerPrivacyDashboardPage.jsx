@@ -188,9 +188,41 @@ export default function ManagerPrivacyDashboardPage() {
     };
 
     if (loading && !summary && sessions.length === 0) {
+        const sh = (w, h, mb = 0) => ({
+            background: 'linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0.05) 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 1.5s infinite linear',
+            borderRadius: '12px',
+            width: w, height: h, marginBottom: mb || undefined,
+        });
         return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', opacity: 0.5 }}>
-                <p style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '14px', fontWeight: 600 }}>Loading dashboard...</p>
+            <div style={{ maxWidth: '1440px', margin: '0 auto', padding: isMobile ? '16px' : isTablet ? '16px 24px' : '20px 32px', fontFamily: "'Be Vietnam Pro', sans-serif" }}>
+                <style>{`@keyframes shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }`}</style>
+                {/* Header skeleton */}
+                <div style={{ marginBottom: '40px' }}>
+                    <div style={sh('120px', '12px', 10)} />
+                    <div style={sh('340px', '48px', 0)} />
+                </div>
+                {/* Stat tiles skeleton */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: '16px', marginBottom: '32px' }}>
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} style={{ background: 'rgba(255,255,255,0.4)', borderRadius: '24px', padding: '24px', border: '1px solid rgba(255,255,255,0.6)' }}>
+                            <div style={sh('60%', '11px', 12)} />
+                            <div style={sh('50%', '36px', 8)} />
+                            <div style={sh('80%', '11px', 0)} />
+                        </div>
+                    ))}
+                </div>
+                {/* Two-column skeleton */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '24px' }}>
+                    {[240, 200].map((h, i) => (
+                        <div key={i} style={{ background: 'rgba(255,255,255,0.4)', borderRadius: '24px', padding: '28px', border: '1px solid rgba(255,255,255,0.6)', height: `${h}px` }}>
+                            <div style={sh('40%', '12px', 16)} />
+                            <div style={sh('90%', '16px', 10)} />
+                            <div style={sh('70%', '16px', 0)} />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
