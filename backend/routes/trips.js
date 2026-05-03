@@ -5,8 +5,9 @@ import { requireAuth } from '../middleware/auth.js';
 import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import { setSession, deleteSession } from '../config/redisHelpers.js';
-import { sendEmail } from '../config/mailer.js';
+import { sendEmail, sendBookingConfirmation } from '../config/mailer.js';
 import { sendPushNotification } from '../utils/sendPushNotification.js';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -29,7 +30,7 @@ router.get('/', requireAuth(['fleet_manager']), async (req, res) => {
 
 // ── POST / — Create New Trip Booking ──────────────────────────────────────────
 router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
-    const { client_corporate_email, client_first_name, pickup_location, destination, pickup_time } = req.body;
+    const { client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number = null, notes = null, send_magic_link = false } = req.body;
 
     if (!client_corporate_email || !client_first_name || !pickup_location || !destination || !pickup_time) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -37,13 +38,26 @@ router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
 
     try {
         const result = await query(
-            `INSERT INTO trips (client_corporate_email, client_first_name, pickup_location, destination, pickup_time)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO trips (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [client_corporate_email, client_first_name, pickup_location, destination, pickup_time]
+            [client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes]
         );
 
-        return res.status(201).json(result.rows[0]);
+        const trip = result.rows[0];
+
+        if (send_magic_link && process.env.NODE_ENV !== 'test') {
+            try {
+                const token = crypto.randomBytes(32).toString('hex');
+                await setSession(`booking_access_token:${token}`, { trip_id: trip.id, client_email: client_corporate_email }, 172800);
+                const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}&tripId=${trip.id}`;
+                await sendBookingConfirmation(client_corporate_email, magicLink);
+            } catch (mailErr) {
+                console.error('[trips] magic link send failed:', mailErr.message);
+            }
+        }
+
+        return res.status(201).json(trip);
     } catch (err) {
         console.error('[trips] create error:', err);
         return res.status(500).json({ error: 'Internal server error', details: err.stack || err.message || String(err) });

@@ -37,6 +37,14 @@ export default function ManagerDispatchPage() {
     const [confirmingTripId, setConfirmingTripId] = useState(null);
     const [socketConnected, setSocketConnected] = useState(false);
     const [completing, setCompleting] = useState(false);
+    const [showNewBooking, setShowNewBooking] = useState(false);
+    const [submittingBooking, setSubmittingBooking] = useState(false);
+    const [newBookingForm, setNewBookingForm] = useState({
+        client_corporate_email: '', client_first_name: '',
+        pickup_location: '', destination: '',
+        pickup_time: '', flight_number: '', notes: '',
+        send_magic_link: true
+    });
 
     const fetchData = useCallback(async () => {
         try {
@@ -108,6 +116,32 @@ export default function ManagerDispatchPage() {
             addToast(err.response?.data?.error || err.response?.data?.message || 'Failed to complete trip.', 'error');
         } finally {
             setCompleting(false);
+        }
+    };
+
+    const handleNewBooking = async (e) => {
+        e.preventDefault();
+        setSubmittingBooking(true);
+        try {
+            const payload = {
+                client_corporate_email: newBookingForm.client_corporate_email.trim(),
+                client_first_name: newBookingForm.client_first_name.trim(),
+                pickup_location: newBookingForm.pickup_location.trim(),
+                destination: newBookingForm.destination.trim(),
+                pickup_time: newBookingForm.pickup_time,
+                flight_number: newBookingForm.flight_number.trim() || null,
+                notes: newBookingForm.notes.trim() || null,
+                send_magic_link: newBookingForm.send_magic_link,
+            };
+            await api.post('/trips', payload);
+            addToast('Booking created successfully.', 'success');
+            setShowNewBooking(false);
+            setNewBookingForm({ client_corporate_email: '', client_first_name: '', pickup_location: '', destination: '', pickup_time: '', flight_number: '', notes: '', send_magic_link: true });
+            await fetchData();
+        } catch (err) {
+            addToast(err.response?.data?.error || 'Failed to create booking.', 'error');
+        } finally {
+            setSubmittingBooking(false);
         }
     };
 
@@ -237,9 +271,18 @@ export default function ManagerDispatchPage() {
                     <>
                         {/* Header */}
                         <header style={{ marginBottom: '24px' }}>
-                            <h1 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: isMobile ? '36px' : '48px', fontWeight: 900, letterSpacing: '-0.03em', color: '#0D0D0D', marginBottom: '6px', textTransform: 'uppercase' }}>
-                                Dispatch
-                            </h1>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                                <h1 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: isMobile ? '36px' : '48px', fontWeight: 900, letterSpacing: '-0.03em', color: '#0D0D0D', marginBottom: '6px', textTransform: 'uppercase' }}>
+                                    Dispatch
+                                </h1>
+                                <button
+                                    onClick={() => setShowNewBooking(true)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '999px', background: '#6C63FF', border: 'none', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(108,99,255,0.35)', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
+                                >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+                                    New Booking
+                                </button>
+                            </div>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                 <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)' }}>
                                     Real-time Command Operations Center
@@ -497,6 +540,98 @@ export default function ManagerDispatchPage() {
                                             ))}
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* New Booking Modal */}
+                        {showNewBooking && (
+                            <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(13,13,13,0.45)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+                                onClick={(e) => { if (e.target === e.currentTarget) setShowNewBooking(false); }}>
+                                <div style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(60px)', WebkitBackdropFilter: 'blur(60px)', borderRadius: '2rem', border: '1px solid rgba(255,255,255,0.9)', boxShadow: '0 24px 80px rgba(0,0,0,0.18)', width: '100%', maxWidth: '560px', padding: isMobile ? '28px 20px' : '40px', fontFamily: "'Be Vietnam Pro', sans-serif", maxHeight: '90vh', overflowY: 'auto' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
+                                        <div>
+                                            <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#0D0D0D', letterSpacing: '-0.02em', marginBottom: '4px' }}>New Booking</h2>
+                                            <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', fontWeight: 600, letterSpacing: '0.04em' }}>Create a corporate trip booking</p>
+                                        </div>
+                                        <button onClick={() => setShowNewBooking(false)} style={{ background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'rgba(0,0,0,0.5)' }}>close</span>
+                                        </button>
+                                    </div>
+                                    <form onSubmit={handleNewBooking} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        {/* Client fields */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>First Name *</label>
+                                                <input required value={newBookingForm.client_first_name} onChange={e => setNewBookingForm(f => ({ ...f, client_first_name: e.target.value }))}
+                                                    placeholder="e.g. James"
+                                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                                            </div>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Corporate Email *</label>
+                                                <input required type="email" value={newBookingForm.client_corporate_email} onChange={e => setNewBookingForm(f => ({ ...f, client_corporate_email: e.target.value }))}
+                                                    placeholder="client@company.com"
+                                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                                            </div>
+                                        </div>
+
+                                        {/* Route */}
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Pickup Location *</label>
+                                            <input required value={newBookingForm.pickup_location} onChange={e => setNewBookingForm(f => ({ ...f, pickup_location: e.target.value }))}
+                                                placeholder="e.g. JKIA Terminal 1"
+                                                style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Destination *</label>
+                                            <input required value={newBookingForm.destination} onChange={e => setNewBookingForm(f => ({ ...f, destination: e.target.value }))}
+                                                placeholder="e.g. Westlands, Nairobi"
+                                                style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                                        </div>
+
+                                        {/* Pickup time + flight number */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Pickup Time *</label>
+                                                <input required type="datetime-local" value={newBookingForm.pickup_time} onChange={e => setNewBookingForm(f => ({ ...f, pickup_time: e.target.value }))}
+                                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                                            </div>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Flight Number</label>
+                                                <input value={newBookingForm.flight_number} onChange={e => setNewBookingForm(f => ({ ...f, flight_number: e.target.value }))}
+                                                    placeholder="e.g. KQ101"
+                                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                                            </div>
+                                        </div>
+
+                                        {/* Notes */}
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Special Instructions</label>
+                                            <textarea value={newBookingForm.notes} onChange={e => setNewBookingForm(f => ({ ...f, notes: e.target.value }))}
+                                                rows={3} placeholder="Any special requirements for the driver..."
+                                                style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px' }} />
+                                        </div>
+
+                                        {/* Magic link toggle */}
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '14px 16px', borderRadius: '14px', background: 'rgba(108,99,255,0.05)', border: '1px solid rgba(108,99,255,0.12)' }}>
+                                            <input type="checkbox" checked={newBookingForm.send_magic_link} onChange={e => setNewBookingForm(f => ({ ...f, send_magic_link: e.target.checked }))}
+                                                style={{ width: '16px', height: '16px', accentColor: '#6C63FF', cursor: 'pointer', flexShrink: 0 }} />
+                                            <div>
+                                                <p style={{ fontSize: '13px', fontWeight: 700, color: '#0D0D0D', marginBottom: '2px' }}>Send booking access link</p>
+                                                <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)' }}>Email a magic link to the client so they can track their trip</p>
+                                            </div>
+                                        </label>
+
+                                        {/* Actions */}
+                                        <div style={{ display: 'flex', gap: '12px', paddingTop: '4px' }}>
+                                            <button type="button" onClick={() => setShowNewBooking(false)} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.6)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                Cancel
+                                            </button>
+                                            <button type="submit" disabled={submittingBooking} style={{ flex: 2, padding: '12px', borderRadius: '12px', background: '#6C63FF', border: 'none', color: 'white', fontSize: '14px', fontWeight: 700, cursor: submittingBooking ? 'not-allowed' : 'pointer', opacity: submittingBooking ? 0.7 : 1, boxShadow: '0 4px 16px rgba(108,99,255,0.35)', fontFamily: 'inherit' }}>
+                                                {submittingBooking ? 'Creating...' : 'Create Booking'}
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         )}
