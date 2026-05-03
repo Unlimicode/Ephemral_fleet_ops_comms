@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import api from '../../api/axios.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import SwiftlinkLogo from '../SwiftlinkLogo.jsx';
@@ -24,12 +25,13 @@ function useWindowWidth() {
 }
 
 export default function ManagerLayout() {
-    const { user, logout } = useAuth();
+    const { user, logout, token } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const width = useWindowWidth();
     const [complaintCount, setComplaintCount] = useState(0);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const socketRef = useRef(null);
     const [currentTime, setCurrentTime] = useState(new Date());
 
     const isDesktop = width >= 1024;
@@ -55,6 +57,27 @@ export default function ManagerLayout() {
             clearInterval(countTimer);
         };
     }, [fetchCounts]);
+
+    useEffect(() => {
+        if (!token) return;
+        const socket = io(import.meta.env.VITE_WS_URL + '/dashboard', { auth: { token } });
+        socketRef.current = socket;
+
+        socket.on('complaint_filed', () => {
+            setComplaintCount(prev => prev + 1);
+        });
+
+        socket.on('complaint_status_updated', ({ new_status }) => {
+            if (new_status === 'resolved') {
+                setComplaintCount(prev => Math.max(0, prev - 1));
+            }
+        });
+
+        return () => {
+            socket.disconnect();
+            socketRef.current = null;
+        };
+    }, [token]);
 
     const handleLogout = async () => {
         await logout();

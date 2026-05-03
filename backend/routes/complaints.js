@@ -334,6 +334,10 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
             ]
         );
 
+        try {
+            emitDashboardEvent('complaint_status_updated', { complaint_id: complaintId, new_status: status });
+        } catch (_) { }
+
         // When a complaint enters investigation, notify the assigned driver.
         // The message body contains no complaint details or client information.
         if (status === 'under_investigation') {
