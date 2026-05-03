@@ -74,7 +74,7 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
             </div>
 
             {/* Vehicle & Flight info */}
-            <div style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ marginBottom: trip.notes ? '12px' : '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {trip.registration_number && (
                     <div style={{ background: 'rgba(13,13,13,0.05)', padding: '4px 10px', borderRadius: '6px' }}>
                         <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>VEHICLE: </span>
@@ -88,6 +88,14 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                     </div>
                 )}
             </div>
+
+            {/* Special instructions */}
+            {trip.notes && (
+                <div style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.18)' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#6C63FF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Note · </span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-dark)' }}>{trip.notes}</span>
+                </div>
+            )}
 
             {/* Actions based on status */}
             {trip.status === 'accepted' && !isDeclining && (

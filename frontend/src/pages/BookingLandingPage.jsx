@@ -75,7 +75,7 @@ export default function BookingLandingPage() {
     const [complaintProgress, setComplaintProgress] = useState(null);
     const [descFocused, setDescFocused] = useState(false);
     const [showEditForm, setShowEditForm] = useState(false);
-    const [editForm, setEditForm] = useState({ pickup_location: '', destination: '', pickup_time: '', flight_number: '' });
+    const [editForm, setEditForm] = useState({ pickup_location: '', destination: '', pickup_time: '', flight_number: '', notes: '' });
     const [editLoading, setEditLoading] = useState(false);
     const [editError, setEditError] = useState('');
 
@@ -170,8 +170,9 @@ export default function BookingLandingPage() {
             if (editForm.destination.trim()) payload.destination = editForm.destination.trim();
             if (editForm.pickup_time) payload.pickup_time = editForm.pickup_time;
             if (editForm.flight_number.trim()) payload.flight_number = editForm.flight_number.trim();
+            payload.notes = editForm.notes.trim() || null;
             await api.patch(`/bookings/${tripId}`, payload);
-            setEditForm({ pickup_location: '', destination: '', pickup_time: '', flight_number: '' });
+            setEditForm({ pickup_location: '', destination: '', pickup_time: '', flight_number: '', notes: '' });
             setShowEditForm(false);
             fetchBooking();
         } catch (err) {
@@ -283,6 +284,13 @@ export default function BookingLandingPage() {
                         )}
                     </div>
 
+                    {booking.notes && (
+                        <div className="mt-4 mb-4 p-3 rounded-2xl" style={{ background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.15)' }}>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: '#6C63FF' }}>Special Instructions</p>
+                            <p className="text-sm" style={{ color: 'var(--text-dark)', lineHeight: 1.6 }}>{booking.notes}</p>
+                        </div>
+                    )}
+
                     <div className="h-1.5 bg-bg-dark/5 rounded-full overflow-hidden">
                         <div
                             className={`h-full transition-all duration-1000 ${isCompleted ? 'bg-success' : 'bg-primary'}`}
@@ -299,6 +307,7 @@ export default function BookingLandingPage() {
                                         destination: booking.destination,
                                         pickup_time: booking.pickup_time ? new Date(booking.pickup_time).toISOString().slice(0, 16) : '',
                                         flight_number: booking.flight_number || '',
+                                        notes: booking.notes || '',
                                     });
                                     setShowEditForm(true);
                                 }}
@@ -636,6 +645,15 @@ export default function BookingLandingPage() {
                             onChange={e => setEditForm(f => ({ ...f, flight_number: e.target.value }))}
                             placeholder="Optional"
                             style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' }}
+                        />
+
+                        <label style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'block' }}>Special Instructions</label>
+                        <textarea
+                            value={editForm.notes}
+                            onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                            placeholder="e.g. wheelchair accessible, extra luggage, meeting point…"
+                            rows={3}
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }}
                         />
 
                         {editError && (

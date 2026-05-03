@@ -29,6 +29,7 @@ router.post('/', async (req, res) => {
         destination,
         pickup_time,
         flight_number = null,
+        notes = null,
     } = req.body;
 
     // 1. Validate required fields
@@ -40,10 +41,10 @@ router.post('/', async (req, res) => {
         // 2. Insert the trip into PostgreSQL (status: pending)
         const tripResult = await query(
             `INSERT INTO trips
-             (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, status)
-             VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+             (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
              RETURNING id, client_first_name`,
-            [client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number]
+            [client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -198,9 +199,9 @@ router.get('/history', requireClientAuth, async (req, res) => {
 
     try {
         const historyResult = await query(
-            `SELECT id, status, pickup_location, destination, pickup_time, flight_number
-             FROM trips 
-             WHERE client_corporate_email = $1 
+            `SELECT id, status, pickup_location, destination, pickup_time, flight_number, notes
+             FROM trips
+             WHERE client_corporate_email = $1
              ORDER BY pickup_time DESC`,
             [client_corporate_email]
         );
@@ -299,12 +300,13 @@ router.get('/:tripId', requireClientAuth, async (req, res) => {
     try {
         const tripResult = await query(
             `SELECT 
-                t.id, 
-                t.status, 
-                t.pickup_location, 
-                t.destination, 
-                t.pickup_time, 
-                t.flight_number, 
+                t.id,
+                t.status,
+                t.pickup_location,
+                t.destination,
+                t.pickup_time,
+                t.flight_number,
+                t.notes,
                 t.assigned_driver_id,
                 d.full_name AS driver_name,
                 v.type AS vehicle_type
@@ -430,7 +432,7 @@ router.get('/status', async (req, res) => {
 
         const tripResult = await query(
             `SELECT 
-                t.id, t.status, t.pickup_location, t.destination, t.pickup_time, t.flight_number,
+                t.id, t.status, t.pickup_location, t.destination, t.pickup_time, t.flight_number, t.notes,
                 d.full_name as driver_name,
                 v.type as vehicle_type
              FROM trips t
@@ -474,7 +476,7 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
         }
 
         // 3. Validate and collect allowed fields
-        const { pickup_location, destination, pickup_time, flight_number } = req.body;
+        const { pickup_location, destination, pickup_time, flight_number, notes } = req.body;
         const updates = {};
 
         if (pickup_location !== undefined) {
@@ -498,6 +500,9 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
         }
         if (flight_number !== undefined) {
             updates.flight_number = flight_number;
+        }
+        if (notes !== undefined) {
+            updates.notes = notes || null;
         }
 
         if (Object.keys(updates).length === 0) {

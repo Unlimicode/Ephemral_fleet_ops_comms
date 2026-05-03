@@ -54,7 +54,8 @@ CREATE TABLE IF NOT EXISTS trips (
                                      )),
   assigned_driver_id     UUID        REFERENCES drivers(id)  ON DELETE SET NULL,
   vehicle_id             UUID        REFERENCES vehicles(id) ON DELETE SET NULL,
-  flight_number          TEXT
+  flight_number          TEXT,
+  notes                  TEXT
 );
 
 -- ── 5. complaints ────────────────────────────────────────────
