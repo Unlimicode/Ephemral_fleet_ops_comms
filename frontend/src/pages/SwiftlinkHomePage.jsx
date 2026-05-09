@@ -59,7 +59,7 @@ export default function SwiftlinkHomePage() {
                 if (ratio > 0.1) {
                     entry.target.querySelectorAll('.reveal-up').forEach(el => el.classList.add('active'));
                 }
-                if (ratio > 0) {
+                if (ratio > 0 && !isMobile) {
                     if (entry.target.classList.contains('mask-merge-up')) {
                         const v = 15 - ratio * 15;
                         entry.target.style.clipPath = `polygon(0 ${v}%, 50% 0, 100% ${v}%, 100% 100%, 0 100%)`;
@@ -253,7 +253,7 @@ export default function SwiftlinkHomePage() {
             <main style={{ position: 'relative' }}>
 
                 {/* ══ Section 1: Hero ══ */}
-                <section className={`sticky-section${!isMobile ? ' mask-merge-down' : ''}`} style={{ background: 'var(--bg-base)', position: 'relative', zIndex: 10, paddingBottom: isMobile ? 120 : 0, overflow: 'visible' }}>
+                <section className={`sticky-section${!isMobile ? ' mask-merge-down' : ''}`} style={{ background: 'var(--bg-base)', position: 'relative', zIndex: 10, paddingBottom: isMobile ? 64 : 0, overflow: 'visible' }}>
                     <div className="arch-grid parallax-layer" data-speed="0.2" />
                     {!isMobile && (
                         <>
@@ -271,7 +271,7 @@ export default function SwiftlinkHomePage() {
                         gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr' : '7fr 5fr',
                         gap: isMobile ? 48 : 64,
                         alignItems: 'center',
-                        paddingTop: isMobile ? 120 : 160
+                        paddingTop: isMobile ? 88 : 160
                     }}>
                         {/* Left column */}
                         <div style={{ textAlign: isMobile ? 'center' : 'left' }}>

@@ -314,6 +314,22 @@
     .section-inner {
         padding: 0 24px;
     }
+
+    /* On mobile, sticky sections must expand to fit their content.
+       height: 100vh clips the booking form and overflow causes it to be
+       covered by the next sticky section as the user scrolls. */
+    .sticky-section {
+        position: relative;
+        height: auto;
+        overflow: visible;
+    }
+
+    /* Mask-merge clip-paths are scroll-driven on desktop. Reset them on mobile
+       so sections render as plain rectangles without visible triangle cuts. */
+    .mask-merge-up,
+    .mask-merge-down {
+        clip-path: none;
+    }
 }
 
 /* ── TTL progress bar ── */

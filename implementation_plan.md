@@ -1177,3 +1177,11 @@ without a test-environment guard.
 - **Files modified:** `backend/routes/dashboard.js`
 - **What changed:** GET /overview: replaced per-trip `SELECT id FROM complaints WHERE trip_id = $1` inside Promise.all map with a single `SELECT DISTINCT trip_id FROM complaints WHERE trip_id = ANY($1::uuid[])` batch query before the map; result stored in a Set for O(1) lookup per trip
 - **Why:** N+1 pattern — dashboard overview was firing one complaint-check DB query per active trip; with N trips the route made N+1 DB round-trips on every page load
+
+### [Sprint 19] — TASK-16: Landing page mobile layout fix
+- **Date:** 2026-05-10
+- **Files modified:** `frontend/src/styles/tokens.css`, `frontend/src/pages/SwiftlinkHomePage.jsx`
+- **What changed:**
+  - tokens.css: added mobile media query (max-width: 768px) — `.sticky-section` overridden to `position: relative; height: auto; overflow: visible`; `.mask-merge-up` and `.mask-merge-down` reset to `clip-path: none`
+  - SwiftlinkHomePage.jsx: IntersectionObserver clip-path updates now gated on `!isMobile` so JS doesn't re-apply triangle masks on mobile; hero section paddingTop reduced from 120 to 88 on mobile; paddingBottom reduced from 120 to 64
+- **Why:** `.sticky-section` forced `height: 100vh; overflow: hidden` on all sections including mobile. On mobile the hero stacks text + 8-field booking form vertically — content overflowed past 100vh and was then covered by the next sticky section (z-index 20) as the user scrolled, making the booking form unreachable. The JS observer also re-applied clip-path polygons on mobile, cutting visible triangular chunks off section tops/bottoms
