@@ -94,6 +94,16 @@ router.get('/overview', requireAuth(['fleet_manager']), async (req, res) => {
 
         const trips = activeTripsQuery.rows;
 
+        // Batch complaint check — one query for all trip ids instead of one per trip
+        const tripsWithComplaints = new Set();
+        if (trips.length > 0) {
+            const complaintBatch = await query(
+                'SELECT DISTINCT trip_id FROM complaints WHERE trip_id = ANY($1::uuid[])',
+                [trips.map(t => t.id)]
+            );
+            complaintBatch.rows.forEach(r => tripsWithComplaints.add(r.trip_id));
+        }
+
         let active_driver_sessions = 0;
         let active_client_sessions = 0;
         let active_message_buffers = 0;
@@ -118,11 +128,6 @@ router.get('/overview', requireAuth(['fleet_manager']), async (req, res) => {
             if (mActive) active_message_buffers++;
             if (wActive) open_complaint_windows++;
 
-            const complaintCheck = await query(
-                'SELECT id FROM complaints WHERE trip_id = $1 LIMIT 1',
-                [tripId]
-            );
-
             return {
                 trip_id: tripId,
                 status: trip.status,
@@ -131,7 +136,7 @@ router.get('/overview', requireAuth(['fleet_manager']), async (req, res) => {
                 driver_session_active: dActive,
                 client_session_active: cActive,
                 complaint_window_active: wActive,
-                complaint_filed: complaintCheck.rows.length > 0
+                complaint_filed: tripsWithComplaints.has(tripId)
             };
         }));
 

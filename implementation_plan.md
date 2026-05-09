@@ -1171,3 +1171,9 @@ without a test-environment guard.
   - sw.js: added install (skip-waiting + shell pre-cache), activate (claim clients + purge old caches), fetch (stale-while-revalidate for same-origin), sync trip-sync (broadcasts SYNC_TRIPS to all clients); push handler gains actions array with "View Trip" for trip_assigned; icon/badge updated to /swiftlink-icon.png
   - usePushNotifications: added online event effect — re-syncs existing browser push subscription with backend when connectivity is restored
 - **Why:** App lacked a web app manifest so browsers never offered PWA install; push toggle was unstyled plain buttons; no offline capability or subscription re-sync on reconnect
+
+### [Sprint 19] — TASK-14: N+1 query audit
+- **Date:** 2026-05-10
+- **Files modified:** `backend/routes/dashboard.js`
+- **What changed:** GET /overview: replaced per-trip `SELECT id FROM complaints WHERE trip_id = $1` inside Promise.all map with a single `SELECT DISTINCT trip_id FROM complaints WHERE trip_id = ANY($1::uuid[])` batch query before the map; result stored in a Set for O(1) lookup per trip
+- **Why:** N+1 pattern — dashboard overview was firing one complaint-check DB query per active trip; with N trips the route made N+1 DB round-trips on every page load
