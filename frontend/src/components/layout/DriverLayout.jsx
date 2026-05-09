@@ -3,6 +3,19 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import SwiftlinkLogo from '../SwiftlinkLogo.jsx';
 
+// Activates all .reveal-up elements in the driver content area on every route
+// change. SwiftlinkHomePage has its own IntersectionObserver; driver pages do
+// not — without this, every glass card and section starts at opacity:0 and
+// never becomes visible.
+function useRevealUp(pathname) {
+    useEffect(() => {
+        const raf = requestAnimationFrame(() => {
+            document.querySelectorAll('.reveal-up').forEach(el => el.classList.add('active'));
+        });
+        return () => cancelAnimationFrame(raf);
+    }, [pathname]);
+}
+
 const TABS = [
     { to: '/driver/trips', label: 'Trips', icon: '🗂️' },
     { to: '/driver/notifications', label: 'Notifications', icon: '🔔' },
@@ -28,6 +41,8 @@ export default function DriverLayout() {
     const isDesktop = width >= 1024;
     const isTablet = width >= 768 && width < 1024;
     const isMobile = width < 768;
+
+    useRevealUp(location.pathname);
 
     const renderNavLinks = (vertical = false) => (
         TABS.map(tab => (

@@ -1191,3 +1191,11 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/components/DriverTripCard.jsx`
 - **What changed:** Decline button: replaced transparent/plain border with glass style (rgba white bg, backdrop-filter, consistent border); Accept/View Trip: added fontFamily Be Vietnam Pro, flex+icon layout; Confirm Decline: changed from custom #D32F2F/rgba(255,100,100) to design-system #E05A5A/rgba(224,90,90); Cancel: kept ghost text style but with proper font; replaced ✓/✗ emoji with Material Symbols icons (check, close, block, directions_car) matching rest of driver UI
 - **Why:** Buttons were visually inconsistent — Decline used raw transparent style while Accept used glass-button class; Confirm Decline used non-system red values; emoji symbols didn't match the Material Symbols icon language used across all driver pages
+
+### [Sprint 19] — fix: driver chat invisible on PWA + WebSocket transport fallback
+- **Date:** 2026-05-10
+- **Files modified:** `frontend/src/components/layout/DriverLayout.jsx`, `frontend/src/hooks/useChat.js`
+- **What changed:**
+  - DriverLayout: added `useRevealUp(pathname)` hook that fires a `requestAnimationFrame` on every route change to add `active` class to all `.reveal-up` elements; without this, every glass card and section on all driver pages started at opacity:0 and never became visible (no IntersectionObserver existed in the driver layout)
+  - useChat: changed `transports: ['websocket']` to `['polling', 'websocket']`; WebSocket-only skips Socket.IO's HTTP polling handshake — mobile carriers and NAT can block bare WebSocket upgrades, causing the chat to stay in "Establishing secure channel..." permanently on mobile networks
+- **Why:** Driver reported chat not opening on PWA; root causes were (1) chat section invisible due to missing reveal-up activation and (2) Socket.IO unable to fall back to long-polling when WebSocket was blocked on mobile network

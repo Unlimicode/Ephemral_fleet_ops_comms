@@ -13,7 +13,7 @@ export default function useChat({ tripId, token, role }) {
 
         const socket = io(import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL.replace('/api', ''), {
             auth: { token, tripId, role },
-            transports: ['websocket'],
+            transports: ['polling', 'websocket'],
             withCredentials: true
         });
 
