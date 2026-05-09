@@ -28,8 +28,46 @@ export default function BookingHistoryPage() {
         if (token) fetchHistory();
     }, [token]);
 
-    if (loading) return <div style={{ padding: '80px', textAlign: 'center' }}>Loading history...</div>;
-    if (error) return <div style={{ padding: '80px', textAlign: 'center', color: '#D32F2F' }}>{error}</div>;
+    const shimmer = {
+        background: 'linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0.05) 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'bh-shimmer 1.5s infinite linear',
+        borderRadius: '8px',
+    };
+
+    const SkeletonCard = () => (
+        <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ ...shimmer, width: '56px', height: '20px' }} />
+                    <div style={{ ...shimmer, width: '80px', height: '20px' }} />
+                </div>
+                <div style={{ ...shimmer, width: '70%', height: '18px' }} />
+            </div>
+            <div style={{ ...shimmer, width: '20px', height: '20px', marginLeft: '16px' }} />
+        </div>
+    );
+
+    if (loading) return (
+        <div style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '40px 24px' }}>
+            <style>{`@keyframes bh-shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }`}</style>
+            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '40px' }}>
+                    <img src="/swiftlink-icon.png" alt="S" style={{ height: '32px' }} />
+                    <span style={{ fontSize: '1.4rem', fontWeight: 800 }}>wiftlink</span>
+                </div>
+                <div style={{ ...shimmer, width: '220px', height: '36px', marginBottom: '12px' }} />
+                <div style={{ ...shimmer, width: '300px', height: '18px', marginBottom: '40px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                </div>
+            </div>
+        </div>
+    );
+
+    if (error) return <div style={{ padding: '80px', textAlign: 'center', color: '#E05A5A' }}>{error}</div>;
 
     return (
         <div style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '40px 24px' }}>

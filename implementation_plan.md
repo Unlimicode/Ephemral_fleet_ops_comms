@@ -1199,3 +1199,9 @@ without a test-environment guard.
   - DriverLayout: added `useRevealUp(pathname)` hook that fires a `requestAnimationFrame` on every route change to add `active` class to all `.reveal-up` elements; without this, every glass card and section on all driver pages started at opacity:0 and never became visible (no IntersectionObserver existed in the driver layout)
   - useChat: changed `transports: ['websocket']` to `['polling', 'websocket']`; WebSocket-only skips Socket.IO's HTTP polling handshake — mobile carriers and NAT can block bare WebSocket upgrades, causing the chat to stay in "Establishing secure channel..." permanently on mobile networks
 - **Why:** Driver reported chat not opening on PWA; root causes were (1) chat section invisible due to missing reveal-up activation and (2) Socket.IO unable to fall back to long-polling when WebSocket was blocked on mobile network
+
+### [Sprint 19] — skeleton: BookingHistoryPage shimmer loading state
+- **Date:** 2026-05-10
+- **Files modified:** `frontend/src/pages/BookingHistoryPage.jsx`
+- **What changed:** Replaced plain "Loading history..." text with shimmer skeleton layout matching the actual booking card structure (header, title placeholder, 3 skeleton cards with status badge + date + route row); error colour updated from #D32F2F to #E05A5A to match design system warning colour
+- **Why:** Only page missing a visual skeleton — all other 11 pages already had shimmer loaders
