@@ -99,27 +99,49 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
 
             {/* Actions based on status */}
             {trip.status === 'accepted' && !isDeclining && (
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={() => setIsDeclining(true)} style={{
-                        flex: 1, padding: '12px', borderRadius: '12px',
-                        background: 'transparent', border: '1px solid rgba(13,13,13,0.3)',
-                        color: 'var(--text-dark)', fontSize: '14px', fontWeight: 600,
-                        cursor: 'pointer'
-                    }}>
-                        Decline ✗
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={() => setIsDeclining(true)}
+                        style={{
+                            flex: 1, padding: '12px', borderRadius: '12px',
+                            background: 'rgba(255,255,255,0.45)',
+                            border: '1px solid rgba(13,13,13,0.12)',
+                            color: 'var(--text-dark)', fontSize: '14px', fontWeight: 700,
+                            cursor: 'pointer', display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', gap: '4px',
+                            fontFamily: "'Be Vietnam Pro', sans-serif",
+                            backdropFilter: 'blur(8px)',
+                        }}
+                    >
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+                        Decline
                     </button>
-                    <button className="glass-button" onClick={async () => { setAccepting(true); try { await onAccept(trip.id); } finally { setAccepting(false); } }} disabled={accepting} style={{
-                        flex: 2, padding: '12px', borderRadius: '12px',
-                        color: '#F5EDE3', fontSize: '14px', fontWeight: 600,
-                        cursor: accepting ? 'not-allowed' : 'pointer', opacity: accepting ? 0.6 : 1
-                    }}>
-                        {accepting ? 'Accepting...' : 'Accept ✓'}
+                    <button
+                        className="glass-button"
+                        onClick={async () => { setAccepting(true); try { await onAccept(trip.id); } finally { setAccepting(false); } }}
+                        disabled={accepting}
+                        style={{
+                            flex: 2, padding: '12px', borderRadius: '12px',
+                            color: '#F5EDE3', fontSize: '14px', fontWeight: 700,
+                            cursor: accepting ? 'not-allowed' : 'pointer', opacity: accepting ? 0.6 : 1,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                            fontFamily: "'Be Vietnam Pro', sans-serif",
+                        }}
+                    >
+                        {accepting ? (
+                            'Accepting…'
+                        ) : (
+                            <>
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>
+                                Accept
+                            </>
+                        )}
                     </button>
                 </div>
             )}
 
             {isDeclining && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input
                         type="text"
                         placeholder="Reason for declining"
@@ -127,25 +149,58 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                         onChange={(e) => setDeclineReason(e.target.value)}
                         style={{
                             width: '100%', padding: '12px', borderRadius: '12px',
-                            border: '1px solid rgba(13,13,13,0.2)', background: 'var(--bg-input)',
-                            color: 'var(--text-dark)', fontSize: '14px', fontFamily: 'Inter, sans-serif',
-                            boxSizing: 'border-box'
+                            border: '1px solid rgba(13,13,13,0.15)',
+                            background: 'rgba(255,255,255,0.45)',
+                            backdropFilter: 'blur(8px)',
+                            color: 'var(--text-dark)', fontSize: '14px',
+                            fontFamily: "'Be Vietnam Pro', sans-serif",
+                            boxSizing: 'border-box', outline: 'none',
                         }}
                     />
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={() => setIsDeclining(false)} style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                        <button onClick={handleDeclineSubmit} style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'rgba(255,100,100,0.1)', border: '1px solid rgba(255,100,100,0.3)', color: '#D32F2F', fontWeight: 600, cursor: 'pointer' }}>Confirm Decline</button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                            onClick={() => setIsDeclining(false)}
+                            style={{
+                                flex: 1, padding: '11px', borderRadius: '12px',
+                                background: 'transparent', border: 'none',
+                                color: 'var(--text-muted)', fontWeight: 600, fontSize: '13px',
+                                cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif",
+                            }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleDeclineSubmit}
+                            style={{
+                                flex: 2, padding: '11px', borderRadius: '12px',
+                                background: 'rgba(224,90,90,0.1)',
+                                border: '1px solid rgba(224,90,90,0.3)',
+                                color: '#E05A5A', fontWeight: 700, fontSize: '13px',
+                                cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif",
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                            }}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>block</span>
+                            Confirm Decline
+                        </button>
                     </div>
                 </div>
             )}
 
             {trip.status === 'in_progress' && (
-                <button className="glass-button" onClick={() => navigate(`/driver/trips/${trip.id}`)} style={{
-                    width: '100%', padding: '12px', borderRadius: '12px',
-                    color: '#F5EDE3', fontSize: '14px', fontWeight: 600,
-                    cursor: 'pointer'
-                }}>
-                    View Active Trip →
+                <button
+                    className="glass-button"
+                    onClick={() => navigate(`/driver/trips/${trip.id}`)}
+                    style={{
+                        width: '100%', padding: '12px', borderRadius: '12px',
+                        color: '#F5EDE3', fontSize: '14px', fontWeight: 700,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', gap: '6px',
+                        fontFamily: "'Be Vietnam Pro', sans-serif",
+                    }}
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>directions_car</span>
+                    View Active Trip
                 </button>
             )}
         </div>

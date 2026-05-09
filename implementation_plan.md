@@ -1185,3 +1185,9 @@ without a test-environment guard.
   - tokens.css: added mobile media query (max-width: 768px) — `.sticky-section` overridden to `position: relative; height: auto; overflow: visible`; `.mask-merge-up` and `.mask-merge-down` reset to `clip-path: none`
   - SwiftlinkHomePage.jsx: IntersectionObserver clip-path updates now gated on `!isMobile` so JS doesn't re-apply triangle masks on mobile; hero section paddingTop reduced from 120 to 88 on mobile; paddingBottom reduced from 120 to 64
 - **Why:** `.sticky-section` forced `height: 100vh; overflow: hidden` on all sections including mobile. On mobile the hero stacks text + 8-field booking form vertically — content overflowed past 100vh and was then covered by the next sticky section (z-index 20) as the user scrolled, making the booking form unreachable. The JS observer also re-applied clip-path polygons on mobile, cutting visible triangular chunks off section tops/bottoms
+
+### [Sprint 19] — TASK-17: DriverTripCard button style audit
+- **Date:** 2026-05-10
+- **Files modified:** `frontend/src/components/DriverTripCard.jsx`
+- **What changed:** Decline button: replaced transparent/plain border with glass style (rgba white bg, backdrop-filter, consistent border); Accept/View Trip: added fontFamily Be Vietnam Pro, flex+icon layout; Confirm Decline: changed from custom #D32F2F/rgba(255,100,100) to design-system #E05A5A/rgba(224,90,90); Cancel: kept ghost text style but with proper font; replaced ✓/✗ emoji with Material Symbols icons (check, close, block, directions_car) matching rest of driver UI
+- **Why:** Buttons were visually inconsistent — Decline used raw transparent style while Accept used glass-button class; Confirm Decline used non-system red values; emoji symbols didn't match the Material Symbols icon language used across all driver pages
