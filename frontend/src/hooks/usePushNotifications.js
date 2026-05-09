@@ -87,6 +87,30 @@ export default function usePushNotifications(token = null) {
         };
     }, [supported, token]);
 
+    // Re-sync the push subscription with the backend whenever the browser regains
+    // connectivity. Handles the case where the driver was offline when the SW
+    // rotated its subscription keys and the backend endpoint became stale.
+    useEffect(() => {
+        if (!supported || !token || !registration) return;
+
+        function handleOnline() {
+            registration.pushManager.getSubscription().then((existing) => {
+                if (!existing) return;
+                fetch(`${import.meta.env.VITE_API_URL}/push/subscribe`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(existing),
+                }).catch(() => {});
+            });
+        }
+
+        window.addEventListener('online', handleOnline);
+        return () => window.removeEventListener('online', handleOnline);
+    }, [supported, token, registration]);
+
     // subscribe accepts a driver auth token so the hook remains decoupled from
     // any specific storage mechanism. The calling component supplies the token
     // from wherever auth state lives at the time of invocation.

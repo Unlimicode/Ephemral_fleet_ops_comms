@@ -1,21 +1,12 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// PushNotificationToggle — Driver Push Notification Control
-// ─────────────────────────────────────────────────────────────────────────────
-
 import usePushNotifications from '../hooks/usePushNotifications';
 
-// PushNotificationToggle renders a toggle button that allows a driver to
-// enable or disable push notifications. The component renders nothing when the
-// browser does not support the Push API. The caller is responsible for
-// supplying the driver auth token, which is forwarded to the backend when
-// registering or removing the subscription.
 export default function PushNotificationToggle({ token }) {
     const { supported, subscribed, subscribe, unsubscribe, loading, error } =
         usePushNotifications(token);
 
     if (!supported) return null;
 
-    function handleClick() {
+    function handleToggle() {
         if (subscribed) {
             unsubscribe(token);
         } else {
@@ -23,33 +14,60 @@ export default function PushNotificationToggle({ token }) {
         }
     }
 
-    const buttonClass = [
-        'px-4 py-2 rounded text-white font-medium transition-colors',
-        loading
-            ? 'bg-gray-400 cursor-not-allowed'
-            : subscribed
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-blue-600 hover:bg-blue-700',
-    ].join(' ');
-
-    const label = loading
-        ? 'Setting up notifications...'
-        : subscribed
-            ? 'Disable Notifications'
-            : 'Enable Notifications';
-
     return (
         <div>
-            <button
-                className={buttonClass}
-                onClick={handleClick}
-                disabled={loading}
-                type="button"
-            >
-                {label}
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: '18px', color: subscribed ? '#6C63FF' : 'rgba(0,0,0,0.3)', transition: 'color 0.2s' }}
+                    >
+                        {subscribed ? 'notifications_active' : 'notifications'}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                        {loading ? 'Updating…' : subscribed ? 'Push notifications on' : 'Enable push notifications'}
+                    </span>
+                </div>
+
+                {/* Toggle pill */}
+                <button
+                    type="button"
+                    onClick={handleToggle}
+                    disabled={loading}
+                    aria-checked={subscribed}
+                    role="switch"
+                    style={{
+                        flexShrink: 0,
+                        width: '44px',
+                        height: '24px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        padding: 0,
+                        background: subscribed ? '#6C63FF' : 'rgba(0,0,0,0.15)',
+                        transition: 'background 0.2s',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        position: 'relative',
+                        opacity: loading ? 0.6 : 1,
+                    }}
+                >
+                    <div
+                        style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '50%',
+                            background: '#FFF',
+                            position: 'absolute',
+                            top: '3px',
+                            left: subscribed ? '23px' : '3px',
+                            transition: 'left 0.2s',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+                        }}
+                    />
+                </button>
+            </div>
+
             {error && (
-                <p className="mt-1 text-sm text-red-600">{error}</p>
+                <p style={{ marginTop: '6px', fontSize: '12px', color: '#E05A5A' }}>{error}</p>
             )}
         </div>
     );

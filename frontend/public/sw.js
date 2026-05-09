@@ -1,27 +1,99 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Fleet Ops Service Worker
+// SwiftLink Service Worker
 // ─────────────────────────────────────────────────────────────────────────────
 
+const CACHE_NAME = 'swiftlink-v1';
+
+// App shell pages to pre-cache so the driver PWA loads offline
+const SHELL = ['/', '/driver/trips', '/driver/trips/active', '/driver/profile', '/driver/notifications'];
+
+// ── Install ───────────────────────────────────────────────────────────────────
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) =>
+            cache.addAll(SHELL).catch(() => {})
+        )
+    );
+});
+
+// ── Activate ──────────────────────────────────────────────────────────────────
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        Promise.all([
+            self.clients.claim(),
+            caches.keys().then((keys) =>
+                Promise.all(
+                    keys
+                        .filter((k) => k !== CACHE_NAME)
+                        .map((k) => caches.delete(k))
+                )
+            ),
+        ])
+    );
+});
+
+// ── Fetch — cache-first for same-origin assets, network-only for cross-origin ─
+self.addEventListener('fetch', (event) => {
+    if (event.request.method !== 'GET') return;
+
+    const url = new URL(event.request.url);
+
+    // Only intercept same-origin requests (the Vite app shell + built assets).
+    // API calls are always cross-origin and must be network-only so drivers
+    // always see live trip data when online.
+    if (url.origin !== self.location.origin) return;
+
+    event.respondWith(
+        caches.match(event.request).then((cached) => {
+            // Serve cache immediately while revalidating in the background
+            const network = fetch(event.request)
+                .then((res) => {
+                    if (res.ok) {
+                        const clone = res.clone();
+                        caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
+                    }
+                    return res;
+                })
+                .catch(() => cached);
+
+            return cached || network;
+        })
+    );
+});
+
+// ── Background Sync — notify clients to refresh trip data ────────────────────
+// The browser fires 'sync' when connectivity is restored after the app called
+// registration.sync.register('trip-sync') while offline.
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'trip-sync') {
+        event.waitUntil(
+            self.clients
+                .matchAll({ type: 'window' })
+                .then((clientList) => {
+                    clientList.forEach((client) =>
+                        client.postMessage({ type: 'SYNC_TRIPS' })
+                    );
+                })
+        );
+    }
+});
+
 // ── Push Event Handler ───────────────────────────────────────────────────────
-// Receives push messages from the backend via the Web Push protocol. Each
-// message contains a JSON payload with title, body, type, and optional tripId.
-//
-// requireInteraction: true for trip_assigned notifications means the
-// notification remains on screen until the driver actively dismisses or taps
-// it. This ensures drivers do not miss new assignment notifications even if
-// their device is busy or the screen is locked.
 self.addEventListener('push', (event) => {
     if (!event.data) return;
 
     const data = event.data.json();
 
+    const actions =
+        data.type === 'trip_assigned'
+            ? [{ action: 'view', title: 'View Trip' }]
+            : [];
+
     const options = {
         body: data.body,
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-        // Include both type and tripId in the tag so different notification types
-        // for the same trip (e.g. trip_assigned vs note_added) are shown as separate
-        // notifications rather than silently replacing each other.
+        icon: '/swiftlink-icon.png',
+        badge: '/swiftlink-icon.png',
         tag: data.tripId ? `${data.type || 'notif'}-${data.tripId}` : 'fleet-ops-notification',
         data: {
             tripId: data.tripId,
@@ -29,6 +101,7 @@ self.addEventListener('push', (event) => {
             url: data.tripId ? `/driver/trips/${data.tripId}` : '/driver/trips',
         },
         requireInteraction: data.type === 'trip_assigned',
+        actions,
     };
 
     event.waitUntil(
@@ -37,11 +110,6 @@ self.addEventListener('push', (event) => {
 });
 
 // ── Notification Click Handler ───────────────────────────────────────────────
-// The click handler first checks if the target URL is already open in a
-// browser tab and focuses it rather than opening a duplicate. If the app is
-// not open, it opens a new window to the relevant trip page. This ensures the
-// driver lands directly on the assigned trip view when tapping the
-// notification.
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 

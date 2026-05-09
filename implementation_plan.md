@@ -1139,3 +1139,35 @@ without a test-environment guard.
 - **Files modified:** `backend/middleware/auth.js`
 - **What changed:** `requireAuth` now imports `query` from db.js; for any token with `role === 'driver'`, adds a DB query (`SELECT active_status FROM drivers WHERE id = $1`) after JWT verification; returns 401 "Account deactivated" if the driver no longer exists or is inactive
 - **Why:** The blocklist-based revocation at deactivation time was silently skipped whenever a trip action (accept/reject/complete) had overwritten the `driver:availability:{id}` session without the token field — so `currentSession.token` was undefined and no blocklist entry was written; the deactivated driver's JWT remained valid for its full 8-hour lifespan; the DB check closes this gap definitively on every request
+
+### [Sprint 19] — 9-section compliance report with PDF export
+- **Date:** 2026-05-01
+- **Files modified:**
+  - `backend/routes/dashboard.js`
+  - `backend/tests/dashboard.test.js`
+  - `frontend/src/pages/manager/ManagerAuditPage.jsx`
+- **What changed:**
+  - dashboard.js: compliance-report endpoint rewritten with a single large CTE query covering session lifecycle (avg session duration from audit_log TRIP_ASSIGNED→TRIP_COMPLETED join, deactivation terminations), data lifecycle (live Redis `complaint:window:*` scan for active windows), complaint status breakdown (open/under_investigation/resolved), avg resolution time (audit_log COMPLAINT_STATUS_UPDATED join), and audit entries by category (session/data_access/complaint/system); response now returns structured `headline` (minimization rate + executive summary prose) and `sections` object covering all 9 report sections; legacy `metrics` shape kept for backward compat
+  - dashboard.test.js: 5 new tests for 9-section structure; CSV test updated to match new section-based row labels
+  - ManagerAuditPage.jsx: `ReportSectionCard` helper component; `handleExportCompliancePDF` builds a formatted jsPDF document with all 9 sections (header, executive summary, session lifecycle, data lifecycle, communication anonymization, complaint & investigation, audit trail, regulatory statement, architecture note); in-app report view replaced with executive summary block, communication anonymization assertion strip (always-zero violations), and 2×2 section grid; Export CSV replaced with Export PDF
+- **Why:** Compliance report needed to answer Research Question 4 with evidence organised by claim — each section maps to a specific architectural assertion examiners can verify; PDF export needed to be a deliverable document, not a dashboard screenshot
+
+### [Sprint 19] — TASK-13: PWA install prompt, push notification interaction, auto-sync
+- **Date:** 2026-05-10
+- **Files modified:**
+  - `frontend/public/manifest.webmanifest` (new)
+  - `frontend/index.html`
+  - `frontend/src/hooks/useInstallPrompt.js` (new)
+  - `frontend/src/components/PushNotificationToggle.jsx`
+  - `frontend/src/pages/driver/DriverProfilePage.jsx`
+  - `frontend/public/sw.js`
+  - `frontend/src/hooks/usePushNotifications.js`
+- **What changed:**
+  - manifest.webmanifest: new PWA manifest (name, icons, standalone display, theme #0D0D0D, background #F5EDE3, start_url /driver/trips)
+  - index.html: added manifest link, theme-color meta, apple-mobile-web-app metas, replaced vite.svg with swiftlink-icon.png
+  - useInstallPrompt.js: new hook — captures beforeinstallprompt, exposes canInstall/install/dismiss; dismissal persisted in localStorage
+  - PushNotificationToggle: restyled from plain Tailwind buttons to glass-card inline toggle switch with bell icon; uses role="switch" ARIA
+  - DriverProfilePage: imports useInstallPrompt; shows install banner (Install / Not now) above push toggle when canInstall is true
+  - sw.js: added install (skip-waiting + shell pre-cache), activate (claim clients + purge old caches), fetch (stale-while-revalidate for same-origin), sync trip-sync (broadcasts SYNC_TRIPS to all clients); push handler gains actions array with "View Trip" for trip_assigned; icon/badge updated to /swiftlink-icon.png
+  - usePushNotifications: added online event effect — re-syncs existing browser push subscription with backend when connectivity is restored
+- **Why:** App lacked a web app manifest so browsers never offered PWA install; push toggle was unstyled plain buttons; no offline capability or subscription re-sync on reconnect

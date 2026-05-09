@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import PushNotificationToggle from '../../components/PushNotificationToggle.jsx';
+import useInstallPrompt from '../../hooks/useInstallPrompt.js';
 import api from '../../api/axios.js';
 
 export default function DriverProfilePage() {
     const { user, token, logout } = useAuth();
     const navigate = useNavigate();
+    const { canInstall, install, dismiss } = useInstallPrompt();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -115,6 +117,44 @@ export default function DriverProfilePage() {
                             </div>
                         </div>
                         <span style={{ fontSize: '18px' }}>→</span>
+                    </div>
+                )}
+
+                {/* PWA install prompt */}
+                {canInstall && (
+                    <div style={{
+                        background: 'rgba(108,99,255,0.07)',
+                        border: '1px solid rgba(108,99,255,0.18)',
+                        borderRadius: '16px',
+                        padding: '14px 16px',
+                        marginBottom: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                    }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#6C63FF', flexShrink: 0 }}>install_mobile</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0D0D0D', marginBottom: '2px' }}>Install SwiftLink</div>
+                            <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)' }}>Add to home screen for offline access</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                            <button
+                                onClick={dismiss}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: 'rgba(0,0,0,0.35)', padding: '4px', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                            >
+                                Not now
+                            </button>
+                            <button
+                                onClick={install}
+                                style={{
+                                    background: '#6C63FF', color: '#FFF', border: 'none', borderRadius: '10px',
+                                    padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                                    fontFamily: "'Be Vietnam Pro', sans-serif",
+                                }}
+                            >
+                                Install
+                            </button>
+                        </div>
                     </div>
                 )}
 

@@ -1,0 +1,25 @@
+{
+  "name": "SwiftLink Fleet",
+  "short_name": "SwiftLink",
+  "description": "Fleet operations and driver communication",
+  "start_url": "/driver/trips",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5EDE3",
+  "theme_color": "#0D0D0D",
+  "icons": [
+    {
+      "src": "/swiftlink-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/swiftlink-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
