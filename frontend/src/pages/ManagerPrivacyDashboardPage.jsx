@@ -42,7 +42,6 @@ export default function ManagerPrivacyDashboardPage() {
     const socketRef = useRef(null);
     const [expandedTripId, setExpandedTripId] = useState(null);
     const [tripDetail, setTripDetail] = useState({});
-    const [ttlRegistry, setTtlRegistry] = useState([]);
     const [destructionEvents, setDestructionEvents] = useState([]);
 
     const fetchSessions = useCallback(async () => {
@@ -128,8 +127,6 @@ export default function ManagerPrivacyDashboardPage() {
         });
         socketRef.current.on('complaint_filed', (data) => addEvent('complaint_filed', data));
         socketRef.current.on('trip_assigned', (data) => addEvent('trip_assigned', data));
-        socketRef.current.on('ttl_registry', (registry) => setTtlRegistry(Array.isArray(registry) ? registry : []));
-        socketRef.current.on('ttl_update', (registry) => setTtlRegistry(Array.isArray(registry) ? registry : []));
 
         return () => {
             clearInterval(sessInterval);
