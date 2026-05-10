@@ -210,4 +210,40 @@ describe('Privacy Dashboard Lifecycle Validation', () => {
         expect(res.body.sessions.destroyed).toBeGreaterThanOrEqual(1);
         expect(res.body.data_lifecycle.trips_completed).toBeGreaterThanOrEqual(1);
     });
+
+    it('Stage 6 — Completion audit entry carries a valid destruction_hash (DPA 2019 s.41)', async () => {
+        const res = await request(app)
+            .get(`${API_DASHBOARD}/audit?action_type=TRIP_COMPLETED`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        const entry = res.body.entries.find(e => e.target_id === testTripId);
+        expect(entry).toBeDefined();
+        expect(entry.destruction_hash).toMatch(/^[0-9a-f]{64}$/);
+    });
+
+    it('Stage 7 — Completion audit entry has correct compliance metadata', async () => {
+        const res = await request(app)
+            .get(`${API_DASHBOARD}/audit?action_type=TRIP_COMPLETED`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        const entry = res.body.entries.find(e => e.target_id === testTripId);
+        expect(entry).toBeDefined();
+        expect(entry.legal_basis).toBe('DPA 2019 s.25 — Data Minimization');
+        expect(entry.retention_category).toBe('ephemeral');
+    });
+
+    it('Stage 8 — Destruction events endpoint returns entries with hashes', async () => {
+        const res = await request(app)
+            .get(`${API_DASHBOARD}/destruction-events`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(Array.isArray(res.body)).toBe(true);
+        const entry = res.body.find(e => e.target_id === testTripId);
+        expect(entry).toBeDefined();
+        expect(entry.destruction_hash).toMatch(/^[0-9a-f]{64}$/);
+        expect(entry.legal_basis).toBe('DPA 2019 s.25 — Data Minimization');
+    });
 });

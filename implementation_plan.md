@@ -1205,3 +1205,27 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/pages/BookingHistoryPage.jsx`
 - **What changed:** Replaced plain "Loading history..." text with shimmer skeleton layout matching the actual booking card structure (header, title placeholder, 3 skeleton cards with status badge + date + route row); error colour updated from #D32F2F to #E05A5A to match design system warning colour
 - **Why:** Only page missing a visual skeleton — all other 11 pages already had shimmer loaders
+
+### [Sprint 19] — Compliance audit trail: destruction hash, DPA columns, live dashboard panels
+- **Date:** 2026-05-10
+- **Files modified:**
+  - `backend/utils/encryption.js`
+  - `backend/database/migrations/002_audit_log_compliance.sql` (new)
+  - `backend/database/schema.sql`
+  - `backend/routes/driverTrips.js`
+  - `backend/socket/dashboardNamespace.js`
+  - `backend/routes/dashboard.js`
+  - `frontend/src/pages/ManagerPrivacyDashboardPage.jsx`
+  - `backend/tests/privacyDashboard.test.js`
+  - `backend/tests/dashboard.test.js`
+- **What changed:**
+  - encryption.js: added `computeDestructionHash(tripId, redisClient)` — MGETs all 4 Redis session keys before deletion, computes SHA-256 hex digest; satisfies DPA 2019 s.41 (destruction verification without retaining content)
+  - 002_audit_log_compliance.sql: new migration — ALTER TABLE adds `legal_basis TEXT`, `retention_category TEXT`, `destruction_hash TEXT`, `data_subjects JSONB` to audit_log; REVOKE/GRANT block enforces append-only at DB role level
+  - schema.sql: audit_log CREATE TABLE updated to include the 4 new columns; comment updated to reference the migration
+  - driverTrips.js: PATCH /:tripId/complete now imports `computeDestructionHash` and Redis client; calls hash BEFORE deleting sessions; audit INSERT includes `legal_basis = 'DPA 2019 s.25 — Data Minimization'`, `retention_category = 'ephemeral'`, `destruction_hash`, `data_subjects`; `session_destroyed` dashboard event now carries `destruction_hash` in payload
+  - dashboardNamespace.js: added `buildTtlRegistry()` helper (scans `session:trip:*:driver` keys, fetches 4 TTLs per trip); 30-second `setInterval` (NODE_ENV !== test) broadcasts `ttl_update` to all connected managers; on each new connection emits `ttl_registry` snapshot immediately so UI hydrates without waiting for the first tick
+  - dashboard.js: added `GET /destruction-events` — recent TRIP_COMPLETED entries with destruction_hash (limit 100, auth: fleet_manager); added `GET /registry` — current Redis TTL state for all active trips (mirrors socket ttl_update for HTTP hydration)
+  - ManagerPrivacyDashboardPage.jsx: added `ttlRegistry` and `destructionEvents` state; listens to `ttl_registry` and `ttl_update` socket events; `session_destroyed` handler now also prepends to destructionEvents when hash is present; initial load fetches `/dashboard/destruction-events`; new "Destruction Proof Log" full-width panel below the main grid — table with Trip ID, Timestamp, Category, Legal Basis, SHA-256 hash (monospace, hover tooltip for full value)
+  - privacyDashboard.test.js: 3 new test cases — Stage 6 (destruction_hash is valid 64-char hex), Stage 7 (legal_basis and retention_category correct), Stage 8 (destruction-events endpoint returns entry with hash)
+  - dashboard.test.js: 3 new tests — audit entries include compliance columns, destruction-events returns array, registry returns array
+- **Why:** Primary academic contribution — the Mediated Ephemeral Identity Framework requires cryptographic proof that session data existed and was destroyed; without a destruction hash the audit log is an assertion without evidence; DPA 2019 s.41 requires organisations to be able to demonstrate destruction; the 4 new columns + hash make every session destruction independently verifiable from the append-only audit trail

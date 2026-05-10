@@ -201,6 +201,40 @@ describe('Privacy Dashboard API', () => {
         expect(res.body.total_count).toBeGreaterThan(0);
     });
 
+    it('Audit entries include compliance schema columns', async () => {
+        const res = await request(app)
+            .get(`${API}/audit`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(Array.isArray(res.body.entries)).toBe(true);
+        if (res.body.entries.length > 0) {
+            const entry = res.body.entries[0];
+            expect('legal_basis' in entry).toBe(true);
+            expect('retention_category' in entry).toBe(true);
+            expect('destruction_hash' in entry).toBe(true);
+            expect('data_subjects' in entry).toBe(true);
+        }
+    });
+
+    it('Destruction events endpoint returns array', async () => {
+        const res = await request(app)
+            .get(`${API}/destruction-events`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(Array.isArray(res.body)).toBe(true);
+    });
+
+    it('Registry endpoint returns array', async () => {
+        const res = await request(app)
+            .get(`${API}/registry`)
+            .set('Authorization', `Bearer ${managerToken}`)
+            .expect(200);
+
+        expect(Array.isArray(res.body)).toBe(true);
+    });
+
     it('Compliance report structure', async () => {
         const res = await request(app)
             .get(`${API}/compliance-report`)

@@ -42,6 +42,8 @@ export default function ManagerPrivacyDashboardPage() {
     const socketRef = useRef(null);
     const [expandedTripId, setExpandedTripId] = useState(null);
     const [tripDetail, setTripDetail] = useState({});
+    const [ttlRegistry, setTtlRegistry] = useState([]);
+    const [destructionEvents, setDestructionEvents] = useState([]);
 
     const fetchSessions = useCallback(async () => {
         try {
@@ -70,6 +72,15 @@ export default function ManagerPrivacyDashboardPage() {
         }
     }, []);
 
+    const fetchDestructionEvents = useCallback(async () => {
+        try {
+            const res = await api.get('/dashboard/destruction-events');
+            setDestructionEvents(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+            console.error('Failed to fetch destruction events', err);
+        }
+    }, []);
+
     const addEvent = useCallback((type, data) => {
         const event = {
             id: Date.now(),
@@ -86,7 +97,7 @@ export default function ManagerPrivacyDashboardPage() {
         const deferredFetch = async () => {
             setLoading(true);
             try {
-                await Promise.all([fetchSessions(), fetchSummary(), fetchOverview()]);
+                await Promise.all([fetchSessions(), fetchSummary(), fetchOverview(), fetchDestructionEvents()]);
                 setError(false);
             } catch {
                 setError(true);
@@ -103,9 +114,22 @@ export default function ManagerPrivacyDashboardPage() {
             auth: { token }
         });
         socketRef.current.on('session_created', (data) => addEvent('session_created', data));
-        socketRef.current.on('session_destroyed', (data) => addEvent('session_destroyed', data));
+        socketRef.current.on('session_destroyed', (data) => {
+            addEvent('session_destroyed', data);
+            if (data.destruction_hash) {
+                setDestructionEvents(prev => [{
+                    target_id: data.trip_id,
+                    timestamp: data.timestamp || new Date().toISOString(),
+                    destruction_hash: data.destruction_hash,
+                    legal_basis: 'DPA 2019 s.25 — Data Minimization',
+                    retention_category: 'ephemeral',
+                }, ...prev].slice(0, 20));
+            }
+        });
         socketRef.current.on('complaint_filed', (data) => addEvent('complaint_filed', data));
         socketRef.current.on('trip_assigned', (data) => addEvent('trip_assigned', data));
+        socketRef.current.on('ttl_registry', (registry) => setTtlRegistry(Array.isArray(registry) ? registry : []));
+        socketRef.current.on('ttl_update', (registry) => setTtlRegistry(Array.isArray(registry) ? registry : []));
 
         return () => {
             clearInterval(sessInterval);
@@ -113,7 +137,7 @@ export default function ManagerPrivacyDashboardPage() {
             clearInterval(overviewInterval);
             if (socketRef.current) socketRef.current.disconnect();
         };
-    }, [fetchSessions, fetchSummary, fetchOverview, addEvent, token]);
+    }, [fetchSessions, fetchSummary, fetchOverview, fetchDestructionEvents, addEvent, token]);
 
     const handleExportPDF = async () => {
         try {
@@ -607,6 +631,54 @@ export default function ManagerPrivacyDashboardPage() {
 
                     </div>
 
+                </div>
+
+                {/* DESTRUCTION PROOF LOG — full width below main grid */}
+                <div className="privacy-card" style={{ marginTop: '24px', padding: '32px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                        <div>
+                            <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#0D0D0D', marginBottom: '4px' }}>Destruction Proof Log</h2>
+                            <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>SHA-256 pre-deletion hashes — DPA 2019 s.41 compliance</p>
+                        </div>
+                        <span style={{ background: 'rgba(224,90,90,0.1)', color: '#E05A5A', borderRadius: '999px', padding: '4px 12px', fontSize: '10px', fontWeight: 700 }}>Append-Only</span>
+                    </div>
+                    {destructionEvents.length === 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', flexDirection: 'column', gap: '8px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '32px', color: 'rgba(0,0,0,0.15)' }}>verified_user</span>
+                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.3)', fontStyle: 'italic' }}>No destruction events yet</p>
+                        </div>
+                    ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                                        {['Trip ID', 'Timestamp', 'Category', 'Legal Basis', 'SHA-256 Hash'].map(h => (
+                                            <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(0,0,0,0.4)' }}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {destructionEvents.map((e, i) => (
+                                        <tr key={e.id || i} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                                            <td style={{ padding: '10px 12px', fontFamily: 'JetBrains Mono, monospace', color: '#6C63FF', fontWeight: 600 }}>#{(e.target_id || '').slice(0, 8)}</td>
+                                            <td style={{ padding: '10px 12px', color: 'rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}>{new Date(e.timestamp).toLocaleString()}</td>
+                                            <td style={{ padding: '10px 12px' }}>
+                                                <span style={{ background: 'rgba(0,245,160,0.1)', color: '#00A86B', borderRadius: '999px', padding: '3px 10px', fontSize: '10px', fontWeight: 700 }}>{e.retention_category || 'ephemeral'}</span>
+                                            </td>
+                                            <td style={{ padding: '10px 12px', fontSize: '11px', color: 'rgba(0,0,0,0.45)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.legal_basis || '—'}</td>
+                                            <td style={{ padding: '10px 12px' }}>
+                                                {e.destruction_hash ? (
+                                                    <span title={e.destruction_hash} style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', color: '#0D0D0D', background: 'rgba(0,0,0,0.04)', padding: '3px 8px', borderRadius: '4px', display: 'inline-block', maxWidth: isMobile ? '120px' : '340px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {e.destruction_hash}
+                                                    </span>
+                                                ) : <span style={{ color: 'rgba(0,0,0,0.3)', fontStyle: 'italic' }}>—</span>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 {/* Status Footer Ticker */}

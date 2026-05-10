@@ -604,4 +604,61 @@ router.get('/compliance-report', requireAuth(['fleet_manager']), async (req, res
     }
 });
 
+/**
+ * GET /destruction-events?limit=20
+ * Returns recent TRIP_COMPLETED audit entries that carry a destruction_hash.
+ * Used by the Privacy Dashboard to show cryptographic proof of session destruction.
+ */
+router.get('/destruction-events', requireAuth(['fleet_manager']), async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+        const result = await query(
+            `SELECT id, action_type, actor_id, target_id, timestamp,
+                    legal_basis, retention_category, destruction_hash, data_subjects
+             FROM audit_log
+             WHERE action_type = 'TRIP_COMPLETED'
+               AND destruction_hash IS NOT NULL
+             ORDER BY timestamp DESC
+             LIMIT $1`,
+            [limit]
+        );
+        return res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('[dashboard] destruction-events error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * GET /registry
+ * Returns the current Redis session TTL state for all active trips.
+ * Mirrors what the Socket.IO ttl_update event broadcasts every 30 seconds,
+ * allowing the UI to hydrate on initial load without waiting for the next tick.
+ */
+router.get('/registry', requireAuth(['fleet_manager']), async (req, res) => {
+    try {
+        const keys = await client.keys('session:trip:*:driver');
+        const entries = await Promise.all(keys.map(async (key) => {
+            const tripId = key.split(':')[2];
+            const [driverTTL, clientTTL, msgTTL, windowTTL] = await Promise.all([
+                client.ttl(`session:trip:${tripId}:driver`),
+                client.ttl(`session:trip:${tripId}:client`),
+                client.ttl(`messages:trip:${tripId}`),
+                client.ttl(`complaint:window:${tripId}`),
+            ]);
+            return {
+                trip_id: tripId,
+                driver_ttl: driverTTL,
+                client_ttl: clientTTL,
+                msg_ttl: msgTTL,
+                window_ttl: windowTTL,
+            };
+        }));
+        return res.status(200).json(entries);
+    } catch (err) {
+        console.error('[dashboard] registry error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;

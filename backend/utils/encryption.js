@@ -41,6 +41,27 @@ export function encrypt(plaintext) {
 }
 
 /**
+ * Computes a SHA-256 proof-of-existence hash over all 4 Redis session keys for a
+ * trip, capturing their values BEFORE deletion. The hash is stored in audit_log
+ * and satisfies DPA 2019 s.41 (destruction verification without retaining content).
+ *
+ * @param {string} tripId
+ * @param {import('ioredis').Redis | import('@redis/client').RedisClientType} redisClient
+ * @returns {Promise<string>} 64-char lowercase hex SHA-256 digest
+ */
+export async function computeDestructionHash(tripId, redisClient) {
+    const keys = [
+        `session:trip:${tripId}:driver`,
+        `session:trip:${tripId}:client`,
+        `messages:trip:${tripId}`,
+        `complaint:window:${tripId}`,
+    ];
+    const values = await redisClient.mGet(keys);
+    const payload = keys.map((k, i) => `${k}=${values[i] ?? 'nil'}`).join('|');
+    return crypto.createHash('sha256').update(payload).digest('hex');
+}
+
+/**
  * Decrypts a previously encrypted JSON architecture isolating parameters natively.
  * @param {string} encryptedJson - The JSON structure emitted by encrypt().
  * @returns {string} The decrypted standard plaintext string.

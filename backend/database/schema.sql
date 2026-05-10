@@ -74,16 +74,24 @@ CREATE TABLE IF NOT EXISTS complaints (
 );
 
 -- ── 6. audit_log (append-only) ───────────────────────────────
--- Revoke UPDATE and DELETE on this table from the app role during provisioning.
+-- Append-only by convention enforced at DB role level (see migrations/002).
+-- UPDATE and DELETE are revoked from the application role.
+-- Compliance columns (legal_basis, retention_category, destruction_hash,
+-- data_subjects) satisfy DPA 2019 ss.25, 30, 41 — added via
+-- migrations/002_audit_log_compliance.sql.
 CREATE TABLE IF NOT EXISTS audit_log (
-  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  action_type TEXT        NOT NULL,
-  actor_id    UUID        NOT NULL,
-  actor_role  TEXT        NOT NULL,
-  target_id   UUID,
-  timestamp   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  ip_address  INET,
-  details     JSONB
+  id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  action_type        TEXT        NOT NULL,
+  actor_id           UUID        NOT NULL,
+  actor_role         TEXT        NOT NULL,
+  target_id          UUID,
+  timestamp          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ip_address         INET,
+  details            JSONB,
+  legal_basis        TEXT,
+  retention_category TEXT,
+  destruction_hash   TEXT,
+  data_subjects      JSONB
 );
 
 -- ── 7. push_subscriptions ─────────────────────────────────────

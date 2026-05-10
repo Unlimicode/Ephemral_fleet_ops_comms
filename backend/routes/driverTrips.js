@@ -5,6 +5,8 @@ import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import { sendEmail } from '../config/mailer.js';
 import { setSession, deleteSession } from '../config/redisHelpers.js';
+import { computeDestructionHash } from '../utils/encryption.js';
+import client from '../config/redis.js';
 
 const router = Router();
 
@@ -160,6 +162,15 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
             [tripId]
         );
 
+        // Compute destruction hash BEFORE deleting sessions — captures proof that
+        // session data existed at the moment of destruction (DPA 2019 s.41).
+        let destructionHash = null;
+        try {
+            destructionHash = await computeDestructionHash(tripId, client);
+        } catch (hashErr) {
+            console.error('[driverTrips] destruction hash error:', hashErr);
+        }
+
         await deleteSession(`session:trip:${tripId}:driver`);
         await deleteSession(`session:trip:${tripId}:client`);
         await setSession(`complaint:window:${tripId}`, { active: true }, 86400);
@@ -188,12 +199,22 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
         }
 
         await query(
-            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
-             VALUES ($1, $2, $3, $4, $5)`,
-            ['TRIP_COMPLETED', driverId, 'driver', tripId, {}]
+            `INSERT INTO audit_log
+               (action_type, actor_id, actor_role, target_id, details,
+                legal_basis, retention_category, destruction_hash, data_subjects)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            ['TRIP_COMPLETED', driverId, 'driver', tripId, {},
+             'DPA 2019 s.25 — Data Minimization',
+             'ephemeral',
+             destructionHash,
+             JSON.stringify({ driver_id: driverId, trip_id: tripId })]
         );
 
-        emitDashboardEvent('session_destroyed', { trip_id: tripId, timestamp: new Date().toISOString() });
+        emitDashboardEvent('session_destroyed', {
+            trip_id: tripId,
+            timestamp: new Date().toISOString(),
+            destruction_hash: destructionHash
+        });
 
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {
