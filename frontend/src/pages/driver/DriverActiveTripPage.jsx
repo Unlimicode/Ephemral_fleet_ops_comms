@@ -27,6 +27,15 @@ export default function DriverActiveTripPage() {
         }
     }, [tripId, navigate, addToast]);
 
+    const fetchComplaint = useCallback(async () => {
+        try {
+            const res = await api.get(`/driver/trips/${tripId}/complaint`);
+            setComplaint(res.data.complaint);
+        } catch {
+            // complaint may not exist yet — silent fail is correct
+        }
+    }, [tripId]);
+
     useEffect(() => {
         fetchTrip();
         fetchComplaint();
@@ -42,15 +51,6 @@ export default function DriverActiveTripPage() {
             document.removeEventListener('visibilitychange', handleVisibility);
         };
     }, [fetchTrip, fetchComplaint]);
-
-    const fetchComplaint = useCallback(async () => {
-        try {
-            const res = await api.get(`/driver/trips/${tripId}/complaint`);
-            setComplaint(res.data.complaint);
-        } catch {
-            // complaint may not exist yet — silent fail is correct
-        }
-    }, [tripId]);
 
     const handleStartTrip = async () => {
         try {
