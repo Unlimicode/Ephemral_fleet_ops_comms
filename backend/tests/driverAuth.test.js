@@ -4,10 +4,13 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import pool, { connect as connectDb, query } from '../config/db.js';
 import client, { connect as connectRedis } from '../config/redis.js';
+import { jest } from '@jest/globals';
 
 import authRouter from '../routes/auth.js';
 import driversRouter from '../routes/drivers.js';
 import tripsRouter from '../routes/trips.js';
+
+jest.setTimeout(30000);
 
 // Setup inline Express app to test the authentication and role bindings
 const app = express();
@@ -44,13 +47,18 @@ describe('Driver Authentication & Role-Aware Middleware', () => {
         await connectDb();
         await connectRedis();
 
+        // Pre-cleanup in case a prior failed run left stale rows
+        await query("DELETE FROM trips WHERE client_corporate_email = 'client@test.com'");
+        await query("DELETE FROM drivers WHERE work_email IN ('active@fleetops.dev', 'fired@fleetops.dev')");
+        await query("DELETE FROM fleet_managers WHERE work_email = 'admin@fleetops.dev'");
+
         // 0. Inject schema patch natively for the test DB
         await query(`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS password_hash TEXT NOT NULL DEFAULT 'unspecified'`);
 
         // 1. Seed Fleet Manager
         const fmHash = await bcrypt.hash('fmpassword', 10);
         const fmRes = await query(
-            `INSERT INTO fleet_managers (work_email, password_hash, full_name) 
+            `INSERT INTO fleet_managers (work_email, password_hash, full_name)
              VALUES ('admin@fleetops.dev', $1, 'Admin User') RETURNING id`,
             [fmHash]
         );

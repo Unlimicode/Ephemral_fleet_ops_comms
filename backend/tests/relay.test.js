@@ -10,6 +10,9 @@ import tripsRouter from '../routes/trips.js';
 import driversRouter from '../routes/drivers.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { jest } from '@jest/globals';
+
+jest.setTimeout(30000);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WEBSOCKET RELAY INTEGRATION TESTS — Phase 4.4
@@ -57,6 +60,11 @@ describe('WebSocket Relay & Ephemeral Privacy Guarantees', () => {
                 resolve();
             });
         });
+
+        // Pre-cleanup in case a prior failed run left stale rows
+        await pool.query("DELETE FROM trips WHERE client_corporate_email = 'relayclient@corporate.com'");
+        await pool.query("DELETE FROM vehicles WHERE registration_number = 'RLY-999'");
+        await pool.query("DELETE FROM drivers WHERE work_email = 'relay@test.com'");
 
         // 3. Setup core entities for testing
         const managerResult = await pool.query("SELECT id FROM fleet_managers WHERE work_email = 'manager@fleetops.dev'");

@@ -1229,3 +1229,9 @@ without a test-environment guard.
   - privacyDashboard.test.js: 3 new test cases — Stage 6 (destruction_hash is valid 64-char hex), Stage 7 (legal_basis and retention_category correct), Stage 8 (destruction-events endpoint returns entry with hash)
   - dashboard.test.js: 3 new tests — audit entries include compliance columns, destruction-events returns array, registry returns array
 - **Why:** Primary academic contribution — the Mediated Ephemeral Identity Framework requires cryptographic proof that session data existed and was destroyed; without a destruction hash the audit log is an assertion without evidence; DPA 2019 s.41 requires organisations to be able to demonstrate destruction; the 4 new columns + hash make every session destruction independently verifiable from the append-only audit trail
+
+### [Sprint 19] — Live TTL badges on session monitor rows
+- **Date:** 2026-05-10
+- **Files modified:** `frontend/src/pages/ManagerPrivacyDashboardPage.jsx`
+- **What changed:** Replaced the three static coloured dots on each session monitor row (driver/client/complaint window) with live TTL badges when `ttlRegistry[t.trip_id]` is populated; `fmtTTL` helper formats seconds into compact strings (e.g. "23h", "45m", "12s"); active sessions show a coloured monospace chip (#00F5A0 driver, #6C63FF client, #F59E0B complaint window) with a translucent tinted background; inactive sessions fall back to a small grey dot; no registry data falls back to the original static dots; fixed `fetchRegistry` missing from the `useEffect` dependency array
+- **Why:** Session monitor showed only pass/fail dot indicators with no timing information — live TTL badges give the manager instant visibility into how long each active session has remaining, making the data-minimization guarantee observable in real time

@@ -43,6 +43,7 @@ export default function ManagerPrivacyDashboardPage() {
     const [expandedTripId, setExpandedTripId] = useState(null);
     const [tripDetail, setTripDetail] = useState({});
     const [destructionEvents, setDestructionEvents] = useState([]);
+    const [ttlRegistry, setTtlRegistry] = useState({});
 
     const fetchSessions = useCallback(async () => {
         try {
@@ -80,6 +81,22 @@ export default function ManagerPrivacyDashboardPage() {
         }
     }, []);
 
+    const applyRegistry = (arr) => {
+        if (!Array.isArray(arr)) return;
+        const obj = {};
+        arr.forEach(e => { obj[e.trip_id] = e; });
+        setTtlRegistry(obj);
+    };
+
+    const fetchRegistry = useCallback(async () => {
+        try {
+            const res = await api.get('/dashboard/registry');
+            applyRegistry(res.data);
+        } catch (err) {
+            console.error('Failed to fetch TTL registry', err);
+        }
+    }, []);
+
     const addEvent = useCallback((type, data) => {
         const event = {
             id: Date.now(),
@@ -96,7 +113,7 @@ export default function ManagerPrivacyDashboardPage() {
         const deferredFetch = async () => {
             setLoading(true);
             try {
-                await Promise.all([fetchSessions(), fetchSummary(), fetchOverview(), fetchDestructionEvents()]);
+                await Promise.all([fetchSessions(), fetchSummary(), fetchOverview(), fetchDestructionEvents(), fetchRegistry()]);
                 setError(false);
             } catch {
                 setError(true);
@@ -127,6 +144,8 @@ export default function ManagerPrivacyDashboardPage() {
         });
         socketRef.current.on('complaint_filed', (data) => addEvent('complaint_filed', data));
         socketRef.current.on('trip_assigned', (data) => addEvent('trip_assigned', data));
+        socketRef.current.on('ttl_registry', (data) => applyRegistry(data));
+        socketRef.current.on('ttl_update', (data) => applyRegistry(data));
 
         return () => {
             clearInterval(sessInterval);
@@ -134,7 +153,7 @@ export default function ManagerPrivacyDashboardPage() {
             clearInterval(overviewInterval);
             if (socketRef.current) socketRef.current.disconnect();
         };
-    }, [fetchSessions, fetchSummary, fetchOverview, fetchDestructionEvents, addEvent, token]);
+    }, [fetchSessions, fetchSummary, fetchOverview, fetchDestructionEvents, fetchRegistry, addEvent, token]);
 
     const handleExportPDF = async () => {
         try {
@@ -470,11 +489,46 @@ export default function ManagerPrivacyDashboardPage() {
                                                 {t.pickup_location} → {t.destination}
                                             </p>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                                            <span title="Driver Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.driver_session_active ? '#00F5A0' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
-                                            <span title="Client Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.client_session_active ? '#6C63FF' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
-                                            <span title="Complaint Window" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.complaint_window_active ? '#F59E0B' : t.complaint_filed ? '#E05A5A' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
-                                        </div>
+                                        {(() => {
+                                            const reg = ttlRegistry[t.trip_id];
+                                            const fmtTTL = (s) => {
+                                                if (!s || s <= 0) return null;
+                                                if (s >= 3600) return `${Math.floor(s / 3600)}h`;
+                                                if (s >= 60) return `${Math.floor(s / 60)}m`;
+                                                return `${s}s`;
+                                            };
+                                            if (reg) {
+                                                return (
+                                                    <div style={{ display: 'flex', gap: '4px', flexShrink: 0, alignItems: 'center' }}>
+                                                        {[
+                                                            { ttl: reg.driver_ttl, color: '#00F5A0', label: 'Driver' },
+                                                            { ttl: reg.client_ttl, color: '#6C63FF', label: 'Client' },
+                                                            { ttl: reg.window_ttl, color: '#F59E0B', label: 'Window' },
+                                                        ].map(({ ttl, color, label }) => {
+                                                            const formatted = fmtTTL(ttl);
+                                                            return formatted ? (
+                                                                <span key={label} title={`${label} — ${ttl}s remaining`} style={{
+                                                                    fontFamily: 'JetBrains Mono, monospace', fontSize: '9px', fontWeight: 700,
+                                                                    color, background: `${color}22`, borderRadius: '4px', padding: '2px 5px', lineHeight: 1.4
+                                                                }}>{formatted}</span>
+                                                            ) : (
+                                                                <span key={label} title={`${label} — Inactive`} style={{
+                                                                    width: '8px', height: '8px', borderRadius: '50%',
+                                                                    background: 'rgba(0,0,0,0.12)', display: 'inline-block'
+                                                                }} />
+                                                            );
+                                                        })}
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                                    <span title="Driver Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.driver_session_active ? '#00F5A0' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                                    <span title="Client Session" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.client_session_active ? '#6C63FF' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                                    <span title="Complaint Window" style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.complaint_window_active ? '#F59E0B' : t.complaint_filed ? '#E05A5A' : 'rgba(0,0,0,0.12)', display: 'inline-block' }} />
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                     {expandedTripId === t.trip_id && (
                                         <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '12px', padding: '16px', marginTop: '8px', marginBottom: '4px' }}>
