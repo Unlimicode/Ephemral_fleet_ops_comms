@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { getIo } from '../socket/io.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
 import { sendEmail } from '../config/mailer.js';
+import { sendClientPushNotification } from '../utils/sendClientPushNotification.js';
 import { setSession, deleteSession } from '../config/redisHelpers.js';
 import { computeDestructionHash } from '../utils/encryption.js';
 import client from '../config/redis.js';
@@ -91,6 +92,29 @@ router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
         );
 
         emitDashboardEvent('session_created', { trip_id: tripId, timestamp: new Date().toISOString() });
+
+        // Push notification to client: driver first name + vehicle info, no contact details.
+        // Fire-and-forget — push failure must not block the response.
+        if (process.env.NODE_ENV !== 'test') {
+            query(
+                `SELECT d.full_name, v.make, v.model, v.registration_number
+                 FROM trips t
+                 JOIN drivers d ON t.assigned_driver_id = d.id
+                 LEFT JOIN vehicles v ON t.vehicle_id = v.id
+                 WHERE t.id = $1`,
+                [tripId]
+            ).then(async (r) => {
+                if (!r.rows.length) return;
+                const { full_name, make, model, registration_number } = r.rows[0];
+                const vehicleLabel = [make, model, registration_number].filter(Boolean).join(' · ');
+                await sendClientPushNotification(tripCheck.rows[0].client_corporate_email, {
+                    title: 'Your driver is on the way',
+                    body: vehicleLabel ? `${full_name} — ${vehicleLabel}` : full_name,
+                    type: 'driver_accepted',
+                    tripId,
+                });
+            }).catch((err) => console.error('[driverTrips] client push error:', err));
+        }
 
         return res.status(200).json(updateResult.rows[0]);
     } catch (err) {

@@ -657,6 +657,52 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
     }
 });
 
+// ── POST /push-subscribe — Register client push subscription ─────────────────
+// Protected: requireClientAuth (HttpOnly cookie). The subscription object
+// produced by PushManager.subscribe() is { endpoint, keys: { p256dh, auth } }.
+// Upsert on endpoint handles browser subscription key rotation gracefully.
+router.post('/push-subscribe', requireClientAuth, async (req, res) => {
+    const { client_corporate_email } = req.client;
+    const { endpoint, keys } = req.body;
+
+    if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        return res.status(400).json({ error: 'Invalid push subscription object' });
+    }
+
+    try {
+        await query(
+            `INSERT INTO client_push_subscriptions (client_email, endpoint, p256dh, auth)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (endpoint) DO UPDATE SET client_email = $1, p256dh = $3, auth = $4`,
+            [client_corporate_email, endpoint, keys.p256dh, keys.auth]
+        );
+        return res.status(201).json({ message: 'Push subscription registered' });
+    } catch (err) {
+        console.error('[bookings] push-subscribe error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── DELETE /push-subscribe — Remove client push subscription ──────────────────
+router.delete('/push-subscribe', requireClientAuth, async (req, res) => {
+    const { endpoint } = req.body;
+
+    if (!endpoint) {
+        return res.status(400).json({ error: 'endpoint is required' });
+    }
+
+    try {
+        await query(
+            'DELETE FROM client_push_subscriptions WHERE endpoint = $1',
+            [endpoint]
+        );
+        return res.status(200).json({ message: 'Push subscription removed' });
+    } catch (err) {
+        console.error('[bookings] push-unsubscribe error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ── POST /logout — Clear client session cookie ───────────────────────────────
 router.post('/logout', (req, res) => {
     res.clearCookie('client_session', {

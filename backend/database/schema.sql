@@ -116,7 +116,25 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ── 8. driver_notifications ───────────────────────────────────
+-- ── 8. client_push_subscriptions ─────────────────────────────
+-- Stores Web Push subscriptions registered by clients via the PWA.
+-- Keyed by client_corporate_email (no persistent UUID for clients).
+-- endpoint is unique per browser/device. Subscriptions are removed
+-- automatically when the push service returns 404/410 (stale endpoint),
+-- or when the client unsubscribes via DELETE /bookings/push-subscribe.
+CREATE TABLE IF NOT EXISTS client_push_subscriptions (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_email TEXT        NOT NULL,
+  endpoint     TEXT        NOT NULL UNIQUE,
+  p256dh       TEXT        NOT NULL,
+  auth         TEXT        NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_push_subscriptions_email
+  ON client_push_subscriptions (client_email);
+
+-- ── 9. driver_notifications ───────────────────────────────────
 CREATE TABLE IF NOT EXISTS driver_notifications (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   driver_id   UUID        NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,

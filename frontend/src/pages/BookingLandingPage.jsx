@@ -336,6 +336,12 @@ export default function BookingLandingPage() {
     const [cancelConfirming, setCancelConfirming] = useState(false);
     const [cancelling, setCancelling] = useState(false);
 
+    // Push notification state — permission prompt shown in trip view
+    const [notifPermission, setNotifPermission] = useState(() =>
+        typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+    );
+    const [notifLoading, setNotifLoading] = useState(false);
+
     const authStarted = useRef(false);
 
     // ── Session init ───────────────────────────────────────────────────────────
@@ -482,6 +488,33 @@ export default function BookingLandingPage() {
         setShowEditForm(true);
     };
 
+    const handleEnablePush = async () => {
+        if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        setNotifLoading(true);
+        try {
+            const permission = await Notification.requestPermission();
+            setNotifPermission(permission);
+            if (permission !== 'granted') return;
+
+            const vapidRes = await fetch(`${import.meta.env.VITE_API_URL}/push/vapid-public-key`);
+            if (!vapidRes.ok) return;
+            const { publicKey } = await vapidRes.json();
+
+            const padding = '='.repeat((4 - (publicKey.length % 4)) % 4);
+            const base64 = (publicKey + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            const applicationServerKey = Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+
+            const reg = await navigator.serviceWorker.ready;
+            const subscription = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+            await api.post('/bookings/push-subscribe', subscription);
+        } catch {
+            // Best-effort — push failure is silent
+        } finally {
+            setNotifLoading(false);
+        }
+    };
+
     // ── View routing ──────────────────────────────────────────────────────────
     if (view === 'loading') return <LoadingState />;
     if (view === 'booking-form') return <BookingFormView />;
@@ -539,6 +572,24 @@ export default function BookingLandingPage() {
                 {networkError && (
                     <div className="bg-warning/10 border border-warning/20 rounded-2xl p-3 text-sm text-warning mb-4 text-center">
                         Could not reach server — retrying...
+                    </div>
+                )}
+
+                {/* Push permission prompt — shown once, at booking confirmation moment */}
+                {notifPermission === 'default' && (
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4" style={{ background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.18)' }}>
+                        <span style={{ fontSize: '20px', flexShrink: 0 }}>🔔</span>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold leading-tight">Get notified when your driver accepts</p>
+                            <p className="text-[11px] text-text-muted mt-0.5">One tap — no account needed.</p>
+                        </div>
+                        <button
+                            onClick={handleEnablePush}
+                            disabled={notifLoading}
+                            style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '7px 14px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: notifLoading ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: notifLoading ? 0.7 : 1 }}
+                        >
+                            {notifLoading ? '…' : 'Enable'}
+                        </button>
                     </div>
                 )}
 
