@@ -1236,6 +1236,12 @@ without a test-environment guard.
 - **What changed:** Replaced the three static coloured dots on each session monitor row (driver/client/complaint window) with live TTL badges when `ttlRegistry[t.trip_id]` is populated; `fmtTTL` helper formats seconds into compact strings (e.g. "23h", "45m", "12s"); active sessions show a coloured monospace chip (#00F5A0 driver, #6C63FF client, #F59E0B complaint window) with a translucent tinted background; inactive sessions fall back to a small grey dot; no registry data falls back to the original static dots; fixed `fetchRegistry` missing from the `useEffect` dependency array
 - **Why:** Session monitor showed only pass/fail dot indicators with no timing information — live TTL badges give the manager instant visibility into how long each active session has remaining, making the data-minimization guarantee observable in real time
 
+### [Sprint 20] — Batch 4: Three-state recovery flow
+- **Date:** 2026-05-12
+- **Files modified:** `backend/routes/bookings.js`
+- **What changed:** `POST /recover` now handles three states: active trip found → full session magic link (24h token); no active trip but history exists → 2hr read-only history magic link with `session_type: 'history'`; email unknown → same generic privacy-preserving response; `GET /auth` branches on `session_type` — history tokens issue a 2hr JWT with `session_type: 'history'` and no `trip_id`; `GET /session` branches on `session_type` — history sessions return email + first name only, skipping the trip query and session extension logic; existing tripId ownership checks on `GET/PATCH/DELETE /:tripId` implicitly block history sessions from operational access without any middleware changes
+- **Why:** The "no accounts" model requires a path back for clients with expired links — the three-state flow covers every real scenario without weakening the privacy guarantee or creating persistent credentials
+
 ### [Sprint 20] — Batch 3: Booking management endpoints
 - **Date:** 2026-05-12
 - **Files modified:** `backend/database/migrations/005_add_cancelled_trip_status.sql`, `backend/database/schema.sql`, `backend/routes/bookings.js`

@@ -130,7 +130,28 @@ router.get('/auth', async (req, res) => {
         // issues with React Strict Mode double-firing.
         await deleteSession(sessionKey);
 
-        // 2. Retrieve supplementary info
+        // 2a. History session path — no trip_id, 2hr read-only cookie
+        if (sessionData.session_type === 'history') {
+            const nameResult = await query(
+                `SELECT client_first_name FROM trips WHERE client_corporate_email = $1 ORDER BY created_at DESC LIMIT 1`,
+                [sessionData.client_corporate_email]
+            );
+            const firstName = nameResult.rows[0]?.client_first_name || 'Client';
+            const historyToken = jwt.sign(
+                { client_corporate_email: sessionData.client_corporate_email, role: 'client', session_type: 'history' },
+                process.env.JWT_SECRET,
+                { expiresIn: '2h' }
+            );
+            res.cookie('client_session', historyToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 2 * 60 * 60 * 1000
+            });
+            return res.status(200).json({ message: 'Session established', session_type: 'history', client_first_name: firstName });
+        }
+
+        // 2b. Full session path — retrieve trip details for TTL calculation
         const tripResult = await query(
             'SELECT client_first_name, pickup_time FROM trips WHERE id = $1',
             [sessionData.trip_id]
@@ -187,6 +208,19 @@ router.get('/session', async (req, res) => {
 
         // Ensure this is a client session, not a fleet manager
         if (decoded.role !== 'client') throw new Error('Invalid token role for client session');
+
+        // History session — no trip_id, scoped to history only
+        if (decoded.session_type === 'history') {
+            const nameResult = await query(
+                `SELECT client_first_name FROM trips WHERE client_corporate_email = $1 ORDER BY created_at DESC LIMIT 1`,
+                [decoded.client_corporate_email]
+            );
+            return res.status(200).json({
+                client_corporate_email: decoded.client_corporate_email,
+                client_first_name: nameResult.rows[0]?.client_first_name || 'Client',
+                session_type: 'history'
+            });
+        }
 
         const tripResult = await query(
             'SELECT client_first_name, status FROM trips WHERE id = $1',
@@ -274,27 +308,56 @@ router.post('/recover', async (req, res) => {
             return res.status(429).json({ error: 'Too many requests. Please try again later.' });
         }
 
-        // 2. Find the most recent active trip for this email
-        const tripResult = await query(
+        // 2. Three-state recovery:
+        //    State 1 — active trip found → full session magic link
+        //    State 2 — no active trip but history exists → 2hr read-only history link
+        //    State 3 — email unknown → same generic response (privacy-preserving)
+
+        const activeResult = await query(
             `SELECT id, client_first_name FROM trips
-             WHERE client_corporate_email = $1 AND status NOT IN ('completed')
+             WHERE client_corporate_email = $1 AND status IN ('pending', 'accepted', 'in_progress')
              ORDER BY created_at DESC LIMIT 1`,
             [client_corporate_email]
         );
 
-        // Privacy-preserving: same response whether match or not
-        if (tripResult.rows.length === 0) {
-            return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
+        let tokenPayload;
+        let emailSubject;
+        let emailBody;
+        let tokenTTL;
+
+        if (activeResult.rows.length > 0) {
+            // State 1: active trip
+            const { id: tripId, client_first_name: firstName } = activeResult.rows[0];
+            tokenPayload = { client_corporate_email, trip_id: tripId, session_type: 'full' };
+            tokenTTL = 86400;
+            emailSubject = 'Fleet Ops: New Booking Access Link';
+            emailBody = `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n%%LINK%%\n\nDo not share it with anyone.`;
+        } else {
+            // Check for history
+            const historyResult = await query(
+                `SELECT client_first_name FROM trips WHERE client_corporate_email = $1 ORDER BY created_at DESC LIMIT 1`,
+                [client_corporate_email]
+            );
+
+            if (historyResult.rows.length === 0) {
+                // State 3: email not found — same response for privacy
+                return res.status(200).json({ message: 'If the details match, a new link has been dispatched.' });
+            }
+
+            // State 2: history only
+            const firstName = historyResult.rows[0].client_first_name;
+            tokenPayload = { client_corporate_email, session_type: 'history' };
+            tokenTTL = 7200; // 2h — matches the history session TTL
+            emailSubject = 'Fleet Ops: View Your Trip History';
+            emailBody = `Hello ${firstName},\n\nUse this link to view your past trips. The link expires in 2 hours.\n\n%%LINK%%\n\nDo not share it with anyone.`;
         }
 
-        const { id: tripId, client_first_name: firstName } = tripResult.rows[0];
-
-        // 3. Generate token and store in Redis with 24h TTL
+        // 3. Generate token and store in Redis
         const token = crypto.randomBytes(32).toString('hex');
         await setSession(
             `booking_access_token:${token}`,
-            { client_corporate_email, trip_id: tripId },
-            86400
+            tokenPayload,
+            tokenTTL
         );
 
         const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}`;
@@ -303,8 +366,8 @@ router.post('/recover', async (req, res) => {
             try {
                 await sendEmail({
                     to: client_corporate_email,
-                    subject: 'Fleet Ops: New Booking Access Link',
-                    text: `Hello ${firstName},\n\nA new secure access link has been requested for your trip.\n\nUse this link to manage your booking:\n${magicLink}\n\nDo not share it with anyone.`,
+                    subject: emailSubject,
+                    text: emailBody.replace('%%LINK%%', magicLink),
                 });
             } catch (mailErr) {
                 console.error('[mailer] Recovery email failed:', mailErr.message);
