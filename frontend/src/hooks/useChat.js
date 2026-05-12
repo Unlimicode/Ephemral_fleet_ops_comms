@@ -14,7 +14,12 @@ export default function useChat({ tripId, token, role }) {
         const socket = io(import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL.replace('/api', ''), {
             auth: { token, tripId, role },
             transports: ['polling', 'websocket'],
-            withCredentials: true
+            withCredentials: true,
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 30000,
+            randomizationFactor: 0.5,
         });
 
         socketRef.current = socket;
@@ -26,8 +31,9 @@ export default function useChat({ tripId, token, role }) {
 
         socket.on('disconnect', () => setConnected(false));
         socket.on('connect_error', (err) => {
-            console.error('Socket connection error:', err);
-            setError('Failed to connect to secure channel.');
+            // Suppress transient errors — Socket.IO retries automatically with backoff.
+            // Permanent rejections come via auth_error instead.
+            console.warn('[useChat] connect_error (retrying):', err.message);
         });
 
         socket.on('auth_error', (msg) => setError(msg));

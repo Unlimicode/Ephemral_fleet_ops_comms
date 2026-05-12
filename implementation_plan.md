@@ -1236,6 +1236,12 @@ without a test-environment guard.
 - **What changed:** Replaced the three static coloured dots on each session monitor row (driver/client/complaint window) with live TTL badges when `ttlRegistry[t.trip_id]` is populated; `fmtTTL` helper formats seconds into compact strings (e.g. "23h", "45m", "12s"); active sessions show a coloured monospace chip (#00F5A0 driver, #6C63FF client, #F59E0B complaint window) with a translucent tinted background; inactive sessions fall back to a small grey dot; no registry data falls back to the original static dots; fixed `fetchRegistry` missing from the `useEffect` dependency array
 - **Why:** Session monitor showed only pass/fail dot indicators with no timing information — live TTL badges give the manager instant visibility into how long each active session has remaining, making the data-minimization guarantee observable in real time
 
+### [Sprint 20] — Batch 5: WebSocket resilience
+- **Date:** 2026-05-12
+- **Files modified:** `frontend/src/hooks/useChat.js`
+- **What changed:** Added explicit Socket.IO reconnection config — `reconnectionAttempts: Infinity`, `reconnectionDelay: 1000ms`, `reconnectionDelayMax: 30000ms`, `randomizationFactor: 0.5` (exponential backoff with jitter, caps at 30s); `connect_error` handler changed from setting user-visible error state to a silent console warn — transient reconnects are now invisible to the user; backend message buffer replay (`message_history` on join) and PWA auto-connect (ChatWindow renders when `isActive`) were already implemented correctly in prior sprints
+- **Why:** Default Socket.IO reconnection had no backoff cap, and every failed retry attempt was surfacing an error banner to the client — silent exponential backoff is the correct UX for transient disconnections on a mobile PWA
+
 ### [Sprint 20] — Batch 4: Three-state recovery flow
 - **Date:** 2026-05-12
 - **Files modified:** `backend/routes/bookings.js`
