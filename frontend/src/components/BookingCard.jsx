@@ -42,7 +42,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
                     {booking.pickup_location} <span style={{ color: 'var(--text-muted)' }}>→</span> {booking.destination}
                 </p>
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {booking.pickup_time ? new Date(booking.pickup_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Invalid Date'}
+                    {booking.pickup_time ? new Date(booking.pickup_time).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', dateStyle: 'medium', timeStyle: 'short' }) + ' EAT' : 'Invalid Date'}
                 </p>
             </div>
 

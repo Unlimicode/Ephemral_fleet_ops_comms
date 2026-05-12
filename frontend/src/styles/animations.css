@@ -332,3 +332,38 @@
     padding: 1rem 2rem;
     border-radius: 0.75rem;
 }
+
+/* ── Reduced motion — low-end Android / accessibility ── */
+@media (prefers-reduced-motion: reduce) {
+    .animate-float,
+    .animate-float-slow,
+    .animate-float-fast,
+    .animate-float-reverse,
+    .animate-float-side,
+    .animate-morph,
+    .animate-spin-slow,
+    .animate-spin-reverse,
+    .animate-drift {
+        animation: none !important;
+        transform: none !important;
+    }
+
+    .reveal-up {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .stagger-1,
+    .stagger-2,
+    .stagger-3,
+    .stagger-4 {
+        transition-delay: 0ms !important;
+    }
+
+    .animate-fade-in-up {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}

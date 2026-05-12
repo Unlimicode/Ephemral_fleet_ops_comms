@@ -53,7 +53,7 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
                     </span>
                 </div>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
-                    {trip.pickup_time ? new Date(trip.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'TBD'}
+                    {trip.pickup_time ? new Date(trip.pickup_time).toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit' }) + ' EAT' : 'TBD'}
                 </span>
             </div>
 

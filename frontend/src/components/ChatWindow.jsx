@@ -49,21 +49,46 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
     const [inputValue, setInputValue] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [inputFocused, setInputFocused] = useState(false);
+    const [pendingMessages, setPendingMessages] = useState([]);
     const messagesEndRef = useRef(null);
     const textareaRef = useRef(null);
+    const prevConnected = useRef(connected);
     const width = useWindowWidth();
     const isMobile = width < 768;
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, isSending]);
+    }, [messages, pendingMessages, isSending]);
+
+    // Flush pending messages when connection is restored
+    useEffect(() => {
+        if (!prevConnected.current && connected && pendingMessages.length > 0) {
+            pendingMessages.forEach(msg => sendMessage(msg.content));
+            setPendingMessages([]);
+        }
+        prevConnected.current = connected;
+    }, [connected, pendingMessages, sendMessage]);
 
     const handleSend = () => {
-        if (!inputValue.trim() || !connected) return;
-        setIsSending(true);
-        sendMessage(inputValue.trim());
+        const content = inputValue.trim();
+        if (!content) return;
+
         setInputValue('');
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+        if (!connected) {
+            // Queue locally — will be flushed on reconnect
+            setPendingMessages(prev => [...prev, {
+                content,
+                from: role,
+                timestamp: new Date().toISOString(),
+                pending: true,
+            }]);
+            return;
+        }
+
+        setIsSending(true);
+        sendMessage(content);
         setTimeout(() => setIsSending(false), 900);
     };
 
@@ -78,7 +103,10 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
     };
 
     // ── PRE-CONNECTION ──────────────────────────────────────────────────────────
-    if (!connected && !sessionClosed) {
+    // Only show the connecting screen on first connect (no messages yet).
+    // If messages exist, the user is mid-session — keep the chat visible
+    // and show a reconnecting indicator in the header instead.
+    if (!connected && !sessionClosed && messages.length === 0 && pendingMessages.length === 0) {
         return (
             <div className="glass-card-dark" style={containerStyle}>
                 <style>{CHAT_STYLES}</style>
@@ -211,9 +239,10 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{
                         width: '8px', height: '8px', borderRadius: '50%',
-                        background: '#6C63FF',
-                        boxShadow: '0 0 10px rgba(108,99,255,0.8)',
-                        animation: 'sessionPulse 2s infinite'
+                        background: connected ? '#6C63FF' : 'rgba(255,255,255,0.25)',
+                        boxShadow: connected ? '0 0 10px rgba(108,99,255,0.8)' : 'none',
+                        animation: connected ? 'sessionPulse 2s infinite' : 'none',
+                        transition: 'background 0.3s ease',
                     }} />
                     <span className="kinetic-text" style={{
                         fontSize: '14px', fontWeight: 800,
@@ -221,6 +250,11 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                     }}>
                         {counterpartName}
                     </span>
+                    {!connected && (
+                        <span style={{ fontSize: '10px', color: 'rgba(240,242,247,0.35)', fontWeight: 600 }}>
+                            reconnecting…
+                        </span>
+                    )}
                 </div>
                 <span style={{
                     fontSize: '11px', fontWeight: 700, color: '#A5A0FF',
@@ -270,27 +304,31 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                     </div>
                 )}
 
-                {messages.map((msg, i) => {
+                {[...messages, ...pendingMessages].map((msg, i) => {
                     const isMine = msg.from === role;
+                    const isPending = !!msg.pending;
                     return (
                         <div key={i} style={{
                             display: 'flex',
                             justifyContent: isMine ? 'flex-end' : 'flex-start',
-                            animation: `${isMine ? 'msgRevealRight' : 'msgRevealLeft'} 0.22s ease-out both`
+                            animation: `${isMine ? 'msgRevealRight' : 'msgRevealLeft'} 0.22s ease-out both`,
+                            opacity: isPending ? 0.55 : 1,
                         }}>
                             <div style={{
                                 maxWidth: '76%',
                                 padding: '10px 14px',
                                 borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                                 background: isMine
-                                    ? 'linear-gradient(135deg, #6C63FF 0%, #8B85FF 100%)'
+                                    ? isPending
+                                        ? 'rgba(108,99,255,0.35)'
+                                        : 'linear-gradient(135deg, #6C63FF 0%, #8B85FF 100%)'
                                     : 'rgba(255,255,255,0.07)',
                                 backdropFilter: isMine ? 'none' : 'blur(20px)',
                                 WebkitBackdropFilter: isMine ? 'none' : 'blur(20px)',
                                 border: isMine
                                     ? '1px solid rgba(108,99,255,0.35)'
                                     : '0.5px solid rgba(255,255,255,0.12)',
-                                boxShadow: isMine
+                                boxShadow: isMine && !isPending
                                     ? '0 4px 18px rgba(108,99,255,0.35)'
                                     : '0 2px 8px rgba(0,0,0,0.18)',
                                 color: isMine ? '#FFF' : '#F5EDE3',
@@ -299,8 +337,11 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                                 {msg.content}
                                 <div style={{
                                     fontSize: '10px', marginTop: '4px',
-                                    opacity: 0.5, textAlign: isMine ? 'right' : 'left'
+                                    opacity: 0.5, textAlign: isMine ? 'right' : 'left',
+                                    display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start',
+                                    alignItems: 'center', gap: '4px',
                                 }}>
+                                    {isPending && <span>⏳</span>}
                                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             </div>
@@ -354,8 +395,8 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                     <textarea
                         ref={textareaRef}
                         className="chat-textarea"
-                        placeholder={connected ? 'Type a message...' : 'Connecting...'}
-                        disabled={!connected}
+                        placeholder={connected ? 'Type a message...' : 'Offline — will send on reconnect'}
+                        disabled={sessionClosed}
                         rows={1}
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
@@ -385,20 +426,22 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                 <button
                     type="button"
                     onClick={handleSend}
-                    disabled={!connected || !inputValue.trim()}
+                    disabled={!inputValue.trim() || sessionClosed}
                     style={{
                         height: '44px', padding: '0 20px',
                         borderRadius: '14px', border: 'none',
-                        background: connected && inputValue.trim()
-                            ? 'linear-gradient(135deg, #6C63FF, #8B85FF)'
+                        background: inputValue.trim() && !sessionClosed
+                            ? connected
+                                ? 'linear-gradient(135deg, #6C63FF, #8B85FF)'
+                                : 'rgba(108,99,255,0.35)'
                             : 'rgba(255,255,255,0.07)',
                         display: 'flex', alignItems: 'center',
                         justifyContent: 'center', fontSize: '16px',
-                        color: connected && inputValue.trim() ? '#FFF' : 'rgba(255,255,255,0.25)',
-                        cursor: connected && inputValue.trim() ? 'pointer' : 'not-allowed',
+                        color: inputValue.trim() && !sessionClosed ? '#FFF' : 'rgba(255,255,255,0.25)',
+                        cursor: inputValue.trim() && !sessionClosed ? 'pointer' : 'not-allowed',
                         flexShrink: 0,
                         transition: 'all 0.2s ease',
-                        boxShadow: connected && inputValue.trim()
+                        boxShadow: inputValue.trim() && connected && !sessionClosed
                             ? '0 4px 16px rgba(108,99,255,0.45)'
                             : 'none'
                     }}

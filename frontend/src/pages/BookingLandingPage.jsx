@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import ChatWindow from '../components/ChatWindow';
 import SwiftlinkLogo from '../components/SwiftlinkLogo';
+import useOnlineStatus from '../hooks/useOnlineStatus';
 
 const modalLabelStyle = { fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'block' };
 const modalInputStyle = { width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' };
@@ -342,6 +343,9 @@ export default function BookingLandingPage() {
     );
     const [notifLoading, setNotifLoading] = useState(false);
 
+    const isOnline = useOnlineStatus();
+    const [queuedComplaint, setQueuedComplaint] = useState(null);
+
     const authStarted = useRef(false);
 
     // ── Session init ───────────────────────────────────────────────────────────
@@ -419,9 +423,35 @@ export default function BookingLandingPage() {
         return () => clearInterval(interval);
     }, [complaintStatus.success, tripId]);
 
+    // Restore queued complaint from localStorage when tripId is known
+    useEffect(() => {
+        if (!tripId) return;
+        const stored = localStorage.getItem(`swiftlink_queued_complaint_${tripId}`);
+        if (stored) {
+            try { setQueuedComplaint(JSON.parse(stored)); } catch {}
+        }
+    }, [tripId]);
+
+    // Drain queued complaint when connectivity is restored
+    useEffect(() => {
+        if (!isOnline || !tripId || !queuedComplaint) return;
+        api.post(`/complaints/${tripId}`, queuedComplaint)
+            .then(() => {
+                localStorage.removeItem(`swiftlink_queued_complaint_${tripId}`);
+                setQueuedComplaint(null);
+                setComplaintStatus({ loading: false, success: true, error: false });
+            })
+            .catch(() => {});
+    }, [isOnline, tripId, queuedComplaint]);
+
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleComplaintSubmit = async (e) => {
         e.preventDefault();
+        if (!isOnline) {
+            localStorage.setItem(`swiftlink_queued_complaint_${tripId}`, JSON.stringify(complaintForm));
+            setQueuedComplaint(complaintForm);
+            return;
+        }
         setComplaintStatus({ loading: true, success: false, error: false });
         try {
             await api.post(`/complaints/${tripId}`, complaintForm);
@@ -564,7 +594,14 @@ export default function BookingLandingPage() {
 
             {/* Sticky nav */}
             <nav className="sticky top-0 z-50 h-[56px] px-5 bg-[#F5EDE3]/80 backdrop-blur-[20px] flex items-center justify-between border-b border-black/5">
-                <SwiftlinkLogo height={36} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <SwiftlinkLogo height={36} />
+                    {!isOnline && (
+                        <span style={{ fontSize: '10px', fontWeight: 700, background: 'rgba(239,68,68,0.08)', color: '#EF4444', padding: '2px 8px', borderRadius: '9999px', letterSpacing: '0.05em', border: '1px solid rgba(239,68,68,0.15)' }}>
+                            offline
+                        </span>
+                    )}
+                </div>
                 <StatusBadge status={status} />
             </nav>
 
@@ -611,7 +648,7 @@ export default function BookingLandingPage() {
                 <div className="glass-card p-6 reveal-up active stagger-1 mb-5">
                     <div className="flex justify-between items-center mb-4">
                         <span className="font-mono text-[10px] text-text-muted uppercase tracking-widest">TRIP #{booking.id.slice(0, 8).toUpperCase()}</span>
-                        <span className="font-mono font-bold text-sm">{new Date(booking.pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="font-mono font-bold text-sm">{new Date(booking.pickup_time).toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit' })} <span className="font-normal text-text-muted text-[10px]">EAT</span></span>
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl kinetic-text mb-4">
@@ -814,6 +851,17 @@ export default function BookingLandingPage() {
                                     </div>
                                 )}
                             </div>
+                        ) : queuedComplaint ? (
+                            <div className="glass-card-dark" style={{ padding: '32px 28px', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '32px' }}>📋</div>
+                                <h3 className="kinetic-text" style={{ fontSize: '18px', margin: 0 }}>Complaint Queued</h3>
+                                <p style={{ fontSize: '13px', color: 'rgba(240,242,247,0.5)', margin: 0, lineHeight: 1.6 }}>
+                                    Your complaint has been saved. It will be submitted automatically when connectivity is restored.
+                                </p>
+                                <span style={{ fontSize: '11px', fontWeight: 700, background: 'rgba(245,158,11,0.15)', color: '#F59E0B', padding: '4px 14px', borderRadius: '9999px', border: '1px solid rgba(245,158,11,0.25)' }}>
+                                    {queuedComplaint.category}
+                                </span>
+                            </div>
                         ) : complaintWindowSeconds !== null && complaintWindowSeconds <= 0 ? (
                             <div className="glass-card-dark" style={{ padding: '40px 28px', borderRadius: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                                 <div style={{ fontSize: '40px' }}>⏰</div>
@@ -878,7 +926,7 @@ export default function BookingLandingPage() {
                                     )}
                                     <button type="submit" disabled={!complaintForm.category || !complaintForm.description.trim() || complaintForm.description.length > 500 || complaintStatus.loading}
                                         className="btn-premium btn-accent w-full" style={{ padding: '16px', borderRadius: '14px' }}>
-                                        {complaintStatus.loading ? 'Submitting...' : 'Submit Complaint →'}
+                                        {complaintStatus.loading ? 'Submitting...' : !isOnline ? 'Queue Complaint →' : 'Submit Complaint →'}
                                     </button>
                                 </form>
                             </div>
