@@ -39,7 +39,19 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // 2. Insert the trip into PostgreSQL (status: pending)
+        // 2. Block concurrent active bookings — one active trip per client at a time
+        const existingTrip = await query(
+            `SELECT id FROM trips WHERE client_corporate_email = $1 AND status IN ('pending', 'accepted', 'in_progress') LIMIT 1`,
+            [client_corporate_email]
+        );
+        if (existingTrip.rows.length > 0) {
+            return res.status(409).json({
+                error: 'You already have an active booking.',
+                existing_trip_id: existingTrip.rows[0].id
+            });
+        }
+
+        // 3. Insert the trip into PostgreSQL (status: pending)
         const tripResult = await query(
             `INSERT INTO trips
              (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes, additional_info, status)
@@ -118,25 +130,32 @@ router.get('/auth', async (req, res) => {
 
         // 2. Retrieve supplementary info
         const tripResult = await query(
-            'SELECT client_first_name FROM trips WHERE id = $1',
+            'SELECT client_first_name, pickup_time FROM trips WHERE id = $1',
             [sessionData.trip_id]
         );
         const firstName = tripResult.rows[0]?.client_first_name || 'Client';
+        const pickupTime = tripResult.rows[0]?.pickup_time;
 
-        // 3. Issue the secure session JWT
+        // 3. Issue the secure session JWT — TTL tied to trip lifecycle
+        // Expires at pickup_time + 72h (covers long trips + 48h complaint window)
+        // Floor: 24h from now in case pickup is imminent or already passed
+        const pickupMs = pickupTime ? new Date(pickupTime).getTime() : Date.now();
+        const expiresAt = Math.max(pickupMs + 72 * 60 * 60 * 1000, Date.now() + 24 * 60 * 60 * 1000);
+        const ttlSecs = Math.floor((expiresAt - Date.now()) / 1000);
+
         const jwtPayload = {
             client_corporate_email: sessionData.client_corporate_email,
             trip_id: sessionData.trip_id,
             role: 'client'
         };
-        const jwtToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: '30d' });
+        const jwtToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: ttlSecs });
 
         // 4. Set the native HttpOnly browser cookie
         res.cookie('client_session', jwtToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days — session valid until trip completes and Redis TTLs are destroyed
+            maxAge: ttlSecs * 1000
         });
 
         // 5. Respond without exposing token
@@ -174,6 +193,22 @@ router.get('/session', async (req, res) => {
 
         if (tripResult.rows.length === 0) {
             return res.status(401).json({ error: 'Trip associated with session not found' });
+        }
+
+        // Silently reissue cookie if JWT has < 4h remaining and trip is still active
+        const remainingMs = decoded.exp * 1000 - Date.now();
+        if (remainingMs < 4 * 60 * 60 * 1000 && tripResult.rows[0].status !== 'completed') {
+            const refreshed = jwt.sign(
+                { client_corporate_email: decoded.client_corporate_email, trip_id: decoded.trip_id, role: 'client' },
+                process.env.JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+            res.cookie('client_session', refreshed, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 24 * 60 * 60 * 1000
+            });
         }
 
         return res.status(200).json({

@@ -1236,6 +1236,12 @@ without a test-environment guard.
 - **What changed:** Replaced the three static coloured dots on each session monitor row (driver/client/complaint window) with live TTL badges when `ttlRegistry[t.trip_id]` is populated; `fmtTTL` helper formats seconds into compact strings (e.g. "23h", "45m", "12s"); active sessions show a coloured monospace chip (#00F5A0 driver, #6C63FF client, #F59E0B complaint window) with a translucent tinted background; inactive sessions fall back to a small grey dot; no registry data falls back to the original static dots; fixed `fetchRegistry` missing from the `useEffect` dependency array
 - **Why:** Session monitor showed only pass/fail dot indicators with no timing information — live TTL badges give the manager instant visibility into how long each active session has remaining, making the data-minimization guarantee observable in real time
 
+### [Sprint 20] — Batch 2: Session TTL and concurrent trip handling
+- **Date:** 2026-05-12
+- **Files modified:** `backend/routes/bookings.js`
+- **What changed:** `POST /bookings` now blocks a second booking if the client already has a trip in `pending`, `accepted`, or `in_progress` — returns 409 with `existing_trip_id` so the frontend can redirect; `GET /bookings/auth` issues a JWT with TTL tied to `pickup_time + 72h` (floor: 24h from now) instead of a fixed 30 days, so the session naturally expires after the complaint window closes; `GET /bookings/session` silently reissues the cookie with a fresh 24h TTL if the JWT has under 4h remaining and the trip is still active; ETA decision recorded: manager sets ETA as TIMESTAMPTZ on assignment
+- **Why:** Fixed TTL was architecturally wrong — a 30-day session could outlive the trip by weeks or expire mid-trip; concurrent booking block enforces the 1-session-per-client model required by the cookie auth architecture
+
 ### [Sprint 20] — Batch 1: Schema and data foundation
 - **Date:** 2026-05-12
 - **Files modified:** `backend/database/migrations/004_add_additional_info_eta_vehicle_details.sql`, `backend/database/schema.sql`, `backend/routes/trips.js`, `backend/routes/bookings.js`, `backend/routes/driverTrips.js`
