@@ -10,7 +10,7 @@ Three actor types: **fleet managers**, **drivers** (PWA), **clients** (corporate
 
 ## Stack
 - **Backend:** Node.js / Express, PostgreSQL (Supabase), Redis (Upstash), Socket.IO
-- **Frontend:** React / Vite, Tailwind CSS, PWA (drivers)
+- **Frontend:** React / Vite, Tailwind CSS, PWA (drivers + clients)
 - **Email:** Resend SMTP (prod), Ethereal Email (dev) — all mail goes through `backend/config/mailer.js`
 - **Auth:** JWT + Redis TTL (ephemeral sessions), magic links for managers, HttpOnly cookies for clients
 - **Dev tunneling:** ngrok via root-level `start-dev.js`
@@ -42,7 +42,7 @@ middleware/
   clientAuth.js         — HttpOnly cookie middleware for clients (requireClientAuth)
 routes/
   auth.js               — Manager magic link auth
-  bookings.js           — Client bookings: submission, token validation, session, history
+  bookings.js           — Client bookings: submission, token validation, session, history, edit, cancel, recovery, push-subscribe, logout
   complaints.js         — Complaint lifecycle: file, status update, message archive access
   contact.js            — Client contact/enquiry
   dashboard.js          — Manager dashboard: summary, sessions, compliance report, audit
@@ -57,14 +57,22 @@ socket/
   io.js                 — Socket.IO server, WebSocket relay namespace (/)
   dashboardNamespace.js — /dashboard namespace for manager real-time events
 utils/
-  encryption.js         — AES-256-GCM encrypt/decrypt for message archives
-  sendPushNotification.js — Push dispatch, auto-deletes stale subscriptions on 404/410
+  encryption.js                  — AES-256-GCM encrypt/decrypt for message archives
+  sendPushNotification.js        — Driver push dispatch, auto-deletes stale subscriptions on 404/410
+  sendClientPushNotification.js  — Client push dispatch, queries client_push_subscriptions by email
 database/
-  schema.sql            — PostgreSQL schema (6 tables + push_subscriptions)
+  schema.sql            — PostgreSQL schema: fleet_managers, drivers, vehicles, trips, complaints, audit_log, push_subscriptions, driver_notifications, client_push_subscriptions
   seed.js               — Master seed script (npm run seed)
   seed.sql              — SQL seed fragments
   seedData.js           — CI seed data helpers
-tests/                  — 14 suites, 76 tests, all must pass before commit
+  migrations/
+    001_driver_notifications.sql          — driver_notifications table
+    002_audit_log_compliance.sql          — DPA compliance columns on audit_log
+    003_add_trips_created_at.sql          — created_at on trips
+    004_add_additional_info_eta_vehicle_details.sql — additional_info, eta on trips; make, model on vehicles
+    005_add_cancelled_trip_status.sql     — cancelled added to trips.status CHECK
+    006_add_client_push_subscriptions.sql — client_push_subscriptions table (email-keyed)
+tests/                  — 14 suites, 89 tests, all must pass before commit
   auth.test.js
   bookings.test.js
   complaints.test.js
@@ -90,8 +98,9 @@ api/
 context/
   AuthContext.jsx       — Auth state: token, role, user. Persisted in sessionStorage.
 hooks/
-  useChat.js            — Socket.IO chat hook: connect, send, receive, session_closed
-  usePushNotifications.js — Push subscription lifecycle hook
+  useChat.js              — Socket.IO chat hook: connect, send, receive, session_closed
+  usePushNotifications.js — Driver push subscription lifecycle hook (Bearer token)
+  useOnlineStatus.js      — navigator.onLine + window online/offline events, returns boolean
 utils/
   ripple.js             — Ripple click effect utility
 styles/
@@ -126,7 +135,7 @@ pages/
     DriverActiveTripPage.jsx      — /driver/trips/:tripId
     DriverProfilePage.jsx         — /driver/profile
     DriverNotificationsPage.jsx   — /driver/notifications
-  BookingLandingPage.jsx          — /booking — client trip session: details, driver card, live chat, complaint form
+  BookingLandingPage.jsx          — /booking — client PWA: three load states (booking-form / history / trip), full trip interface, offline complaint queuing, push permission prompt
   BookingHistoryPage.jsx          — /booking/history — lives at pages root (not pages/booking/)
   LoginPage.jsx                   — /login
   SwiftlinkHomePage.jsx           — / — public landing page
@@ -150,12 +159,17 @@ pages/
 ### Trip Status Flow
 ```
 pending -> accepted -> in_progress -> completed
-                                   -> cancelled
+        -> cancelled                -> cancelled (client cancels)
 ```
-- `accepted` = manager assigned driver, driver not yet started
-- `in_progress` = driver pressed start, client picked up
-- Chat on BookingLandingPage opens when booking status is `accepted`
-- Redis session keys created when driver accepts, destroyed on complete
+- `pending` = booking submitted, no driver assigned yet
+- `accepted` = manager assigned driver + vehicle, driver has not started
+- `in_progress` = driver accepted assignment, Redis sessions created, chat channel open
+- `completed` = driver marked drop-off done, Redis sessions destroyed, 24h complaint window opens
+- `cancelled` = client cancelled at pending or accepted (not allowed at in_progress)
+- Client can cancel at `pending` or `accepted`; driver notified via socket + push when cancelled at `accepted`
+- Chat opens when trip status is `accepted` (not tied to complaint state)
+- Redis session keys: `session:trip:{id}:driver` and `session:trip:{id}:client`, created on accept, deleted on complete
+- Push notification sent to client when driver accepts: driver first name + vehicle make/model/plate (no contact details)
 
 ### Complaint Status Flow
 ```
@@ -172,7 +186,7 @@ open -> under_investigation -> resolved
 
 ### Email — Critical Gotchas
 - All email goes through `backend/config/mailer.js` only — never create inline transporters
-- Named exports: `sendBookingConfirmation`, `sendDriverAssignedNotification`, `sendTripCompletionNotification`
+- Named exports: `sendBookingConfirmation`, `sendDriverAssignedNotification`, `sendTripCompletionNotification`, `sendComplaintStatusUpdate`
 - Resend click-tracking strips magic link tokens — never add HTML wrappers to magic link emails
 - `MAIL_FROM` must match the Ethereal account address in dev or sends fail silently
 - Wrap all `sendMail` calls in `if (process.env.NODE_ENV !== 'test')` to prevent ECONNREFUSED in CI
@@ -186,7 +200,7 @@ open -> under_investigation -> resolved
 
 ### Responsive Breakpoints
 - Standard hook: `useWindowWidth` — event listener + state + cleanup pattern
-- Not a standalone file yet — create at `frontend/src/hooks/useWindowWidth.js` if needed
+- Currently inlined in `ChatWindow.jsx` — extract to `frontend/src/hooks/useWindowWidth.js` if needed elsewhere
 - Never use static `window.innerWidth` checks
 - Manager content: `max-width: 1440px`
 - Driver content: `max-width: 900px`
@@ -225,7 +239,7 @@ Examples: `fix(complaints): allow status to return to open`, `feat(audit): add C
 
 ## CI Pipeline (GitHub Actions)
 Backend tests run on every push. Before finishing any task:
-1. Run `cd backend; npm test` and confirm 14 suites, 76 tests, 0 failures
+1. Run `cd backend; npm test` and confirm 14 suites, 89 tests, 0 failures
 2. These suites have a history of failures — always check them:
    - `driverTrips.test.js`
    - `roster.test.js`
@@ -269,20 +283,26 @@ cd backend; npm run seed
 
 ---
 
-## Current Status — Sprint 19
+## Current Status — Sprint 20 (complete)
 
 ### Completed
 - [x] Sprints 1-8: Full backend — auth, trips, WebSocket relay, complaints, push notifications, privacy dashboard APIs
 - [x] Sprints 9-12: Full frontend foundation — layouts, pages, chat, responsive design system
-- [x] Sprint 13: Client-driver WebSocket wire-up, BookingLandingPage
+- [x] Sprint 13: Client-driver WebSocket wire-up, BookingLandingPage (original)
 - [x] Sprint 14: Email consolidation to shared mailer, Privacy Dashboard UI
 - [x] Sprint 18: PDF compliance export (ManagerPrivacyDashboardPage), CSV audit export (ManagerAuditPage)
-- [x] Fix: addToast/showToast naming mismatch and reversed args fixed across 7 files (commit 75ccb26)
+- [x] Sprint 20 Batch 1: Schema foundation — `additional_info`, `eta` on trips; `make`, `model` on vehicles; migration 004
+- [x] Sprint 20 Batch 2: Session TTL tied to trip lifecycle; dynamic JWT expiry; concurrent trip blocking (409)
+- [x] Sprint 20 Batch 3: `PATCH /bookings/:id` edit; `DELETE /bookings/:id` cancel with state gates; socket + push on cancel at accepted; ETA on assignment
+- [x] Sprint 20 Batch 4: Three-state recovery — active trip / history-only / unknown email; read-only 2h history session
+- [x] Sprint 20 Batch 5: WebSocket reconnection with exponential backoff (1s–30s, Infinity); silent connect_error; visibility-change reconnect
+- [x] Sprint 20 Batch 6: Full BookingLandingPage rewrite — three load states (booking-form / history / trip), cancel UI, ETA badge, driver card with vehicle make/model/plate, additional_info edit, complaint form + progress tracker, `POST /bookings/logout`
+- [x] Sprint 20 Batch 7: Driver — `additional_info` display, cancelled trip state; Manager — ETA input on dispatch, booking_cancelled socket listener
+- [x] Sprint 20 Batch 8: Client push notifications — `client_push_subscriptions` table (migration 006), `sendClientPushNotification` utility, `POST/DELETE /bookings/push-subscribe`, push fired on driver accept, push permission prompt in BookingLandingPage trip view
+- [x] Sprint 20 Batch 9: Offline resilience — `useOnlineStatus` hook, offline pill in nav, complaint queuing to localStorage with auto-drain; ChatWindow pending message state, mid-session reconnect fix; Africa/Nairobi timezone + EAT label on all date displays; `prefers-reduced-motion` in animations.css
 
 ### Outstanding
-- [ ] Request Transfer button obscured by animated shapes on mobile scroll (BookingLandingPage)
-- [ ] Complaint status regression — cannot return to `open` from `under_investigation`
-- [ ] Message visibility incorrectly tied to `under_investigation` (should open at `accepted` booking status)
-- [ ] SwiftLink SVG logo inconsistency across layouts
-- [ ] Client-facing complaint progress view + email notifications on complaint status change
-- [ ] Sprint 18: Manager dashboard Stitch-style redesign (all 6 pages: Dispatch, Drivers, Vehicles, Complaints, Audit, PrivacyDashboard)
+- [ ] Complaint status regression — cannot return to `open` from `under_investigation` (backend guard in complaints.js)
+- [ ] Message visibility — chat should open at trip `accepted` status, not be gated on complaint investigation state (verify and fix in complaints/socket layer if still wrong)
+- [ ] SwiftLink SVG logo inconsistency — size/style varies between ManagerLayout, DriverLayout, and BookingLandingPage
+- [ ] Manager dashboard visual redesign — all 6 pages (Dispatch, Drivers, Vehicles, Complaints, Audit, PrivacyDashboard) need Stitch-style refresh (large task)
