@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS trips (
                                        'pending',
                                        'accepted',
                                        'in_progress',
-                                       'completed'
+                                       'completed',
+                                       'cancelled'
                                      )),
   assigned_driver_id     UUID        REFERENCES drivers(id)  ON DELETE SET NULL,
   vehicle_id             UUID        REFERENCES vehicles(id) ON DELETE SET NULL,

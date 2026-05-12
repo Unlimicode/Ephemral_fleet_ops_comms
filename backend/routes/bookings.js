@@ -7,6 +7,8 @@ import { sendEmail } from '../config/mailer.js';
 import jwt from 'jsonwebtoken';
 import { requireClientAuth } from '../middleware/clientAuth.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
+import { getIo } from '../socket/io.js';
+import { sendPushNotification } from '../utils/sendPushNotification.js';
 
 const router = Router();
 
@@ -512,12 +514,19 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
         if (tripCheck.rows.length === 0) {
             return res.status(404).json({ error: 'Trip not found' });
         }
-        if (tripCheck.rows[0].status !== 'pending') {
-            return res.status(403).json({ error: 'Booking can only be updated while pending' });
+        const currentStatus = tripCheck.rows[0].status;
+        const { pickup_location, destination, pickup_time, flight_number, notes, additional_info } = req.body;
+
+        // Core fields: pending only. additional_info: pending or accepted (until driver starts)
+        const hasCoreFields = [pickup_location, destination, pickup_time, flight_number, notes].some(f => f !== undefined);
+        if (hasCoreFields && currentStatus !== 'pending') {
+            return res.status(403).json({ error: 'Booking details can only be updated while pending' });
+        }
+        if (additional_info !== undefined && !['pending', 'accepted'].includes(currentStatus)) {
+            return res.status(403).json({ error: 'Trip notes can only be updated until your driver has started' });
         }
 
         // 3. Validate and collect allowed fields
-        const { pickup_location, destination, pickup_time, flight_number, notes } = req.body;
         const updates = {};
 
         if (pickup_location !== undefined) {
@@ -544,6 +553,9 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
         }
         if (notes !== undefined) {
             updates.notes = notes || null;
+        }
+        if (additional_info !== undefined) {
+            updates.additional_info = additional_info || null;
         }
 
         if (Object.keys(updates).length === 0) {
@@ -578,6 +590,77 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
 
     } catch (err) {
         console.error('[bookings] PATCH error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── DELETE /:tripId — Cancel Booking ─────────────────────────────────────────
+// Allowed at pending (no driver) and accepted (driver assigned, not started).
+// At accepted: notifies driver via socket + push before closing.
+// ─────────────────────────────────────────────────────────────────────────────
+router.delete('/:tripId', requireClientAuth, async (req, res) => {
+    const { tripId } = req.params;
+
+    if (req.client.trip_id !== tripId) {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    try {
+        const tripCheck = await query(
+            'SELECT status, assigned_driver_id FROM trips WHERE id = $1',
+            [tripId]
+        );
+
+        if (tripCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+
+        const { status, assigned_driver_id } = tripCheck.rows[0];
+
+        if (status === 'in_progress') {
+            return res.status(403).json({ error: 'Cannot cancel a trip that is already in progress' });
+        }
+        if (status === 'completed' || status === 'cancelled') {
+            return res.status(403).json({ error: 'Trip is already closed' });
+        }
+
+        await query(
+            `UPDATE trips SET status = 'cancelled' WHERE id = $1`,
+            [tripId]
+        );
+
+        await query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['BOOKING_CANCELLED', req.client.client_corporate_email, 'client', tripId, JSON.stringify({ previous_status: status })]
+        );
+
+        emitDashboardEvent('booking_cancelled', { tripId, previous_status: status });
+
+        // Notify assigned driver if trip was already accepted
+        if (status === 'accepted' && assigned_driver_id) {
+            const io = getIo();
+            if (io) {
+                io.to(`trip:${tripId}`).emit('trip_cancelled', {
+                    tripId,
+                    reason: 'Client cancelled the booking'
+                });
+            }
+
+            if (process.env.NODE_ENV !== 'test') {
+                sendPushNotification(assigned_driver_id, {
+                    title: 'Trip Cancelled',
+                    body: 'The client has cancelled this booking.',
+                    type: 'trip_cancelled',
+                    tripId,
+                }).catch(() => {});
+            }
+        }
+
+        return res.status(200).json({ message: 'Booking cancelled successfully' });
+
+    } catch (err) {
+        console.error('[bookings] cancel error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });

@@ -1236,6 +1236,12 @@ without a test-environment guard.
 - **What changed:** Replaced the three static coloured dots on each session monitor row (driver/client/complaint window) with live TTL badges when `ttlRegistry[t.trip_id]` is populated; `fmtTTL` helper formats seconds into compact strings (e.g. "23h", "45m", "12s"); active sessions show a coloured monospace chip (#00F5A0 driver, #6C63FF client, #F59E0B complaint window) with a translucent tinted background; inactive sessions fall back to a small grey dot; no registry data falls back to the original static dots; fixed `fetchRegistry` missing from the `useEffect` dependency array
 - **Why:** Session monitor showed only pass/fail dot indicators with no timing information — live TTL badges give the manager instant visibility into how long each active session has remaining, making the data-minimization guarantee observable in real time
 
+### [Sprint 20] — Batch 3: Booking management endpoints
+- **Date:** 2026-05-12
+- **Files modified:** `backend/database/migrations/005_add_cancelled_trip_status.sql`, `backend/database/schema.sql`, `backend/routes/bookings.js`
+- **What changed:** Added `cancelled` to the trips status CHECK constraint (migration 005); `PATCH /bookings/:tripId` now accepts `additional_info` with an extended state gate (editable at `pending` or `accepted`, blocked once in_progress); `DELETE /bookings/:tripId` cancels a booking at `pending` or `accepted`, blocked at `in_progress`/`completed`/`cancelled`; on cancellation at `accepted`, emits `trip_cancelled` socket event to the trip room and sends push notification to the assigned driver; audit log entry written on every cancellation
+- **Why:** Clients need to be able to correct bookings and cancel before the driver departs — state gates enforce the privacy guarantee by blocking changes once the trip is underway
+
 ### [Sprint 20] — Batch 2: Session TTL and concurrent trip handling
 - **Date:** 2026-05-12
 - **Files modified:** `backend/routes/bookings.js`
