@@ -657,6 +657,16 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
     }
 });
 
+// ── POST /logout — Clear client session cookie ───────────────────────────────
+router.post('/logout', (req, res) => {
+    res.clearCookie('client_session', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+    });
+    return res.status(200).json({ message: 'Session cleared' });
+});
+
 // ── DELETE /:tripId — Cancel Booking ─────────────────────────────────────────
 // Allowed at pending (no driver) and accepted (driver assigned, not started).
 // At accepted: notifies driver via socket + push before closing.
