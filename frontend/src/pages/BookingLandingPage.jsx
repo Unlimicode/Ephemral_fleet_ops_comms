@@ -416,7 +416,7 @@ export default function BookingLandingPage() {
     useEffect(() => {
         if (!complaintStatus.success || !tripId) return;
         const poll = async () => {
-            try { const res = await api.get(`/complaints/${tripId}/status`); setComplaintProgress(res.data); } catch {}
+            try { const res = await api.get(`/complaints/${tripId}/status`); setComplaintProgress(res.data); } catch { /* silent — next poll will retry */ }
         };
         poll();
         const interval = setInterval(poll, 30000);
@@ -428,7 +428,7 @@ export default function BookingLandingPage() {
         if (!tripId) return;
         const stored = localStorage.getItem(`swiftlink_queued_complaint_${tripId}`);
         if (stored) {
-            try { setQueuedComplaint(JSON.parse(stored)); } catch {}
+            try { setQueuedComplaint(JSON.parse(stored)); } catch { /* malformed localStorage entry — ignore */ }
         }
     }, [tripId]);
 
