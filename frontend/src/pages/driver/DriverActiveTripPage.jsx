@@ -99,6 +99,7 @@ export default function DriverActiveTripPage() {
     );
 
     const isInProgress = trip?.status === 'in_progress';
+    const isCancelled = trip?.status === 'cancelled';
     const sh = { background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear', borderRadius: '12px' };
 
     return (
@@ -118,6 +119,7 @@ export default function DriverActiveTripPage() {
             {loading ? (
                 <>
                     {/* Section 1 skeleton */}
+
                     <section className="glass-card" style={{ margin: '0 20px', padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div style={{ ...sh, width: '200px', height: '32px' }} />
                         <div style={{ ...sh, width: '100%', height: '18px' }} />
@@ -138,6 +140,19 @@ export default function DriverActiveTripPage() {
                         <div style={{ ...sh, width: '60%', height: '16px' }} />
                     </section>
                 </>
+            ) : isCancelled ? (
+                <section className="reveal-up stagger-1" style={{ padding: '0 20px' }}>
+                    <div className="glass-card-dark" style={{ padding: '40px 24px', borderRadius: '24px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🚫</div>
+                        <p className="kinetic-text" style={{ fontSize: '20px', fontWeight: 800, color: '#F5EDE3', margin: '0 0 8px 0', letterSpacing: '-0.05em' }}>Trip Cancelled</p>
+                        <p style={{ fontSize: '13px', color: 'rgba(245,237,227,0.5)', lineHeight: 1.5, margin: '0 0 24px 0' }}>
+                            The client has cancelled this booking.
+                        </p>
+                        <button className="btn-premium" onClick={() => navigate('/driver/trips')} style={{ background: '#6C63FF', padding: '14px 32px' }}>
+                            Back to Trips
+                        </button>
+                    </div>
+                </section>
             ) : (
                 <>
             {/* Section 1: Trip Status Card */}

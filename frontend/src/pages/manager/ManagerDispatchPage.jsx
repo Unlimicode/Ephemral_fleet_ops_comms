@@ -81,6 +81,7 @@ export default function ManagerDispatchPage() {
         socket.on('session_destroyed', fetchData);
         socket.on('complaint_filed', fetchData);
         socket.on('booking_updated', fetchData);
+        socket.on('booking_cancelled', fetchData);
 
         return () => {
             clearInterval(pollInterval);
@@ -96,9 +97,9 @@ export default function ManagerDispatchPage() {
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [fetchData]);
 
-    const handleAssign = async (tripId, driverId, vehicleId) => {
+    const handleAssign = async (tripId, driverId, vehicleId, eta = null) => {
         try {
-            await api.patch(`/trips/${tripId}/assign`, { driver_id: driverId, vehicle_id: vehicleId });
+            await api.patch(`/trips/${tripId}/assign`, { driver_id: driverId, vehicle_id: vehicleId, eta });
             await fetchData();
             addToast('Trip assigned successfully.', 'success');
         } catch (err) {

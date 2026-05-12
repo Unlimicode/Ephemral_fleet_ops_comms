@@ -11,7 +11,8 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
         accepted: { bg: 'rgba(255,180,0,0.15)', text: '#B8860B', label: 'Assigned', pulse: false },
         assigned: { bg: 'rgba(255,180,0,0.15)', text: '#B8860B', label: 'Assigned', pulse: false },
         in_progress: { bg: 'rgba(0,245,160,0.15)', text: '#00A86B', label: 'In Progress', pulse: true },
-        completed: { bg: 'rgba(13,13,13,0.08)', text: 'var(--text-muted)', label: 'Completed', pulse: false }
+        completed: { bg: 'rgba(13,13,13,0.08)', text: 'var(--text-muted)', label: 'Completed', pulse: false },
+        cancelled: { bg: 'rgba(224,90,90,0.1)', text: '#E05A5A', label: 'Cancelled', pulse: false },
     };
 
     const currentStatus = statusMap[trip.status] || statusMap['assigned'];
@@ -91,9 +92,17 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
 
             {/* Special instructions */}
             {trip.notes && (
-                <div style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.18)' }}>
+                <div style={{ marginBottom: '12px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.18)' }}>
                     <span style={{ fontSize: '10px', fontWeight: 700, color: '#6C63FF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Note · </span>
                     <span style={{ fontSize: '13px', color: 'var(--text-dark)' }}>{trip.notes}</span>
+                </div>
+            )}
+
+            {/* Additional driver notes */}
+            {trip.additional_info && (
+                <div style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(13,13,13,0.05)', border: '1px solid rgba(13,13,13,0.08)' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Driver Notes · </span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-dark)' }}>{trip.additional_info}</span>
                 </div>
             )}
 

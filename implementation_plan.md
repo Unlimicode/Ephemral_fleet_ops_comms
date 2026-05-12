@@ -1260,6 +1260,12 @@ without a test-environment guard.
 - **What changed:** `POST /bookings` now blocks a second booking if the client already has a trip in `pending`, `accepted`, or `in_progress` — returns 409 with `existing_trip_id` so the frontend can redirect; `GET /bookings/auth` issues a JWT with TTL tied to `pickup_time + 72h` (floor: 24h from now) instead of a fixed 30 days, so the session naturally expires after the complaint window closes; `GET /bookings/session` silently reissues the cookie with a fresh 24h TTL if the JWT has under 4h remaining and the trip is still active; ETA decision recorded: manager sets ETA as TIMESTAMPTZ on assignment
 - **Why:** Fixed TTL was architecturally wrong — a 30-day session could outlive the trip by weeks or expire mid-trip; concurrent booking block enforces the 1-session-per-client model required by the cookie auth architecture
 
+### [Sprint 20] — Batch 7: Driver and manager frontend
+- **Date:** 2026-05-12
+- **Files modified:** `frontend/src/components/DriverTripCard.jsx`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`, `frontend/src/components/BookingCard.jsx`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- **What changed:** `DriverTripCard` — added `additional_info` display ("Driver Notes" label, neutral pill, shown after special instructions) and `cancelled` status to statusMap; `DriverActiveTripPage` — added `isCancelled` check rendering a "Trip Cancelled" dark card with back button when client cancels at accepted before driver starts; `BookingCard` — added optional ETA datetime-local input, passes `eta` to `onAssign`; `ManagerDispatchPage` — `handleAssign` now accepts `eta` param and sends it to `PATCH /trips/:tripId/assign`; added `booking_cancelled` socket listener so the dispatch board updates in real time when a client cancels
+- **Why:** Completes the cancellation feedback loop — driver sees the cancellation immediately on their active trip screen instead of a stale "start trip" button; manager dispatch board stays consistent without a manual refresh; additional_info was already stored and returned by the backend but not rendered for the driver
+
 ### [Sprint 20] — Batch 6: Client PWA — full interface
 - **Date:** 2026-05-12
 - **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`, `backend/routes/bookings.js`

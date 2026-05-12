@@ -3,6 +3,7 @@ import { useState } from 'react';
 export default function BookingCard({ booking, drivers, vehicles, onAssign, index = 0 }) {
     const [selectedDriver, setSelectedDriver] = useState('');
     const [selectedVehicle, setSelectedVehicle] = useState('');
+    const [eta, setEta] = useState('');
     const [assigning, setAssigning] = useState(false);
 
     const isPending = booking.status === 'pending';
@@ -13,7 +14,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
         if (selectedDriver && selectedVehicle) {
             setAssigning(true);
             try {
-                await onAssign(booking.id, selectedDriver, selectedVehicle);
+                await onAssign(booking.id, selectedDriver, selectedVehicle, eta || null);
             } finally {
                 setAssigning(false);
             }
@@ -57,7 +58,7 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
                 </div>
             )}
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                 <select
                     value={selectedDriver}
                     onChange={(e) => setSelectedDriver(e.target.value)}
@@ -87,6 +88,18 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
                         <option key={v.vehicle_id} value={v.vehicle_id}>{v.registration_number} ({v.type})</option>
                     ))}
                 </select>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.35)', marginBottom: '5px' }}>
+                    Driver ETA <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                </label>
+                <input
+                    type="datetime-local"
+                    value={eta}
+                    onChange={(e) => setEta(e.target.value)}
+                    style={{ width: '100%', background: 'var(--bg-input)', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)', padding: '10px 12px', fontSize: '13px', color: 'var(--text-dark)', outline: 'none', boxSizing: 'border-box' }}
+                />
             </div>
 
             <button
