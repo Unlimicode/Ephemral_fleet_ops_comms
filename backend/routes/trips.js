@@ -49,7 +49,7 @@ router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
         if (send_magic_link && process.env.NODE_ENV !== 'test') {
             try {
                 const token = crypto.randomBytes(32).toString('hex');
-                await setSession(`booking_access_token:${token}`, { trip_id: trip.id, client_email: client_corporate_email }, 172800);
+                await setSession(`booking_access_token:${token}`, { trip_id: trip.id, client_corporate_email }, 172800);
                 const magicLink = `${process.env.CLIENT_ORIGIN}/booking?token=${token}&tripId=${trip.id}`;
                 await sendBookingConfirmation(client_corporate_email, magicLink);
             } catch (mailErr) {
@@ -67,7 +67,7 @@ router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
 // ── PATCH /:tripId/assign — Assign Driver & Vehicle ──────────────────────────
 router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res) => {
     const { tripId } = req.params;
-    const { driver_id, vehicle_id } = req.body;
+    const { driver_id, vehicle_id, eta = null } = req.body;
 
     if (!driver_id || !vehicle_id) {
         return res.status(400).json({ error: 'driver_id and vehicle_id are required' });
@@ -110,10 +110,10 @@ router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res)
         // 4. Assign
         const result = await client.query(
             `UPDATE trips
-             SET assigned_driver_id = $1, vehicle_id = $2, status = 'accepted'
+             SET assigned_driver_id = $1, vehicle_id = $2, status = 'accepted', eta = $4
              WHERE id = $3
              RETURNING *`,
-            [driver_id, vehicle_id, tripId]
+            [driver_id, vehicle_id, tripId, eta]
         );
 
         if (result.rows.length === 0) {

@@ -30,6 +30,7 @@ router.post('/', async (req, res) => {
         pickup_time,
         flight_number = null,
         notes = null,
+        additional_info = null,
     } = req.body;
 
     // 1. Validate required fields
@@ -41,10 +42,10 @@ router.post('/', async (req, res) => {
         // 2. Insert the trip into PostgreSQL (status: pending)
         const tripResult = await query(
             `INSERT INTO trips
-             (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+             (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes, additional_info, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
              RETURNING id, client_first_name`,
-            [client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes]
+            [client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes, additional_info]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -128,14 +129,14 @@ router.get('/auth', async (req, res) => {
             trip_id: sessionData.trip_id,
             role: 'client'
         };
-        const jwtToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const jwtToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: '30d' });
 
         // 4. Set the native HttpOnly browser cookie
         res.cookie('client_session', jwtToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days — session valid until trip completes and Redis TTLs are destroyed
         });
 
         // 5. Respond without exposing token
@@ -299,7 +300,7 @@ router.get('/:tripId', requireClientAuth, async (req, res) => {
 
     try {
         const tripResult = await query(
-            `SELECT 
+            `SELECT
                 t.id,
                 t.status,
                 t.pickup_location,
@@ -307,8 +308,13 @@ router.get('/:tripId', requireClientAuth, async (req, res) => {
                 t.pickup_time,
                 t.flight_number,
                 t.notes,
+                t.additional_info,
+                t.eta,
                 t.assigned_driver_id,
                 d.full_name AS driver_name,
+                v.make AS vehicle_make,
+                v.model AS vehicle_model,
+                v.registration_number AS vehicle_plate,
                 v.type AS vehicle_type
              FROM trips t
              LEFT JOIN drivers d ON t.assigned_driver_id = d.id

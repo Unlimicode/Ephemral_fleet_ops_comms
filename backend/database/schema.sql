@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS drivers (
 CREATE TABLE IF NOT EXISTS vehicles (
   id                  UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
   registration_number TEXT    NOT NULL UNIQUE,
+  make                TEXT,
+  model               TEXT,
   type                TEXT    NOT NULL,
   capacity            INTEGER NOT NULL CHECK (capacity > 0)
 );
@@ -55,7 +57,10 @@ CREATE TABLE IF NOT EXISTS trips (
   assigned_driver_id     UUID        REFERENCES drivers(id)  ON DELETE SET NULL,
   vehicle_id             UUID        REFERENCES vehicles(id) ON DELETE SET NULL,
   flight_number          TEXT,
-  notes                  TEXT
+  notes                  TEXT,
+  additional_info        TEXT,
+  eta                    TIMESTAMPTZ,
+  created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ── 5. complaints ────────────────────────────────────────────

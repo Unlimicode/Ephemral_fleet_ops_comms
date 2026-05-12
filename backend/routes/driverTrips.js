@@ -16,6 +16,7 @@ router.get('/', requireAuth(['driver']), async (req, res) => {
     try {
         const result = await query(
             `SELECT t.id, t.pickup_location, t.destination, t.pickup_time, t.status, t.assigned_driver_id, t.client_first_name,
+                    t.additional_info, t.eta,
                     v.registration_number as vehicle_reg
              FROM trips t
              LEFT JOIN vehicles v ON t.vehicle_id = v.id
@@ -38,6 +39,7 @@ router.get('/:tripId', requireAuth(['driver']), async (req, res) => {
     try {
         const result = await query(
             `SELECT t.id, t.pickup_location, t.destination, t.pickup_time, t.status, t.assigned_driver_id, t.client_first_name,
+                    t.additional_info, t.eta,
                     v.registration_number as vehicle_reg
              FROM trips t
              LEFT JOIN vehicles v ON t.vehicle_id = v.id
