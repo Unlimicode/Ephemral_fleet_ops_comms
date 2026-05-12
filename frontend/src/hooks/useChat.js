@@ -68,9 +68,11 @@ export default function useChat({ tripId, token, role }) {
     }, [tripId, token, role]);
 
     const sendMessage = useCallback((content) => {
-        if (!socketRef.current || !connected) return;
+        if (!socketRef.current) return;
+        // Emit even when temporarily disconnected — Socket.IO buffers and
+        // replays the event automatically on reconnect.
         socketRef.current.emit('send_message', { content });
-    }, [connected]);
+    }, []);
 
     return { messages, connected, error, sendMessage, sessionClosed };
 }

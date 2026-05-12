@@ -60,14 +60,16 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, pendingMessages, isSending]);
 
-    // Flush pending messages when connection is restored
+    // Clear visual pending queue when connection is restored.
+    // Socket.IO already buffered and replayed the emits — we just need to
+    // remove the pending indicators from the UI. Deferred via setTimeout to
+    // avoid calling setState synchronously inside an effect body.
     useEffect(() => {
-        if (!prevConnected.current && connected && pendingMessages.length > 0) {
-            pendingMessages.forEach(msg => sendMessage(msg.content));
-            setPendingMessages([]);
+        if (!prevConnected.current && connected) {
+            setTimeout(() => setPendingMessages([]), 0);
         }
         prevConnected.current = connected;
-    }, [connected, pendingMessages, sendMessage]);
+    }, [connected]);
 
     const handleSend = () => {
         const content = inputValue.trim();
@@ -77,19 +79,21 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
         if (!connected) {
-            // Queue locally — will be flushed on reconnect
+            // Show as pending locally; sendMessage below buffers it in Socket.IO.
             setPendingMessages(prev => [...prev, {
                 content,
                 from: role,
                 timestamp: new Date().toISOString(),
                 pending: true,
             }]);
-            return;
+        } else {
+            setIsSending(true);
+            setTimeout(() => setIsSending(false), 900);
         }
 
-        setIsSending(true);
+        // Always emit — Socket.IO queues the message internally when disconnected
+        // and sends it automatically when the connection is restored.
         sendMessage(content);
-        setTimeout(() => setIsSending(false), 900);
     };
 
     const containerStyle = {

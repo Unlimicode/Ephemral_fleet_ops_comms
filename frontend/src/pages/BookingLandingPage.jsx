@@ -216,13 +216,13 @@ const HistoryView = ({ onBookNew }) => {
     useEffect(() => {
         api.get('/bookings/history')
             .then(res => setTrips(res.data))
-            .catch(() => {})
+            .catch(() => { /* silent — loading state shows error via empty list */ })
             .finally(() => setLoading(false));
     }, []);
 
     const handleRemove = async () => {
         setRemoving(true);
-        try { await api.post('/bookings/logout'); } catch {}
+        try { await api.post('/bookings/logout'); } catch { /* session may already be cleared */ }
         setRemoved(true);
         setRemoving(false);
     };
@@ -441,7 +441,7 @@ export default function BookingLandingPage() {
                 setQueuedComplaint(null);
                 setComplaintStatus({ loading: false, success: true, error: false });
             })
-            .catch(() => {});
+            .catch(() => { /* silent — will retry on next online event */ });
     }, [isOnline, tripId, queuedComplaint]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
