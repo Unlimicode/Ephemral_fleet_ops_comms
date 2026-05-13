@@ -613,8 +613,8 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
         }
         if (pickup_time !== undefined) {
             const dt = new Date(pickup_time);
-            if (isNaN(dt.getTime()) || dt <= new Date()) {
-                return res.status(400).json({ error: 'pickup_time must be a valid future date' });
+            if (isNaN(dt.getTime())) {
+                return res.status(400).json({ error: 'pickup_time must be a valid date' });
             }
             updates.pickup_time = dt.toISOString();
         }
@@ -653,7 +653,7 @@ router.patch('/:tripId', requireClientAuth, async (req, res) => {
         await query(
             `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
              VALUES ($1, $2, $3, $4, $5)`,
-            ['BOOKING_UPDATED', req.client.client_corporate_email, 'client', tripId, JSON.stringify(updates)]
+            ['BOOKING_UPDATED', tripId, 'client', tripId, JSON.stringify(updates)]
         );
 
         return res.status(200).json(result.rows[0]);
@@ -758,7 +758,7 @@ router.delete('/:tripId', requireClientAuth, async (req, res) => {
         await query(
             `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
              VALUES ($1, $2, $3, $4, $5)`,
-            ['BOOKING_CANCELLED', req.client.client_corporate_email, 'client', tripId, JSON.stringify({ previous_status: status })]
+            ['BOOKING_CANCELLED', tripId, 'client', tripId, JSON.stringify({ previous_status: status })]
         );
 
         emitDashboardEvent('booking_cancelled', { tripId, previous_status: status });

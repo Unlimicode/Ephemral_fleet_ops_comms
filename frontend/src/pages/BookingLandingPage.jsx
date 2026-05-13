@@ -781,16 +781,18 @@ export default function BookingLandingPage() {
                 {/* Chat */}
                 {!isCancelled && (
                     <div className="reveal-up active stagger-3 flex flex-col min-h-[450px] mb-5">
-                        {!isActive ? (
+                        {isInProgress ? (
+                            <ChatWindow tripId={tripId} token={undefined} role="client" counterpartName={booking.driver_name?.split(' ')[0] || 'Driver'} />
+                        ) : (
                             <div className="glass-card-dark flex-1 flex flex-col items-center justify-center p-8 text-center rounded-[24px]">
                                 <div className="text-5xl mb-6">🔒</div>
                                 <h3 className="text-xl font-bold text-text-cream mb-2">Secure channel pending</h3>
                                 <p className="text-text-muted text-sm leading-relaxed">
-                                    {isCompleted ? 'This trip has ended. The channel is closed.' : 'Your driver will be assigned shortly. The channel opens automatically when they accept.'}
+                                    {isCompleted ? 'This trip has ended. The channel is closed.'
+                                     : isAccepted ? 'Your driver is en route. The channel opens automatically when the trip starts.'
+                                     : 'Your driver will be assigned shortly. The channel opens when they start the trip.'}
                                 </p>
                             </div>
-                        ) : (
-                            <ChatWindow tripId={tripId} token={undefined} role="client" counterpartName={booking.driver_name?.split(' ')[0] || 'Driver'} />
                         )}
                     </div>
                 )}
