@@ -168,18 +168,7 @@ export default function ManagerLayout() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span className="font-bold text-sm">{user?.name?.split(' ')[0] || 'Manager'}</span>
-                        <NavLink
-                            to="/manager/help"
-                            title="Help Guide"
-                            style={() => ({
-                                display: 'flex', alignItems: 'center', gap: '4px',
-                                padding: '5px 12px', borderRadius: '9999px',
-                                background: '#6C63FF', color: '#fff',
-                                fontSize: '12px', fontWeight: 800,
-                                textDecoration: 'none', flexShrink: 0,
-                                boxShadow: '0 2px 8px rgba(108,99,255,0.4)',
-                            })}
-                        >
+                        <NavLink to="/manager/help" title="Help Guide" className="help-pill">
                             ? Help
                         </NavLink>
                     </div>
@@ -236,19 +225,7 @@ export default function ManagerLayout() {
                             </div>
 
                             {/* Help button */}
-                            <NavLink
-                                to="/manager/help"
-                                title="Help Guide"
-                                style={() => ({
-                                    display: 'flex', alignItems: 'center', gap: '4px',
-                                    padding: '6px 14px', borderRadius: '9999px',
-                                    background: '#6C63FF', color: '#fff',
-                                    fontSize: '12px', fontWeight: 800,
-                                    textDecoration: 'none', flexShrink: 0,
-                                    boxShadow: '0 2px 8px rgba(108,99,255,0.4)',
-                                    transition: 'all 0.2s ease',
-                                })}
-                            >
+                            <NavLink to="/manager/help" title="Help Guide" className="help-pill">
                                 ? Help
                             </NavLink>
 
@@ -301,19 +278,7 @@ export default function ManagerLayout() {
                         </button>
                         <div className="mt-12 flex flex-col gap-2">
                             {renderNavLinks(true)}
-                            <NavLink
-                                to="/manager/help"
-                                onClick={() => setDrawerOpen(false)}
-                                style={() => ({
-                                    display: 'flex', alignItems: 'center', gap: '6px',
-                                    padding: '8px 18px', borderRadius: '9999px',
-                                    color: '#fff',
-                                    background: '#6C63FF',
-                                    fontSize: '14px', fontWeight: 700, textDecoration: 'none',
-                                    boxShadow: '0 2px 8px rgba(108,99,255,0.4)',
-                                    transition: 'all 0.2s ease',
-                                })}
-                            >
+                            <NavLink to="/manager/help" onClick={() => setDrawerOpen(false)} className="help-pill help-pill-dark">
                                 ? Help
                             </NavLink>
                         </div>

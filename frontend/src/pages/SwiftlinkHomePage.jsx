@@ -599,18 +599,8 @@ export default function SwiftlinkHomePage() {
         {/* Floating help button */}
         <button
             onClick={() => setHelpOpen(true)}
-            style={{
-                position: 'fixed', bottom: '24px', right: '24px', zIndex: 50,
-                height: '44px', padding: '0 20px', borderRadius: '9999px',
-                background: '#6C63FF', color: '#fff',
-                boxShadow: '0 4px 16px rgba(108,99,255,0.45)',
-                border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '6px',
-                fontSize: '14px', fontWeight: 800,
-                transition: 'transform 0.15s ease',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+            className="help-pill help-pill-float"
+            style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 50, border: 'none' }}
         >
             ? Help
         </button>

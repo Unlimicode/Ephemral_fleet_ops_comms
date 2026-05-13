@@ -269,18 +269,8 @@ export default function ClientHelpModal({ context }) {
             <button
                 onClick={() => setOpen(true)}
                 title="Help"
-                style={{
-                    position: 'fixed', bottom: '88px', right: '20px', zIndex: 50,
-                    height: '44px', padding: '0 20px', borderRadius: '9999px',
-                    background: '#6C63FF',
-                    boxShadow: '0 4px 16px rgba(108,99,255,0.45)',
-                    border: 'none', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    color: '#fff', fontSize: '14px', fontWeight: 800,
-                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(108,99,255,0.55)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)';    e.currentTarget.style.boxShadow = '0 4px 16px rgba(108,99,255,0.45)'; }}
+                className="help-pill help-pill-float"
+                style={{ position: 'fixed', bottom: '88px', right: '20px', zIndex: 50, border: 'none' }}
             >
                 ? Help
             </button>
