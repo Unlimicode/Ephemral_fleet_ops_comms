@@ -80,7 +80,7 @@ export default function SwiftlinkHomePage() {
         document.querySelectorAll('section:not(.sticky-section)').forEach(s => revealObserver.observe(s));
 
         return () => { observer.disconnect(); revealObserver.disconnect(); };
-    }, []);
+    }, [isMobile]);
 
     useEffect(() => {
         const handler = () => {

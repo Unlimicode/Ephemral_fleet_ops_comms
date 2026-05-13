@@ -124,7 +124,7 @@ export default function ManagerAuditPage() {
         try {
             const res = await api.get('/contact');
             setEnquiries(res.data);
-        } catch (err) {
+        } catch {
             addToast('Could not load enquiries.', 'error');
         } finally {
             setEnquiriesLoading(false);
