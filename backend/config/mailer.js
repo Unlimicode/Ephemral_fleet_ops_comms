@@ -86,28 +86,56 @@ export const sendBookingConfirmation = async (to, magicLink) => {
         <p style="margin:0 0 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#888888;">
           What happens next
         </p>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;gap:12px;align-items:flex-start;">
-            <span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#ffffff;
-                         display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">1</span>
-            <span style="font-size:13px;color:#333333;line-height:1.5;padding-top:3px;">Your fleet manager is assigning a driver and vehicle to your booking.</span>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start;">
-            <span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#ffffff;
-                         display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">2</span>
-            <span style="font-size:13px;color:#333333;line-height:1.5;padding-top:3px;">You will receive another email when your driver is confirmed, with their name and vehicle details.</span>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start;">
-            <span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#ffffff;
-                         display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">3</span>
-            <span style="font-size:13px;color:#333333;line-height:1.5;padding-top:3px;">Once assigned, open your dashboard to see driver details and message them securely through the in-app channel.</span>
-          </div>
-          <div style="display:flex;gap:12px;align-items:flex-start;">
-            <span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#ffffff;
-                         display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">4</span>
-            <span style="font-size:13px;color:#333333;line-height:1.5;padding-top:3px;">After your trip, you have <strong>24 hours</strong> to file a complaint if needed — directly from your dashboard.</span>
-          </div>
-        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:0 0 12px 0;vertical-align:top;">
+              <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                  <td style="width:30px;vertical-align:top;padding-top:2px;">
+                    <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#ffffff;text-align:center;line-height:22px;font-size:11px;font-weight:700;">1</span>
+                  </td>
+                  <td style="font-size:13px;color:#333333;line-height:1.6;padding-left:10px;">Your fleet manager is assigning a driver and vehicle to your booking.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 0 12px 0;vertical-align:top;">
+              <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                  <td style="width:30px;vertical-align:top;padding-top:2px;">
+                    <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#ffffff;text-align:center;line-height:22px;font-size:11px;font-weight:700;">2</span>
+                  </td>
+                  <td style="font-size:13px;color:#333333;line-height:1.6;padding-left:10px;">You will receive another email when your driver is confirmed, with their name and vehicle details.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 0 12px 0;vertical-align:top;">
+              <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                  <td style="width:30px;vertical-align:top;padding-top:2px;">
+                    <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#ffffff;text-align:center;line-height:22px;font-size:11px;font-weight:700;">3</span>
+                  </td>
+                  <td style="font-size:13px;color:#333333;line-height:1.6;padding-left:10px;">Once assigned, open your dashboard to see driver details and message them securely through the in-app channel.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0;vertical-align:top;">
+              <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                  <td style="width:30px;vertical-align:top;padding-top:2px;">
+                    <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#ffffff;text-align:center;line-height:22px;font-size:11px;font-weight:700;">4</span>
+                  </td>
+                  <td style="font-size:13px;color:#333333;line-height:1.6;padding-left:10px;">After your trip, you have <strong>24 hours</strong> to file a complaint if needed — directly from your dashboard.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </div>
 
       <!-- What you can do -->
