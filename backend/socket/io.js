@@ -28,7 +28,7 @@ export function initIo(httpServer) {
                 return socket.disconnect(true);
             }
 
-            if (role !== 'driver' && role !== 'client') {
+            if (role !== 'driver' && role !== 'client' && role !== 'fleet_manager') {
                 socket.emit('auth_error', 'Invalid role');
                 return socket.disconnect(true);
             }
@@ -36,6 +36,23 @@ export function initIo(httpServer) {
             // ─────────────────────────────────────────────────────────────────
             // IDENTITY GATE - Mediated Ephemeral Identity (MEI) Framework
             // ─────────────────────────────────────────────────────────────────
+
+            if (role === 'fleet_manager') {
+                if (!token) {
+                    socket.emit('auth_error', 'Missing auth token');
+                    return socket.disconnect(true);
+                }
+                try {
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                    if (decoded.role !== 'fleet_manager') {
+                        socket.emit('auth_error', 'Invalid token');
+                        return socket.disconnect(true);
+                    }
+                } catch {
+                    socket.emit('auth_error', 'Invalid or expired token');
+                    return socket.disconnect(true);
+                }
+            }
 
             if (role === 'client') {
                 const cookies = cookie.parse(socket.handshake.headers.cookie || '');
@@ -63,8 +80,11 @@ export function initIo(httpServer) {
                     }
                 }
             }
-            // If role is driver, we use the token from handshake auth as before
-            const sessionKey = `session:trip:${tripId}:${role}`;
+            // Fleet managers share the driver session key — they don't have their own
+            // Redis session, so we check the driver key to confirm the trip is active.
+            const sessionKey = role === 'fleet_manager'
+                ? `session:trip:${tripId}:driver`
+                : `session:trip:${tripId}:${role}`;
             const sessionData = await getSession(sessionKey);
 
             if (!sessionData) {

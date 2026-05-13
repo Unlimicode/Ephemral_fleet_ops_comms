@@ -1,4 +1,4 @@
-export default function ActiveTripCard({ trip, onComplete, isConfirming, onConfirm, onCancel, completing = false }) {
+export default function ActiveTripCard({ trip, onComplete, isConfirming, onConfirm, onCancel, completing = false, onOpenComm }) {
     return (
         <div className="glass-card session-pulse" style={{ padding: '24px', overflow: 'visible' }}>
             <style>{`@keyframes confirmFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
@@ -28,6 +28,22 @@ export default function ActiveTripCard({ trip, onComplete, isConfirming, onConfi
                     Started: {trip.started_at ? new Date(trip.started_at).toLocaleTimeString() : 'Recently'}
                 </p>
             </div>
+
+            {onOpenComm && (
+                <button
+                    onClick={() => onOpenComm(trip.id)}
+                    style={{
+                        width: '100%', padding: '10px', borderRadius: '12px', border: 'none',
+                        background: 'rgba(108,99,255,0.12)', color: '#6C63FF',
+                        fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                        marginBottom: '8px', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', gap: '6px',
+                    }}
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>chat</span>
+                    Open Comms
+                </button>
+            )}
 
             {isConfirming ? (
                 <div style={{

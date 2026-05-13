@@ -44,7 +44,7 @@ const CHAT_STYLES = `
     }
 `;
 
-export default function ChatWindow({ tripId, token, role, counterpartName }) {
+export default function ChatWindow({ tripId, token, role, counterpartName, showSenderLabels = false }) {
     const { messages, connected, error, sendMessage, sessionClosed } = useChat({ tripId, token, role });
     const [inputValue, setInputValue] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -311,13 +311,22 @@ export default function ChatWindow({ tripId, token, role, counterpartName }) {
                 {[...messages, ...pendingMessages].map((msg, i) => {
                     const isMine = msg.from === role;
                     const isPending = !!msg.pending;
+                    const senderLabel = showSenderLabels && !isMine
+                        ? (msg.from === 'driver' ? 'Driver' : msg.from === 'client' ? 'Client' : null)
+                        : null;
                     return (
                         <div key={i} style={{
                             display: 'flex',
-                            justifyContent: isMine ? 'flex-end' : 'flex-start',
+                            flexDirection: 'column',
+                            alignItems: isMine ? 'flex-end' : 'flex-start',
                             animation: `${isMine ? 'msgRevealRight' : 'msgRevealLeft'} 0.22s ease-out both`,
                             opacity: isPending ? 0.55 : 1,
                         }}>
+                        {senderLabel && (
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(240,242,247,0.4)', marginBottom: '3px', paddingLeft: '4px', letterSpacing: '0.04em' }}>
+                                {senderLabel}
+                            </span>
+                        )}
                             <div style={{
                                 maxWidth: '76%',
                                 padding: '10px 14px',
