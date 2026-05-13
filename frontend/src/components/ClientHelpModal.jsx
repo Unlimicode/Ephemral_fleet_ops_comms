@@ -64,6 +64,19 @@ function SectionHeading({ children }) {
     );
 }
 
+/* ─── Screenshot helper ─── */
+
+function HelpImage({ src, caption }) {
+    const [show, setShow] = useState(true);
+    if (!show) return null;
+    return (
+        <figure style={{ margin: '14px 0 4px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <img src={src} alt={caption} onError={() => setShow(false)} style={{ width: '100%', display: 'block' }} />
+            {caption && <figcaption style={{ padding: '6px 12px', fontSize: '11px', color: '#6B6B6B', background: 'rgba(0,0,0,0.02)', fontStyle: 'italic' }}>{caption}</figcaption>}
+        </figure>
+    );
+}
+
 /* ─── Content blocks per context ─── */
 
 function BookingFormContent() {
@@ -94,6 +107,7 @@ function BookingFormContent() {
             <p style={{ fontSize: '13px', color: '#3D3D3D', margin: 0, lineHeight: 1.7 }}>
                 Once signed in, your trip dashboard shows your route, pickup time, current status, driver details once assigned, a secure chat channel, and an option to enable push notifications.
             </p>
+            <HelpImage src="/help/client/01-booking-form.png" caption="Your trip dashboard after signing in via the booking link" />
         </>
     );
 }
@@ -112,6 +126,7 @@ function TripPendingContent() {
             <CautionNote>
                 If your pickup time is approaching and no driver has been assigned, contact your fleet manager directly.
             </CautionNote>
+            <HelpImage src="/help/client/02-trip-pending.png" caption="Trip dashboard showing a booking awaiting driver assignment" />
         </>
     );
 }
@@ -139,6 +154,7 @@ function TripAcceptedContent() {
             <CautionNote>
                 Cancellation is only available before the driver starts the journey. Once the trip is underway, contact your fleet manager directly.
             </CautionNote>
+            <HelpImage src="/help/client/03-trip-accepted.png" caption="Driver card showing first name, vehicle, registration plate, and ETA" />
         </>
     );
 }
@@ -170,6 +186,7 @@ function TripActiveContent() {
             <PrivacyNote>
                 The session and all associated data are destroyed the moment the trip is marked complete. Message content is not kept beyond the complaint window.
             </PrivacyNote>
+            <HelpImage src="/help/client/04-trip-active-chat.png" caption="Active trip view with the Secure Channel chat open" />
         </>
     );
 }
@@ -189,6 +206,7 @@ function TripEndedContent() {
             <p style={{ fontSize: '13px', color: '#3D3D3D', margin: 0, lineHeight: 1.6 }}>
                 The booking has been cancelled and the session was closed. Contact your fleet manager if you need a new booking.
             </p>
+            <HelpImage src="/help/client/05-trip-ended-complaint.png" caption="Completed trip showing the File a Complaint section with 24-hour countdown" />
         </>
     );
 }
@@ -214,6 +232,7 @@ function HistoryContent() {
             <PrivacyNote>
                 Your history session expires automatically after 2 hours. This limits the exposure of your booking records on shared or unattended devices.
             </PrivacyNote>
+            <HelpImage src="/help/client/06-booking-history.png" caption="Booking history page showing all trips under your corporate email" />
         </>
     );
 }
@@ -252,18 +271,18 @@ export default function ClientHelpModal({ context }) {
                 title="Help"
                 style={{
                     position: 'fixed', bottom: '88px', right: '20px', zIndex: 50,
-                    width: '44px', height: '44px', borderRadius: '50%',
+                    height: '44px', padding: '0 20px', borderRadius: '9999px',
                     background: '#6C63FF',
-                    boxShadow: '0 4px 16px rgba(108,99,255,0.4)',
+                    boxShadow: '0 4px 16px rgba(108,99,255,0.45)',
                     border: 'none', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontSize: '18px', fontWeight: 800,
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    color: '#fff', fontSize: '14px', fontWeight: 800,
                     transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(108,99,255,0.5)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)';    e.currentTarget.style.boxShadow = '0 4px 16px rgba(108,99,255,0.4)'; }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(108,99,255,0.55)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)';    e.currentTarget.style.boxShadow = '0 4px 16px rgba(108,99,255,0.45)'; }}
             >
-                ?
+                ? Help
             </button>
 
             {/* Backdrop */}

@@ -51,7 +51,7 @@ export default function DriverActiveTripPage() {
             clearInterval(interval);
             document.removeEventListener('visibilitychange', handleVisibility);
         };
-    }, [fetchTrip, fetchComplaint]);
+    }, [fetchTrip, fetchComplaint, tripId]);
 
     const handleStartTrip = async () => {
         try {

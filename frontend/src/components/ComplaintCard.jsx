@@ -16,10 +16,10 @@ export default function ComplaintCard({
     const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
-        if (seconds <= 0) return;
+        if (initialSeconds <= 0) return;
         const t = setInterval(() => setSeconds(s => (s > 0 ? s - 1 : 0)), 1000);
         return () => clearInterval(t);
-    }, []);
+    }, [initialSeconds]);
 
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);

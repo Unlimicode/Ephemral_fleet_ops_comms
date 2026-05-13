@@ -171,16 +171,16 @@ export default function ManagerLayout() {
                         <NavLink
                             to="/manager/help"
                             title="Help Guide"
-                            style={({ isActive }) => ({
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: '28px', height: '28px', borderRadius: '50%',
-                                background: isActive ? '#6C63FF' : 'rgba(108,99,255,0.12)',
-                                color: isActive ? '#fff' : '#6C63FF',
-                                fontSize: '13px', fontWeight: 800,
+                            style={() => ({
+                                display: 'flex', alignItems: 'center', gap: '4px',
+                                padding: '5px 12px', borderRadius: '9999px',
+                                background: '#6C63FF', color: '#fff',
+                                fontSize: '12px', fontWeight: 800,
                                 textDecoration: 'none', flexShrink: 0,
+                                boxShadow: '0 2px 8px rgba(108,99,255,0.4)',
                             })}
                         >
-                            ?
+                            ? Help
                         </NavLink>
                     </div>
                 </header>
@@ -239,17 +239,17 @@ export default function ManagerLayout() {
                             <NavLink
                                 to="/manager/help"
                                 title="Help Guide"
-                                style={({ isActive }) => ({
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    width: '30px', height: '30px', borderRadius: '50%',
-                                    background: isActive ? '#6C63FF' : 'rgba(108,99,255,0.12)',
-                                    color: isActive ? '#fff' : '#6C63FF',
-                                    fontSize: '14px', fontWeight: 800,
+                                style={() => ({
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    padding: '6px 14px', borderRadius: '9999px',
+                                    background: '#6C63FF', color: '#fff',
+                                    fontSize: '12px', fontWeight: 800,
                                     textDecoration: 'none', flexShrink: 0,
+                                    boxShadow: '0 2px 8px rgba(108,99,255,0.4)',
                                     transition: 'all 0.2s ease',
                                 })}
                             >
-                                ?
+                                ? Help
                             </NavLink>
 
                             {isTablet && (
@@ -304,16 +304,17 @@ export default function ManagerLayout() {
                             <NavLink
                                 to="/manager/help"
                                 onClick={() => setDrawerOpen(false)}
-                                style={({ isActive }) => ({
-                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                style={() => ({
+                                    display: 'flex', alignItems: 'center', gap: '6px',
                                     padding: '8px 18px', borderRadius: '9999px',
-                                    color: isActive ? '#6C63FF' : '#F5EDE3',
-                                    background: isActive ? 'rgba(108,99,255,0.15)' : 'transparent',
+                                    color: '#fff',
+                                    background: '#6C63FF',
                                     fontSize: '14px', fontWeight: 700, textDecoration: 'none',
+                                    boxShadow: '0 2px 8px rgba(108,99,255,0.4)',
                                     transition: 'all 0.2s ease',
                                 })}
                             >
-                                Help
+                                ? Help
                             </NavLink>
                         </div>
                         <div className="absolute bottom-10 left-8 right-8">

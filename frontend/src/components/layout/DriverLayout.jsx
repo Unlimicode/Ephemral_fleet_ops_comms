@@ -105,14 +105,15 @@ export default function DriverLayout() {
                             onClick={() => setHelpOpen(true)}
                             title="Help"
                             style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: '28px', height: '28px', borderRadius: '50%',
-                                background: 'rgba(108,99,255,0.12)', color: '#6C63FF',
+                                display: 'flex', alignItems: 'center', gap: '4px',
+                                padding: '5px 12px', borderRadius: '9999px',
+                                background: '#6C63FF', color: '#fff',
                                 border: 'none', cursor: 'pointer',
-                                fontSize: '13px', fontWeight: 800, flexShrink: 0,
+                                fontSize: '12px', fontWeight: 800, flexShrink: 0,
+                                boxShadow: '0 2px 8px rgba(108,99,255,0.4)',
                             }}
                         >
-                            ?
+                            ? Help
                         </button>
                     </div>
                 </header>
@@ -152,15 +153,16 @@ export default function DriverLayout() {
                                 onClick={() => setHelpOpen(true)}
                                 title="Help"
                                 style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    width: '30px', height: '30px', borderRadius: '50%',
-                                    background: 'rgba(108,99,255,0.12)', color: '#6C63FF',
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    padding: '6px 14px', borderRadius: '9999px',
+                                    background: '#6C63FF', color: '#fff',
                                     border: 'none', cursor: 'pointer',
-                                    fontSize: '14px', fontWeight: 800, flexShrink: 0,
-                                    transition: 'background 0.2s ease',
+                                    fontSize: '12px', fontWeight: 800, flexShrink: 0,
+                                    boxShadow: '0 2px 8px rgba(108,99,255,0.4)',
+                                    transition: 'all 0.2s ease',
                                 }}
                             >
-                                ?
+                                ? Help
                             </button>
                         </div>
                     </div>
