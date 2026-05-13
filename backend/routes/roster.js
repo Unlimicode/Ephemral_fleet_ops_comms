@@ -227,7 +227,7 @@ router.get('/audit', requireAuth(['fleet_manager']), async (req, res) => {
         }
 
         if (search) {
-            whereClauses.push(`(actor_id::text ILIKE $${whereClauses.length + 1} OR details::text ILIKE $${whereClauses.length + 1})`);
+            whereClauses.push(`(actor_id::text ILIKE $${whereClauses.length + 1} OR target_id::text ILIKE $${whereClauses.length + 1} OR action_type ILIKE $${whereClauses.length + 1} OR details::text ILIKE $${whereClauses.length + 1})`);
             queryParams.push(`%${search}%`);
         }
 
@@ -237,7 +237,8 @@ router.get('/audit', requireAuth(['fleet_manager']), async (req, res) => {
         }
 
         if (to) {
-            whereClauses.push(`timestamp <= $${whereClauses.length + 1}`);
+            // Include the full 'to' day by upper-bounding at start of the next day
+            whereClauses.push(`timestamp < ($${whereClauses.length + 1}::date + INTERVAL '1 day')`);
             queryParams.push(to);
         }
 

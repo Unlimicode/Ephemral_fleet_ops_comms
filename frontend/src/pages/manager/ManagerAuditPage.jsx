@@ -353,10 +353,10 @@ export default function ManagerAuditPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                             <div>
                                 <h2 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: 900, letterSpacing: '-0.02em', color: '#0D0D0D', margin: 0 }}>
-                                    Data Minimisation Compliance Report
+                                    Data Confinement Report
                                 </h2>
                                 <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', fontWeight: 500, margin: '4px 0 0 0' }}>
-                                    Kenya Data Protection Act 2019, s.25 — ephemeral identity framework
+                                    DPA 2019 s.25 · Trip data structurally confined to lifecycle boundary
                                 </p>
                             </div>
                             <button
@@ -412,7 +412,7 @@ export default function ManagerAuditPage() {
                                 {report && !reportLoading && (() => {
                                     const c = report.compliance || {};
                                     const summary = report.headline?.summary ||
-                                        `In this period, SwiftLink processed ${c.sessions_created ?? 0} sessions, revoked ${c.credentials_revoked ?? 0} credentials, and achieved a data minimisation rate of ${c.minimization_rate_percent ?? 0}%.`;
+                                        `In this period, SwiftLink processed ${c.sessions_created ?? 0} sessions, revoked ${c.credentials_revoked ?? 0} credentials, and achieved a data confinement rate of ${c.minimization_rate_percent ?? 0}%.`;
                                     return (
                                         <>
                                             {/* 10-metric grid */}
@@ -420,7 +420,7 @@ export default function ManagerAuditPage() {
 
                                                 {/* Headline metric — full width */}
                                                 <div className="audit-stat-card" style={{ gridColumn: isMobile ? undefined : '1 / -1', padding: '24px', borderLeft: '4px solid #6C63FF' }}>
-                                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#6C63FF', margin: '0 0 8px 0' }}>Data Minimisation Rate</p>
+                                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#6C63FF', margin: '0 0 8px 0' }}>Data Confinement Rate</p>
                                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
                                                         <span style={{ fontSize: isMobile ? '42px' : '56px', fontWeight: 900, color: '#6C63FF', letterSpacing: '-0.04em', lineHeight: 1 }}>{c.minimization_rate_percent ?? 0}%</span>
                                                         <span style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>of completed trips resulted in permanent data erasure</span>
