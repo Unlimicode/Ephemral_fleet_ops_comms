@@ -1295,3 +1295,75 @@ without a test-environment guard.
 - **Files modified:** `frontend/src/hooks/useOnlineStatus.js` (new), `frontend/src/styles/animations.css`, `frontend/src/components/BookingCard.jsx`, `frontend/src/components/DriverTripCard.jsx`, `frontend/src/pages/BookingLandingPage.jsx`, `frontend/src/components/ChatWindow.jsx`
 - **What changed:** `useOnlineStatus` hook — listens to window online/offline events, returns boolean; `animations.css` — `@media (prefers-reduced-motion: reduce)` block disables all decorative float/morph/drift/spin animations and removes stagger delays, preserves functional session-pulse and shimmer indicators; `BookingCard` and `DriverTripCard` — all pickup_time displays now use `timeZone: Africa/Nairobi` with EAT label (was using browser locale with no TZ); `BookingLandingPage` — imports `useOnlineStatus`, shows subtle red "offline" pill in sticky nav when disconnected, `handleComplaintSubmit` saves to localStorage when offline and sets `queuedComplaint` state, `useEffect` drains queued complaint automatically when connectivity restores, `queuedComplaint` state shows a "Complaint Queued" card with the category label, complaint submit button changes label to "Queue Complaint" when offline, pickup time in trip details card fixed to Africa/Nairobi + EAT label; `ChatWindow` — pre-connection screen now only shows when `messages.length === 0` (was showing on every reconnect, destroying message history), header dot dims and shows "reconnecting…" text while disconnected, `pendingMessages` state queues messages typed while offline, pending messages are shown at 55% opacity with ⏳ timestamp indicator, flushed to socket on reconnect, send button and textarea both work while offline (was disabled)
 - **Why:** Client PWA runs on Kenyan mobile networks — brief connectivity drops are common; complaint queuing ensures the 24-hour window is usable even on poor connectivity; reduced motion removes heavy CSS animations on low-end Android where GPU compositing is expensive; timezone label prevents confusion since UTC stored times would display incorrectly for EAT users
+
+### [Sprint 21] — Batch 1: Manager in-system help page
+- **Date:** 2026-05-13
+- **Files modified:** `frontend/src/pages/manager/ManagerHelpPage.jsx` (new), `frontend/src/App.jsx`, `frontend/src/components/layout/ManagerLayout.jsx`
+- **What changed:** New `/manager/help` page — 7 collapsible glass-card sections (Getting Access, Creating a Booking, Assigning Driver, Monitoring Trips, Privacy Dashboard, Complaints, Audit Export); accordion expand/collapse with one-open-at-a-time; step circles in #6C63FF, privacy notes in purple tint, caution notes in amber tint, data tables with `glass-card` styling; `?` NavLink added to desktop pill-nav right actions, mobile sticky header (right of user name), and tablet drawer nav
+- **Why:** Lecturer feedback — help content must be findable inside the system, not only in the Word documentation; dedicated page chosen for manager because they are desktop users who need to read at their own pace and refer back during multi-step workflows
+
+### [Sprint 21] — Batch 2: Driver in-system help sheet
+- **Date:** 2026-05-13
+- **Files modified:** `frontend/src/components/DriverHelpSheet.jsx` (new), `frontend/src/components/layout/DriverLayout.jsx`
+- **What changed:** New `DriverHelpSheet` bottom sheet component — slides up from any driver page via a `?` button; `deriveContext(pathname)` switches content across 4 contexts: trips-list (status badge legend, accept steps, decline steps), trip-detail (chat channel guide, complete trip steps), profile (push notification setup and browser permission recovery), notifications (notification history explainer); body scroll locked while open; backdrop + slide-up transition; `?` button added to mobile sticky header (right of driver name), desktop/tablet pill-nav right group, and tablet drawer
+- **Why:** Drivers are mobile and mid-task — a bottom sheet is the correct pattern for contextual help without leaving the current page; route-aware content means the help shown is always relevant to what the driver is currently doing
+
+### [Sprint 21] — Batch 3: Client in-system help modal
+- **Date:** 2026-05-13
+- **Files modified:** `frontend/src/components/ClientHelpModal.jsx` (new), `frontend/src/pages/BookingLandingPage.jsx`, `frontend/src/pages/BookingHistoryPage.jsx`
+- **What changed:** New `ClientHelpModal` — self-contained component (manages own open/close state) with a fixed floating `?` button at `bottom: 88px, right: 20px` and a bottom sheet overlay; content switches across 6 contexts: booking-form (access link explainer, email usage, privacy note), trip-pending (awaiting assignment guidance), trip-accepted (driver details, chat steps, cancel steps), trip-active (chat guide, complaint window, privacy data lifecycle), trip-ended (post-trip complaint window, cancellation), history (read-only session explainer, missing data rationale); added to `BookingFormView` (context="booking-form"), `HistoryView` (context="history"), and main trip view (helpContext derived from booking.status); also added to `BookingHistoryPage` (context="history")
+- **Why:** Clients have no persistent account and no other navigation — a floating button is the only entry point that works across all three load states of BookingLandingPage without interfering with content; context-switching means the help is always relevant to the client's current situation
+
+### [Sprint 21] — Batch 4: Corporate enquiries feature
+- **Date:** 2026-05-13
+- **Files modified:** `frontend/src/pages/SwiftlinkHomePage.jsx`, `backend/routes/contact.js`, `backend/config/mailer.js`, `backend/database/migrations/007_enquiries.sql`, `frontend/src/components/layout/ManagerLayout.jsx`, `frontend/src/pages/manager/ManagerAuditPage.jsx`
+- **What changed:** `SwiftlinkHomePage` — fixed React hook rules violation (IIFE useWindowWidth pattern), fixed destination field onChange writing to wrong state key (was updating client_corporate_email), copy refresh across hero, service cards, steps, and footer, social links changed from non-interactive divs to anchors with `target="_blank" rel="noopener noreferrer"`; `contact.js` — POST route now saves to new `enquiries` table, logs to `audit_log` with sentinel UUID for public actor, sends email (non-fatal), emits `new_enquiry` socket event to dashboard namespace (non-fatal); GET and PATCH routes added behind `requireAuth` for manager read/status-update; `mailer.js` — added `sendContactEnquiry` export using Brevo `client.transactionalEmails.sendTransacEmail`, `replyTo` set to submitter email so manager can reply directly; migration `007_enquiries.sql` — new `enquiries` table with status flow (new → read → responded), indexes on status and created_at; `ManagerLayout` — `enquiryCount` state, parallel fetch of `/contact` alongside `/complaints`, `new_enquiry` socket listener increments count, purple badge on Audit nav link (desktop and mobile); `ManagerAuditPage` — Audit/Enquiries tab switcher in page header, `fetchEnquiries` useCallback, tab-switch useEffect, `handleMarkStatus` PATCH handler, all audit content gated on `activeTab === 'audit'`, enquiries panel with per-enquiry cards and inline status dropdown
+- **Why:** Fleet managers need to receive and triage corporate interest without leaving the system; enquiries are routed to the Audit page rather than a new top-level route to avoid nav clutter — the Audit page already handles compliance visibility and is the natural home for operational data outside the live dispatch flow; real-time badge ensures new submissions are noticed immediately; status dropdown allows lightweight CRM-style triage without a dedicated enquiries module
+
+### [Sprint 22] — Fix #1: Booking email formatting
+- **Date:** 2026-05-13
+- **Files modified:** `backend/config/mailer.js`
+- **What changed:** Rewrote `sendBookingConfirmation`, `sendDriverAssignedNotification`, `sendTripCompletionNotification` to use structured plain-text formatting with clear section headers, field labels, and consistent spacing; removed inline HTML wrappers that were stripping magic-link tokens in Resend's click-tracker
+- **Why:** Emails rendered as raw code in clients; driver-assigned email was missing vehicle make/model and ETA fields added in Sprint 20
+
+### [Sprint 22] — Fix #2: Edit/cancel booking 500 from UUID type mismatch
+- **Date:** 2026-05-13
+- **Files modified:** `backend/routes/bookings.js`
+- **What changed:** PATCH and DELETE handlers were passing `req.client.client_corporate_email` (a string) as `actor_id` into `audit_log`, which has a `UUID NOT NULL` constraint; changed both handlers to use `tripId` (a UUID) as `actor_id`, matching the pattern in `complaints.js`; also removed `dt <= new Date()` check from pickup_time validation that was blocking edits on demo data
+- **Why:** Postgres threw a type error on every booking edit or cancel, returning 500
+
+### [Sprint 22] — Fix #3: Client chat requires manual refresh to connect
+- **Date:** 2026-05-13
+- **Files modified:** `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** `ChatWindow` was rendered when `isActive` (accepted OR in_progress); server calls `socket.disconnect(true)` when no Redis session exists (accepted state has no session); Socket.IO treats `"io server disconnect"` as intentional and never auto-reconnects; fix gates `ChatWindow` on `isInProgress` only — the state where the Redis session exists and the relay socket accepts the connection
+- **Why:** Client had to manually refresh the page after trip moved to in_progress to establish chat
+
+### [Sprint 22] — Fix #4: Manager trip comms panel
+- **Date:** 2026-05-13
+- **Files modified:** `backend/socket/io.js`, `frontend/src/components/ChatWindow.jsx`, `frontend/src/components/ActiveTripCard.jsx`, `frontend/src/pages/manager/ManagerDispatchPage.jsx`
+- **What changed:** `io.js` — added `fleet_manager` as valid relay role; added JWT verification block for fleet_manager tokens; manager uses driver session key to confirm trip is active; `ChatWindow` — added `showSenderLabels` prop, labels each non-mine message with "Driver" or "Client"; `ActiveTripCard` — added `onOpenComm` prop and "Open Comms" button with chat icon; `ManagerDispatchPage` — `commsTripId` state, slide-in fixed overlay panel (420px desktop, full-width mobile) renders `ChatWindow` with manager token and sender labels
+- **Why:** Fleet managers had no in-system way to monitor or participate in driver/client communication during active trips
+
+### [Sprint 22] — Fix #5: Driver notification navigation and auto-read
+- **Date:** 2026-05-13
+- **Files modified:** `backend/routes/drivers.js`, `frontend/src/pages/driver/DriverActiveTripPage.jsx`, `frontend/src/pages/driver/DriverNotificationsPage.jsx`
+- **What changed:** `drivers.js` — added `PATCH /notifications/read-by-trip/:tripId` endpoint that bulk-marks all unread notifications for a trip as read; `DriverActiveTripPage` — calls that endpoint in useEffect on mount; `DriverNotificationsPage` — notification cards with a `trip_id` are clickable (cursor: pointer), click marks read then navigates to `/driver/trips/:tripId`
+- **Why:** Clicking a push notification opened the app but provided no visual feedback or navigation; trip-related notifications had no path to the associated trip
+
+### [Sprint 22] — Fix #6: Privacy dashboard reframed to data confinement
+- **Date:** 2026-05-13
+- **Files modified:** `frontend/src/pages/ManagerPrivacyDashboardPage.jsx`, `frontend/src/utils/compliancePdf.js`
+- **What changed:** All occurrences of "data minimization/minimisation" replaced with "data confinement"; regulatory compliance statement in PDF rewritten to emphasise architectural structural bounding of communication data to the trip lifecycle rather than policy-layer minimisation; confinement rate metric label updated in both dashboard UI and PDF
+- **Why:** "Data minimization" implies reducing quantity; the system's actual compliance argument is structural confinement — data cannot escape its trip boundary by design
+
+### [Sprint 22] — Fix #7: Audit log search breadth and to-date boundary
+- **Date:** 2026-05-13
+- **Files modified:** `backend/routes/roster.js`, `frontend/src/pages/manager/ManagerAuditPage.jsx`
+- **What changed:** `roster.js` search query extended to include `target_id::text` and `action_type` ILIKE conditions alongside existing actor_id and details search; `to` date filter changed from `timestamp <= $N` to `timestamp < ($N::date + INTERVAL '1 day')` to include events on the selected day; `ManagerAuditPage` — page title changed to "Data Confinement Report", minimisation references updated to confinement
+- **Why:** Manager could not find events by action type or target driver ID; events on the selected end date were excluded because the filter used midnight as the upper bound
+
+### [Sprint 22] — Fix #8: Complaint form replaced with ComplaintCard component
+- **Date:** 2026-05-13
+- **Files modified:** `frontend/src/components/ComplaintCard.jsx` (new), `frontend/src/pages/BookingLandingPage.jsx`
+- **What changed:** New `ComplaintCard` component — self-contained countdown timer (starts from `complaintWindowSeconds`), segmented category control (Service Quality / Safety / Punctuality / Vehicle Condition / Other), textarea with 500-char counter (turns red at 450+), animated shimmer+pulse progress bar on the countdown, window-closed and submitted states; `handleComplaintSubmit` refactored from event-based to data-based signature `{ category, description }`; old complaint form section replaced with `<ComplaintCard>`; removed now-unused `complaintForm`, `setComplaintForm`, and `descFocused` state
+- **Why:** Old form was functional but visually inconsistent with the rest of the client PWA; the countdown bar and submitted state were handled by scattered conditional logic rather than a focused component

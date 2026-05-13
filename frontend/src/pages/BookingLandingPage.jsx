@@ -4,6 +4,8 @@ import api from '../api/axios';
 import ChatWindow from '../components/ChatWindow';
 import SwiftlinkLogo from '../components/SwiftlinkLogo';
 import useOnlineStatus from '../hooks/useOnlineStatus';
+import ClientHelpModal from '../components/ClientHelpModal';
+import ComplaintCard from '../components/ComplaintCard';
 
 const modalLabelStyle = { fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'block' };
 const modalInputStyle = { width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' };
@@ -201,6 +203,7 @@ const BookingFormView = () => {
                     </div>
                 </div>
             </div>
+            <ClientHelpModal context="booking-form" />
         </div>
     );
 };
@@ -306,6 +309,7 @@ const HistoryView = ({ onBookNew }) => {
                     </div>
                 </div>
             )}
+            <ClientHelpModal context="history" />
         </div>
     );
 };
@@ -321,10 +325,8 @@ export default function BookingLandingPage() {
 
     // Complaint
     const [complaintStatus, setComplaintStatus] = useState({ loading: false, success: false, error: false });
-    const [complaintForm, setComplaintForm] = useState({ category: 'Service Quality', description: '' });
     const [complaintWindowSeconds, setComplaintWindowSeconds] = useState(null);
     const [complaintProgress, setComplaintProgress] = useState(null);
-    const [descFocused, setDescFocused] = useState(false);
 
     // Edit
     const [showEditForm, setShowEditForm] = useState(false);
@@ -445,16 +447,16 @@ export default function BookingLandingPage() {
     }, [isOnline, tripId, queuedComplaint]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
-    const handleComplaintSubmit = async (e) => {
-        e.preventDefault();
+    const handleComplaintSubmit = async ({ category, description }) => {
+        const complaintData = { category, description };
         if (!isOnline) {
-            localStorage.setItem(`swiftlink_queued_complaint_${tripId}`, JSON.stringify(complaintForm));
-            setQueuedComplaint(complaintForm);
+            localStorage.setItem(`swiftlink_queued_complaint_${tripId}`, JSON.stringify(complaintData));
+            setQueuedComplaint(complaintData);
             return;
         }
         setComplaintStatus({ loading: true, success: false, error: false });
         try {
-            await api.post(`/complaints/${tripId}`, complaintForm);
+            await api.post(`/complaints/${tripId}`, complaintData);
             setComplaintStatus({ loading: false, success: true, error: false });
         } catch {
             setComplaintStatus({ loading: false, success: false, error: true });
@@ -581,6 +583,11 @@ export default function BookingLandingPage() {
     const formatEta = (eta) => new Date(eta).toLocaleTimeString('en-KE', {
         timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit',
     });
+
+    const helpContext = isInProgress ? 'trip-active'
+        : isAccepted   ? 'trip-accepted'
+        : isPending    ? 'trip-pending'
+        : 'trip-ended';
 
     return (
         <div className="min-h-screen bg-[#F5EDE3] relative overflow-hidden flex flex-col">
@@ -773,31 +780,33 @@ export default function BookingLandingPage() {
                 {/* Chat */}
                 {!isCancelled && (
                     <div className="reveal-up active stagger-3 flex flex-col min-h-[450px] mb-5">
-                        {!isActive ? (
+                        {isInProgress ? (
+                            <ChatWindow tripId={tripId} token={undefined} role="client" counterpartName={booking.driver_name?.split(' ')[0] || 'Driver'} />
+                        ) : (
                             <div className="glass-card-dark flex-1 flex flex-col items-center justify-center p-8 text-center rounded-[24px]">
                                 <div className="text-5xl mb-6">🔒</div>
                                 <h3 className="text-xl font-bold text-text-cream mb-2">Secure channel pending</h3>
                                 <p className="text-text-muted text-sm leading-relaxed">
-                                    {isCompleted ? 'This trip has ended. The channel is closed.' : 'Your driver will be assigned shortly. The channel opens automatically when they accept.'}
+                                    {isCompleted ? 'This trip has ended. The channel is closed.'
+                                     : isAccepted ? 'Your driver is en route. The channel opens automatically when the trip starts.'
+                                     : 'Your driver will be assigned shortly. The channel opens when they start the trip.'}
                                 </p>
                             </div>
-                        ) : (
-                            <ChatWindow tripId={tripId} token={undefined} role="client" counterpartName={booking.driver_name?.split(' ')[0] || 'Driver'} />
                         )}
                     </div>
                 )}
 
-                {/* Complaint form */}
+                {/* Complaint section */}
                 {isCompleted && (
                     <div className="reveal-up active mb-10">
                         {complaintStatus.success ? (
-                            <div className="glass-card-dark reveal-up active" style={{ padding: '24px', borderRadius: '24px' }}>
+                            <div className="glass-card reveal-up active" style={{ padding: '24px', borderRadius: '24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0, background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: '#A5A0FF' }}>✓</div>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0, background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: '#6C63FF' }}>✓</div>
                                     <div>
-                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#F0F2F7' }}>Complaint Received</div>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Complaint Received</div>
                                         {complaintProgress && (
-                                            <div style={{ fontSize: '11px', color: 'rgba(240,242,247,0.5)', marginTop: '2px' }}>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                                                 Filed {new Date(complaintProgress.created_at).toLocaleString('en-KE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         )}
@@ -808,13 +817,13 @@ export default function BookingLandingPage() {
                                     const stepIndex = { open: 0, under_investigation: 1, resolved: 2, escalated: 2 };
                                     const current = stepIndex[complaintProgress.status] ?? 0;
                                     const activeColor = '#6C63FF';
-                                    const futureColor = 'rgba(255,255,255,0.2)';
+                                    const futureColor = 'rgba(0,0,0,0.15)';
                                     return (
                                         <>
                                             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
                                                 {steps.map((step, i) => (
                                                     <div key={step} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
-                                                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0, background: i <= current ? activeColor : futureColor, boxShadow: i === current ? '0 0 8px rgba(108,99,255,0.7)' : 'none' }} />
+                                                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0, background: i <= current ? activeColor : futureColor, boxShadow: i === current ? '0 0 8px rgba(108,99,255,0.5)' : 'none' }} />
                                                         {i < steps.length - 1 && <div style={{ flex: 1, height: '1px', background: i < current ? activeColor : futureColor }} />}
                                                     </div>
                                                 ))}
@@ -824,22 +833,22 @@ export default function BookingLandingPage() {
                                                     const isStepActive = i === current;
                                                     const isFuture = i > current;
                                                     return (
-                                                        <span key={step} style={{ fontSize: '10px', fontWeight: isStepActive ? 800 : 600, letterSpacing: isStepActive ? '-0.05em' : '0.08em', color: isFuture ? 'rgba(255,255,255,0.2)' : '#F0F2F7', textTransform: isStepActive ? 'none' : 'uppercase', textAlign: i === 0 ? 'left' : i === 2 ? 'right' : 'center' }}>
+                                                        <span key={step} style={{ fontSize: '10px', fontWeight: isStepActive ? 800 : 600, letterSpacing: isStepActive ? '-0.05em' : '0.08em', color: isFuture ? 'var(--text-muted)' : 'var(--text-primary)', textTransform: isStepActive ? 'none' : 'uppercase', textAlign: i === 0 ? 'left' : i === 2 ? 'right' : 'center' }}>
                                                             {step}
                                                         </span>
                                                     );
                                                 })}
                                             </div>
                                             <div style={{ marginBottom: '16px' }}>
-                                                <span style={{ display: 'inline-block', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 12px', borderRadius: '9999px', background: 'rgba(108,99,255,0.15)', border: '1px solid rgba(108,99,255,0.3)', color: '#A5A0FF' }}>
+                                                <span style={{ display: 'inline-block', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 12px', borderRadius: '9999px', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.2)', color: '#6C63FF' }}>
                                                     {complaintProgress.category}
                                                 </span>
                                             </div>
-                                            <p style={{ fontSize: '12px', color: 'rgba(240,242,247,0.5)', lineHeight: 1.5 }}>Email updates will be sent as your complaint progresses.</p>
+                                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>Email updates will be sent as your complaint progresses.</p>
                                             {complaintProgress.investigation_notes && (
-                                                <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(108,99,255,0.08)', borderRadius: '14px', border: '1px solid rgba(108,99,255,0.15)' }}>
-                                                    <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>Investigation Notes</p>
-                                                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, margin: 0 }}>{complaintProgress.investigation_notes}</p>
+                                                <div style={{ marginTop: '16px', padding: '16px', background: 'rgba(108,99,255,0.06)', borderRadius: '14px', border: '1px solid rgba(108,99,255,0.12)' }}>
+                                                    <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(108,99,255,0.7)', marginBottom: '8px' }}>Investigation Notes</p>
+                                                    <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.6, margin: 0 }}>{complaintProgress.investigation_notes}</p>
                                                 </div>
                                             )}
                                         </>
@@ -847,89 +856,29 @@ export default function BookingLandingPage() {
                                 })() : (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <div style={{ width: '16px', height: '16px', border: '2px solid #6C63FF', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                                        <span style={{ fontSize: '13px', color: 'rgba(240,242,247,0.5)' }}>Loading progress...</span>
+                                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Loading progress...</span>
                                     </div>
                                 )}
                             </div>
                         ) : queuedComplaint ? (
-                            <div className="glass-card-dark" style={{ padding: '32px 28px', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', textAlign: 'center' }}>
+                            <div className="glass-card" style={{ padding: '32px 28px', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', textAlign: 'center' }}>
                                 <div style={{ fontSize: '32px' }}>📋</div>
                                 <h3 className="kinetic-text" style={{ fontSize: '18px', margin: 0 }}>Complaint Queued</h3>
-                                <p style={{ fontSize: '13px', color: 'rgba(240,242,247,0.5)', margin: 0, lineHeight: 1.6 }}>
+                                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
                                     Your complaint has been saved. It will be submitted automatically when connectivity is restored.
                                 </p>
-                                <span style={{ fontSize: '11px', fontWeight: 700, background: 'rgba(245,158,11,0.15)', color: '#F59E0B', padding: '4px 14px', borderRadius: '9999px', border: '1px solid rgba(245,158,11,0.25)' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, background: 'rgba(245,158,11,0.12)', color: '#F59E0B', padding: '4px 14px', borderRadius: '9999px', border: '1px solid rgba(245,158,11,0.2)' }}>
                                     {queuedComplaint.category}
                                 </span>
                             </div>
-                        ) : complaintWindowSeconds !== null && complaintWindowSeconds <= 0 ? (
-                            <div className="glass-card-dark" style={{ padding: '40px 28px', borderRadius: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ fontSize: '40px' }}>⏰</div>
-                                <h3 className="kinetic-text" style={{ fontSize: '20px', margin: 0 }}>Complaint Window Closed</h3>
-                                <p style={{ fontSize: '13px', color: 'rgba(240,242,247,0.45)', margin: 0, lineHeight: 1.6 }}>The 24-hour window for this trip has passed.</p>
-                            </div>
                         ) : (
-                            <div className="glass-card-dark" style={{ padding: '28px 24px', borderRadius: '24px', borderLeft: '3px solid #6C63FF' }}>
-                                <style>{`.complaint-desc::placeholder { color: rgba(255,255,255,0.35); }`}</style>
-                                <div style={{ marginBottom: '24px' }}>
-                                    <h3 className="kinetic-text" style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.05em', color: '#F0F2F7', margin: '0 0 6px 0' }}>File a Complaint</h3>
-                                    <p style={{ fontSize: '13px', color: 'rgba(240,242,247,0.45)', margin: 0, lineHeight: 1.5 }}>Your feedback is confidential and helps us maintain service standards</p>
-                                </div>
-                                {complaintWindowSeconds !== null && complaintWindowSeconds > 0 && (() => {
-                                    const timerColor = complaintWindowSeconds <= 1800 ? '#EF4444' : complaintWindowSeconds <= 7200 ? '#F59E0B' : '#6C63FF';
-                                    const h = Math.floor(complaintWindowSeconds / 3600);
-                                    const m = Math.floor((complaintWindowSeconds % 3600) / 60);
-                                    const s = complaintWindowSeconds % 60;
-                                    const barPercent = Math.min(100, (complaintWindowSeconds / 86400) * 100);
-                                    return (
-                                        <div style={{ marginBottom: '28px' }}>
-                                            <p className="kinetic-text" style={{ fontSize: '28px', fontWeight: 800, color: timerColor, margin: '0 0 10px 0', letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums' }}>
-                                                {h}h {String(m).padStart(2, '0')}m {String(s).padStart(2, '0')}s
-                                            </p>
-                                            <div style={{ width: '100%', height: '3px', borderRadius: '9999px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', marginBottom: '8px' }}>
-                                                <div style={{ width: `${barPercent}%`, height: '100%', background: timerColor, borderRadius: '9999px', transition: 'width 1s linear, background 0.5s ease' }} />
-                                            </div>
-                                            <p style={{ fontSize: '11px', color: 'rgba(240,242,247,0.4)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>remaining to file</p>
-                                        </div>
-                                    );
-                                })()}
-                                <form onSubmit={handleComplaintSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    <div style={{ overflowX: 'auto', margin: '0 -4px', paddingBottom: '4px' }}>
-                                        <div style={{ display: 'flex', gap: '8px', padding: '0 4px', whiteSpace: 'nowrap' }}>
-                                            {['Service Quality', 'Safety', 'Punctuality', 'Vehicle Condition', 'Other'].map(cat => {
-                                                const selected = complaintForm.category === cat;
-                                                return (
-                                                    <button key={cat} type="button" onClick={() => setComplaintForm({ ...complaintForm, category: cat })}
-                                                        style={{ padding: '8px 16px', borderRadius: '9999px', fontSize: '12px', fontWeight: 700, flexShrink: 0, border: selected ? 'none' : '1px solid rgba(108,99,255,0.2)', background: selected ? '#6C63FF' : 'rgba(108,99,255,0.15)', color: selected ? '#FFF' : '#A5A0FF', boxShadow: selected ? '0 2px 12px rgba(108,99,255,0.4)' : 'none', cursor: 'pointer', transition: 'all 0.15s ease' }}>
-                                                        {cat}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                    <div style={{ position: 'relative' }}>
-                                        <textarea className="complaint-desc" placeholder="Describe what happened..." value={complaintForm.description}
-                                            onChange={(e) => setComplaintForm({ ...complaintForm, description: e.target.value.slice(0, 500) })}
-                                            onFocus={() => setDescFocused(true)} onBlur={() => setDescFocused(false)}
-                                            maxLength={500} required
-                                            style={{ width: '100%', minHeight: '120px', padding: '16px', background: 'rgba(255,255,255,0.07)', border: `1px solid ${descFocused ? 'rgba(108,99,255,0.5)' : 'rgba(255,255,255,0.12)'}`, boxShadow: descFocused ? '0 0 0 3px rgba(108,99,255,0.1)' : 'none', borderRadius: '16px', color: '#F5EDE3', fontSize: '14px', lineHeight: 1.6, resize: 'none', outline: 'none', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box', display: 'block', transition: 'border-color 0.2s ease, box-shadow 0.2s ease', paddingBottom: '32px' }}
-                                        />
-                                        <span style={{ position: 'absolute', bottom: '12px', right: '14px', fontSize: '11px', fontWeight: 600, pointerEvents: 'none', color: complaintForm.description.length > 500 ? '#EF4444' : 'rgba(255,255,255,0.4)' }}>
-                                            {complaintForm.description.length}/500
-                                        </span>
-                                    </div>
-                                    {complaintStatus.error && (
-                                        <div className="glass-card" style={{ padding: '12px 16px', borderRadius: '12px', borderLeft: '3px solid #EF4444', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span style={{ fontSize: '14px', flexShrink: 0 }}>⚠️</span>
-                                            <p style={{ fontSize: '13px', color: '#EF4444', fontWeight: 600, margin: 0 }}>Failed to submit. Please try again.</p>
-                                        </div>
-                                    )}
-                                    <button type="submit" disabled={!complaintForm.category || !complaintForm.description.trim() || complaintForm.description.length > 500 || complaintStatus.loading}
-                                        className="btn-premium btn-accent w-full" style={{ padding: '16px', borderRadius: '14px' }}>
-                                        {complaintStatus.loading ? 'Submitting...' : !isOnline ? 'Queue Complaint →' : 'Submit Complaint →'}
-                                    </button>
-                                </form>
-                            </div>
+                            <ComplaintCard
+                                complaintWindowSeconds={complaintWindowSeconds ?? 86400}
+                                onSubmit={handleComplaintSubmit}
+                                loading={complaintStatus.loading}
+                                error={complaintStatus.error}
+                                offline={!isOnline}
+                            />
                         )}
                     </div>
                 )}
@@ -978,6 +927,8 @@ export default function BookingLandingPage() {
                     </div>
                 </div>
             )}
+
+            <ClientHelpModal context={helpContext} />
         </div>
     );
 }

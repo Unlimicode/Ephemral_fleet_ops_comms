@@ -65,6 +65,10 @@ router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
 });
 
 // ── PATCH /:tripId/assign — Assign Driver & Vehicle ──────────────────────────
+// [FR1] Trip Lifecycle — manager assigns driver and vehicle, status → 'accepted'.
+// Uses a PostgreSQL transaction (BEGIN/COMMIT) to prevent race conditions:
+// without atomicity, two concurrent managers could both pass the conflict guards
+// and assign the same driver/vehicle to different trips simultaneously.
 router.patch('/:tripId/assign', requireAuth(['fleet_manager']), async (req, res) => {
     const { tripId } = req.params;
     const { driver_id, vehicle_id, eta = null } = req.body;
@@ -240,7 +244,14 @@ router.patch('/:tripId/reassign', requireAuth(['fleet_manager']), async (req, re
     }
 });
 
-// ── PATCH /:tripId/accept — Accept Assignment (Driver Fallback) ───────────────
+// ── PATCH /:tripId/accept — Accept Assignment (Driver) ───────────────────────
+// [FR4] Ephemeral Credential Management — session creation.
+//       This is the moment the communication channel opens:
+//       status → 'in_progress', two Redis session keys created (driver + client).
+//       Both keys have 86400s (24h) TTL — they expire automatically even if
+//       the trip completion endpoint is never called (e.g. server crash).
+// [FR3] Server-Mediated Communication — client email stored in server-side
+//       Redis only, never sent to the driver's device.
 router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;
     const driverId = req.user.id;
@@ -274,7 +285,14 @@ router.patch('/:tripId/accept', requireAuth(['driver']), async (req, res) => {
     }
 });
 
-// ── PATCH /:tripId/complete — Complete Trip (Driver Fallback) ──────────────────
+// ── PATCH /:tripId/complete — Complete Trip (Driver) ─────────────────────────
+// [FR4] Ephemeral Credential Management — session destruction.
+//       Redis session keys deleted → WebSocket credentials gone → channel closes.
+//       No persistent link between client and driver survives this point.
+// [FR5] Conditional Persistence — complaint:window:{id} created here with 24h TTL.
+//       This key is the ONLY mechanism through which complaints can be filed.
+//       When it expires, the system is architecturally incapable of accepting complaints.
+// session_closed WebSocket event triggers the client and driver UI transitions.
 router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;
     const driverId = req.user.id;

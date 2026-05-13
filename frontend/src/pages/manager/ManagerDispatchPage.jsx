@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import BookingCard from '../../components/BookingCard.jsx';
 import ActiveTripCard from '../../components/ActiveTripCard.jsx';
+import ChatWindow from '../../components/ChatWindow.jsx';
 import useWindowWidth from '../../hooks/useWindowWidth.js';
 
 const GLASS = {
@@ -35,6 +36,7 @@ export default function ManagerDispatchPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [confirmingTripId, setConfirmingTripId] = useState(null);
+    const [commsTripId, setCommsTripId] = useState(null);
     const [socketConnected, setSocketConnected] = useState(false);
     const [completing, setCompleting] = useState(false);
     const [showNewBooking, setShowNewBooking] = useState(false);
@@ -455,7 +457,7 @@ export default function ManagerDispatchPage() {
                                     ) : (
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
                                             {activeTrips.map(trip => (
-                                                <ActiveTripCard key={trip.id} trip={trip} onComplete={() => setConfirmingTripId(trip.id)} isConfirming={confirmingTripId === trip.id} onConfirm={async () => { await handleComplete(trip.id); setConfirmingTripId(null); }} onCancel={() => setConfirmingTripId(null)} completing={completing} />
+                                                <ActiveTripCard key={trip.id} trip={trip} onComplete={() => setConfirmingTripId(trip.id)} isConfirming={confirmingTripId === trip.id} onConfirm={async () => { await handleComplete(trip.id); setConfirmingTripId(null); }} onCancel={() => setConfirmingTripId(null)} completing={completing} onOpenComm={(id) => setCommsTripId(id)} />
                                             ))}
                                         </div>
                                     )}
@@ -636,6 +638,48 @@ export default function ManagerDispatchPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Comms overlay panel */}
+                        {commsTripId && (() => {
+                            const trip = activeTrips.find(t => t.id === commsTripId);
+                            return (
+                                <>
+                                    <div
+                                        onClick={() => setCommsTripId(null)}
+                                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, backdropFilter: 'blur(4px)' }}
+                                    />
+                                    <div style={{
+                                        position: 'fixed', top: 0, right: 0, bottom: 0,
+                                        width: isMobile ? '100%' : '420px',
+                                        zIndex: 51, display: 'flex', flexDirection: 'column',
+                                        background: 'rgba(13,13,13,0.96)',
+                                        borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                                        boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
+                                    }}>
+                                        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                                            <button onClick={() => setCommsTripId(null)} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'rgba(240,242,247,0.7)' }}>close</span>
+                                            </button>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#F0F2F7', letterSpacing: '-0.03em' }}>
+                                                    {trip ? `${trip.driver_name?.split(' ')[0]} — ${trip.client_first_name}` : 'Trip Comms'}
+                                                </p>
+                                                <p style={{ margin: 0, fontSize: '10px', color: 'rgba(240,242,247,0.4)', fontWeight: 600, marginTop: '1px' }}>Fleet manager channel</p>
+                                            </div>
+                                        </div>
+                                        <div style={{ flex: 1, minHeight: 0, padding: '12px' }}>
+                                            <ChatWindow
+                                                tripId={commsTripId}
+                                                token={token}
+                                                role="fleet_manager"
+                                                counterpartName={trip ? `${trip.driver_name?.split(' ')[0]} & ${trip.client_first_name}` : 'Trip'}
+                                                showSenderLabels
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            );
+                        })()}
 
                         {/* Status Footer Ticker */}
                         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,0,0,0.05)', height: '40px', display: 'flex', alignItems: 'center', paddingLeft: '32px', gap: '40px' }}>

@@ -38,8 +38,12 @@ CREATE TABLE IF NOT EXISTS vehicles (
 );
 
 -- ── 4. trips ─────────────────────────────────────────────────
+-- [FR1] Trip Lifecycle — central entity. All FRs are bound to an active trip record.
+-- [FR3] Server-Mediated Communication — data minimisation enforced at schema level.
 -- PRIVACY CONSTRAINT: client_first_name only.
--- No last_name, no phone_number — data minimisation enforced at schema level.
+-- No last_name column, no phone_number column — these fields do not exist in the schema.
+-- Even if application code tried to store a surname or phone number, there is no column
+-- to receive it. Data minimisation is enforced architecturally, not through policy.
 CREATE TABLE IF NOT EXISTS trips (
   id                     UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   client_corporate_email TEXT        NOT NULL,
@@ -65,8 +69,12 @@ CREATE TABLE IF NOT EXISTS trips (
 );
 
 -- ── 5. complaints ────────────────────────────────────────────
--- encrypted_message_archive: nullable TEXT — populated only when a complaint
--- is filed against an ephemeral Redis chat session (conditionally archived).
+-- [FR5] Conditional Persistence — encrypted_message_archive is nullable TEXT.
+--       NULL means no complaint was filed, or no messages were exchanged.
+--       Only populated when a complaint is filed within the 24h window and
+--       Redis buffer messages exist. The schema itself reflects the data lifecycle.
+-- [FR6] Complaint Investigation — status column drives the investigation gate.
+--       Transitions: open -> under_investigation -> resolved (terminal, no re-open).
 CREATE TABLE IF NOT EXISTS complaints (
   id                        UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   trip_id                   UUID        NOT NULL
@@ -80,11 +88,15 @@ CREATE TABLE IF NOT EXISTS complaints (
 );
 
 -- ── 6. audit_log (append-only) ───────────────────────────────
+-- [FR6] Complaint Investigation — every MESSAGE_ARCHIVE_ACCESSED event is logged here.
+-- [FR7] Privacy Dashboard — dashboard reads this table for compliance metrics.
 -- Append-only by convention enforced at DB role level (see migrations/002).
--- UPDATE and DELETE are revoked from the application role.
--- Compliance columns (legal_basis, retention_category, destruction_hash,
--- data_subjects) satisfy DPA 2019 ss.25, 30, 41 — added via
--- migrations/002_audit_log_compliance.sql.
+-- UPDATE and DELETE are revoked from the application role — records are permanent.
+-- Compliance columns satisfy Kenya Data Protection Act 2019:
+--   legal_basis        → DPA 2019 s.25 (lawful basis for processing)
+--   retention_category → DPA 2019 s.30 (retention periods)
+--   destruction_hash   → DPA 2019 s.41 (proof of deletion without retaining content)
+--   data_subjects      → tracks which data subjects are affected by this operation
 CREATE TABLE IF NOT EXISTS audit_log (
   id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   action_type        TEXT        NOT NULL,

@@ -68,7 +68,7 @@ export function generateCompliancePDF(report) {
     const summary = report.headline?.summary ||
         `In the period covered by this report, SwiftLink processed ${c.sessions_created ?? 0} dispatch sessions. ` +
         `${c.credentials_revoked ?? 0} driver credentials were revoked on trip completion, achieving a data ` +
-        `minimisation rate of ${c.minimization_rate_percent ?? 0}%. ` +
+        `data confinement rate of ${c.minimization_rate_percent ?? 0}%. ` +
         `${c.data_expired ?? 0} sessions resulted in permanent data deletion. ` +
         `${c.data_conditionally_persisted ?? 0} sessions triggered conditional preservation due to filed complaints.`;
     addText(summary, margin, 10, [60, 60, 60]);
@@ -100,7 +100,7 @@ export function generateCompliancePDF(report) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(108, 99, 255);
-    doc.text(`Data Minimisation Rate: ${c.minimization_rate_percent ?? 0}%`, margin, y);
+    doc.text(`Data Confinement Rate: ${c.minimization_rate_percent ?? 0}%`, margin, y);
     y += 12;
     addDivider([200, 200, 210], 0.3);
 
@@ -149,10 +149,11 @@ export function generateCompliancePDF(report) {
     y += 2;
     const regText =
         'This report documents compliance with the Kenya Data Protection Act 2019, Section 25 (Data Minimisation ' +
-        'Principle). The SwiftLink system enforces data minimisation at the architectural level through time-limited ' +
-        'Redis sessions, automatic credential revocation, and conditional persistence triggered exclusively by filed ' +
-        'complaints. The metrics above constitute a documented record of data minimisation in practice, suitable for ' +
-        'presentation to the Office of the Data Protection Commissioner.';
+        'Principle). SwiftLink enforces data confinement at the architectural level — communication data is ' +
+        'structurally bounded to the trip lifecycle through time-limited Redis sessions, automatic credential ' +
+        'revocation, and conditional persistence triggered exclusively by filed complaints. Data cannot escape ' +
+        'its trip boundary by design. The metrics above constitute a documented record of data confinement in ' +
+        'practice, suitable for presentation to the Office of the Data Protection Commissioner.';
     const regLines = doc.splitTextToSize(regText, contentWidth - 8);
     const boxH = regLines.length * 4.5 + 10;
     checkPage(boxH + 6);

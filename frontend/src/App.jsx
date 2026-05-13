@@ -9,6 +9,7 @@ import ManagerVehiclesPage from './pages/manager/ManagerVehiclesPage.jsx';
 import ManagerComplaintsPage from './pages/manager/ManagerComplaintsPage.jsx';
 import ManagerDashboardPage from './pages/ManagerPrivacyDashboardPage.jsx';
 import ManagerAuditPage from './pages/manager/ManagerAuditPage.jsx';
+import ManagerHelpPage from './pages/manager/ManagerHelpPage.jsx';
 import DriverTripsPage from './pages/driver/DriverTripsPage.jsx';
 import DriverActiveTripPage from './pages/driver/DriverActiveTripPage.jsx';
 import DriverProfilePage from './pages/driver/DriverProfilePage.jsx';
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/manager/complaints" element={<ManagerComplaintsPage />} />
           <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
           <Route path="/manager/audit" element={<ManagerAuditPage />} />
+          <Route path="/manager/help" element={<ManagerHelpPage />} />
         </Route>
 
         {/* Driver routes — nested under DriverLayout */}

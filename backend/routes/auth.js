@@ -11,6 +11,7 @@ import { setSession } from '../config/redisHelpers.js';
 const router = Router();
 
 // ── POST /login ─────────────────────────────────────────────────────────────
+// [FR4] Ephemeral Credential Management — JWT issuance for fleet managers.
 // Accepts { email, password }.
 // Looks up the fleet_managers table, verifies the password with bcrypt, then
 // issues a signed JWT containing { id, role } valid for JWT_EXPIRES_IN.
@@ -60,6 +61,7 @@ router.post('/login', async (req, res) => {
 });
 
 // ── POST /logout ────────────────────────────────────────────────────────────
+// [FR4] Ephemeral Credential Management — JWT revocation via Redis blocklist.
 // Accepts the JWT from the Authorization: Bearer header.
 // Decodes the token (without re-verifying the signature) to read the `exp`
 // claim, then stores the token in Redis under blocklist:<token> for exactly
@@ -69,8 +71,9 @@ router.post('/login', async (req, res) => {
 // JWTs are stateless — the server cannot "cancel" a token once issued.
 // Storing the token in Redis for its remaining TTL gives us server-side
 // invalidation without permanent state: Redis automatically evicts the entry
-// when the token would have expired anyway. Downstream middleware (Phase 2.5)
-// will check this blocklist before honouring any protected request.
+// when the token would have expired anyway. Downstream middleware checks this
+// blocklist before honouring any protected request. This is how ephemeral
+// credentials are revoked without requiring a persistent session store.
 router.post('/logout', async (req, res) => {
     const authHeader = req.headers['authorization'];
 

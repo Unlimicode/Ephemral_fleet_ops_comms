@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
 const formatTimeAgo = (iso) => {
@@ -36,6 +37,7 @@ const SkeletonCard = () => (
 );
 
 export default function DriverNotificationsPage() {
+    const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -55,6 +57,11 @@ export default function DriverNotificationsPage() {
         } catch {
             // best-effort
         }
+    };
+
+    const handleCardClick = async (n) => {
+        if (!n.read) await markAsRead(n.id);
+        if (n.trip_id) navigate(`/driver/trips/${n.trip_id}`);
     };
 
     return (
@@ -132,11 +139,13 @@ export default function DriverNotificationsPage() {
                             <div
                                 key={n.id}
                                 className="notif-card"
+                                onClick={() => handleCardClick(n)}
                                 style={{
                                     padding: '20px 24px',
                                     borderLeft: n.read ? '3px solid transparent' : '3px solid #6C63FF',
                                     background: n.read ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.75)',
                                     opacity: n.read ? 0.8 : 1,
+                                    cursor: n.trip_id ? 'pointer' : 'default',
                                 }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>

@@ -74,6 +74,10 @@ export default function ManagerAuditPage() {
     const [reportFrom, setReportFrom] = useState('');
     const [reportTo, setReportTo] = useState('');
 
+    const [activeTab, setActiveTab] = useState('audit');
+    const [enquiries, setEnquiries] = useState([]);
+    const [enquiriesLoading, setEnquiriesLoading] = useState(false);
+
     const { addToast } = useToast();
     const width = useWindowWidth();
     const isMobile = width < 768;
@@ -115,6 +119,18 @@ export default function ManagerAuditPage() {
         }
     }, [filters, offset, addToast]);
 
+    const fetchEnquiries = useCallback(async () => {
+        setEnquiriesLoading(true);
+        try {
+            const res = await api.get('/contact');
+            setEnquiries(res.data);
+        } catch {
+            addToast('Could not load enquiries.', 'error');
+        } finally {
+            setEnquiriesLoading(false);
+        }
+    }, [addToast]);
+
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchAudit();
@@ -123,6 +139,10 @@ export default function ManagerAuditPage() {
             clearTimeout(timer);
         };
     }, [filters.search, filters.action_type, filters.from, filters.to, fetchAudit]);
+
+    useEffect(() => {
+        if (activeTab === 'enquiries') fetchEnquiries();
+    }, [activeTab, fetchEnquiries]);
 
     const handleExportAuditCSV = async () => {
         try {
@@ -178,6 +198,15 @@ export default function ManagerAuditPage() {
     const handleExportCompliancePDF = () => {
         if (!report) return;
         generateCompliancePDF(report);
+    };
+
+    const handleMarkStatus = async (id, status) => {
+        try {
+            await api.patch(`/contact/${id}`, { status });
+            setEnquiries(prev => prev.map(e => e.id === id ? { ...e, status } : e));
+        } catch {
+            addToast('Could not update enquiry status.', 'error');
+        }
     };
 
     const formatTimestamp = (iso) => {
@@ -281,35 +310,53 @@ export default function ManagerAuditPage() {
             {(!loading || entries.length > 0) && !error && (
                 <>
                     {/* Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px', flexWrap: 'wrap', gap: '24px' }}>
-                        <div>
-                            <h1 style={{ fontSize: isMobile ? '36px' : '56px', fontWeight: 900, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#0D0D0D', lineHeight: 1, margin: 0 }}>
-                                Audit Trail
-                            </h1>
-                            <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.5)', fontWeight: 500, marginTop: '12px', maxWidth: '480px', margin: '12px 0 0 0' }}>
-                                Comprehensive system event monitoring and regulatory compliance logs.
-                            </p>
+                    <div style={{ marginBottom: '40px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px', marginBottom: '24px' }}>
+                            <div>
+                                <h1 style={{ fontSize: isMobile ? '36px' : '56px', fontWeight: 900, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#0D0D0D', lineHeight: 1, margin: 0 }}>
+                                    {activeTab === 'audit' ? 'Audit Trail' : 'Enquiries'}
+                                </h1>
+                                <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.5)', fontWeight: 500, margin: '12px 0 0 0', maxWidth: '480px' }}>
+                                    {activeTab === 'audit'
+                                        ? 'Comprehensive system event monitoring and regulatory compliance logs.'
+                                        : 'Corporate contact enquiries submitted via the public landing page.'}
+                                </p>
+                            </div>
+                            {activeTab === 'audit' && (
+                                <button
+                                    className="export-btn"
+                                    onClick={handleExportAuditCSV}
+                                    style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 28px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 20px rgba(108,99,255,0.3)', transition: 'transform 0.2s ease', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+                                    Export CSV
+                                </button>
+                            )}
                         </div>
-                        <button
-                            className="export-btn"
-                            onClick={handleExportAuditCSV}
-                            style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 28px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 20px rgba(108,99,255,0.3)', transition: 'transform 0.2s ease', fontFamily: "'Be Vietnam Pro', sans-serif" }}
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
-                            Export CSV
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            {['audit', 'enquiries'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    style={{ background: activeTab === tab ? '#6C63FF' : 'rgba(255,255,255,0.5)', color: activeTab === tab ? 'white' : 'rgba(0,0,0,0.5)', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif", transition: 'all 0.2s ease', textTransform: 'capitalize' }}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
+                    {activeTab === 'audit' && (<>
                     {/* Compliance Report Panel — collapsible, above stat tiles */}
                     <div className="audit-panel" style={{ padding: '28px 32px', marginBottom: '32px' }}>
                         {/* Toggle header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                             <div>
                                 <h2 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: 900, letterSpacing: '-0.02em', color: '#0D0D0D', margin: 0 }}>
-                                    Data Minimisation Compliance Report
+                                    Data Confinement Report
                                 </h2>
                                 <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', fontWeight: 500, margin: '4px 0 0 0' }}>
-                                    Kenya Data Protection Act 2019, s.25 — ephemeral identity framework
+                                    DPA 2019 s.25 · Trip data structurally confined to lifecycle boundary
                                 </p>
                             </div>
                             <button
@@ -365,7 +412,7 @@ export default function ManagerAuditPage() {
                                 {report && !reportLoading && (() => {
                                     const c = report.compliance || {};
                                     const summary = report.headline?.summary ||
-                                        `In this period, SwiftLink processed ${c.sessions_created ?? 0} sessions, revoked ${c.credentials_revoked ?? 0} credentials, and achieved a data minimisation rate of ${c.minimization_rate_percent ?? 0}%.`;
+                                        `In this period, SwiftLink processed ${c.sessions_created ?? 0} sessions, revoked ${c.credentials_revoked ?? 0} credentials, and achieved a data confinement rate of ${c.minimization_rate_percent ?? 0}%.`;
                                     return (
                                         <>
                                             {/* 10-metric grid */}
@@ -373,7 +420,7 @@ export default function ManagerAuditPage() {
 
                                                 {/* Headline metric — full width */}
                                                 <div className="audit-stat-card" style={{ gridColumn: isMobile ? undefined : '1 / -1', padding: '24px', borderLeft: '4px solid #6C63FF' }}>
-                                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#6C63FF', margin: '0 0 8px 0' }}>Data Minimisation Rate</p>
+                                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#6C63FF', margin: '0 0 8px 0' }}>Data Confinement Rate</p>
                                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
                                                         <span style={{ fontSize: isMobile ? '42px' : '56px', fontWeight: 900, color: '#6C63FF', letterSpacing: '-0.04em', lineHeight: 1 }}>{c.minimization_rate_percent ?? 0}%</span>
                                                         <span style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>of completed trips resulted in permanent data erasure</span>
@@ -579,6 +626,45 @@ export default function ManagerAuditPage() {
                             )}
                         </div>
                     </div>
+                    </>)}
+
+                    {activeTab === 'enquiries' && (
+                        <div className="audit-panel" style={{ padding: '32px' }}>
+                            {enquiriesLoading && (
+                                <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.4)', fontWeight: 500 }}>Loading enquiries…</p>
+                            )}
+                            {!enquiriesLoading && enquiries.length === 0 && (
+                                <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.4)', fontWeight: 500 }}>No enquiries yet.</p>
+                            )}
+                            {!enquiriesLoading && enquiries.map(enq => (
+                                <div key={enq.id} style={{ padding: '20px 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                                        <div>
+                                            <p style={{ fontSize: '15px', fontWeight: 700, color: '#0D0D0D', margin: '0 0 4px 0' }}>
+                                                {enq.name} — <span style={{ fontWeight: 500 }}>{enq.company}</span>
+                                            </p>
+                                            <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', margin: '0 0 8px 0', fontFamily: 'JetBrains Mono, monospace' }}>{enq.email}</p>
+                                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.65)', lineHeight: 1.6, margin: 0 }}>{enq.message}</p>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', minWidth: '140px' }}>
+                                            <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.35)', margin: 0, fontFamily: 'JetBrains Mono, monospace' }}>
+                                                {new Date(enq.created_at).toLocaleDateString()}
+                                            </p>
+                                            <select
+                                                value={enq.status}
+                                                onChange={e => handleMarkStatus(enq.id, e.target.value)}
+                                                style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', borderRadius: '999px', padding: '6px 16px', fontSize: '11px', fontWeight: 700, color: '#0D0D0D', outline: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                            >
+                                                <option value="new">New</option>
+                                                <option value="read">Read</option>
+                                                <option value="responded">Responded</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </>
             )}
         </div>

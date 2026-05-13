@@ -30,6 +30,7 @@ export default function ManagerLayout() {
     const location = useLocation();
     const width = useWindowWidth();
     const [complaintCount, setComplaintCount] = useState(0);
+    const [enquiryCount, setEnquiryCount] = useState(0);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const socketRef = useRef(null);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -40,9 +41,14 @@ export default function ManagerLayout() {
 
     const fetchCounts = useCallback(async () => {
         try {
-            const res = await api.get('/complaints');
-            const open = res.data.filter(c => c.status === 'open').length;
+            const [compRes, enqRes] = await Promise.all([
+                api.get('/complaints'),
+                api.get('/contact'),
+            ]);
+            const open = compRes.data.filter(c => c.status === 'open').length;
             setComplaintCount(open);
+            const newEnq = enqRes.data.filter(e => e.status === 'new').length;
+            setEnquiryCount(newEnq);
         } catch (err) {
             console.error('Failed to fetch counts:', err);
         }
@@ -65,6 +71,10 @@ export default function ManagerLayout() {
 
         socket.on('complaint_filed', () => {
             setComplaintCount(prev => prev + 1);
+        });
+
+        socket.on('new_enquiry', () => {
+            setEnquiryCount(prev => prev + 1);
         });
 
         socket.on('complaint_status_updated', ({ new_status }) => {
@@ -112,6 +122,11 @@ export default function ManagerLayout() {
                         {complaintCount}
                     </span>
                 )}
+                {link.label === 'Audit' && enquiryCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#6C63FF] text-[10px] text-white">
+                        {enquiryCount}
+                    </span>
+                )}
             </NavLink>
         ))
     );
@@ -151,7 +166,23 @@ export default function ManagerLayout() {
                     <div className="flex items-center gap-2">
                         <SwiftlinkLogo height={36} />
                     </div>
-                    <span className="font-bold text-sm">{user?.name?.split(' ')[0] || 'Manager'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="font-bold text-sm">{user?.name?.split(' ')[0] || 'Manager'}</span>
+                        <NavLink
+                            to="/manager/help"
+                            title="Help Guide"
+                            style={({ isActive }) => ({
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: '28px', height: '28px', borderRadius: '50%',
+                                background: isActive ? '#6C63FF' : 'rgba(108,99,255,0.12)',
+                                color: isActive ? '#fff' : '#6C63FF',
+                                fontSize: '13px', fontWeight: 800,
+                                textDecoration: 'none', flexShrink: 0,
+                            })}
+                        >
+                            ?
+                        </NavLink>
+                    </div>
                 </header>
             ) : (
                 /* Desktop/Tablet Pill Nav */
@@ -204,6 +235,23 @@ export default function ManagerLayout() {
                                 {complaintCount > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#EF4444] rounded-full" />}
                             </div>
 
+                            {/* Help button */}
+                            <NavLink
+                                to="/manager/help"
+                                title="Help Guide"
+                                style={({ isActive }) => ({
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    width: '30px', height: '30px', borderRadius: '50%',
+                                    background: isActive ? '#6C63FF' : 'rgba(108,99,255,0.12)',
+                                    color: isActive ? '#fff' : '#6C63FF',
+                                    fontSize: '14px', fontWeight: 800,
+                                    textDecoration: 'none', flexShrink: 0,
+                                    transition: 'all 0.2s ease',
+                                })}
+                            >
+                                ?
+                            </NavLink>
+
                             {isTablet && (
                                 <button
                                     onClick={() => setDrawerOpen(true)}
@@ -253,6 +301,20 @@ export default function ManagerLayout() {
                         </button>
                         <div className="mt-12 flex flex-col gap-2">
                             {renderNavLinks(true)}
+                            <NavLink
+                                to="/manager/help"
+                                onClick={() => setDrawerOpen(false)}
+                                style={({ isActive }) => ({
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    padding: '8px 18px', borderRadius: '9999px',
+                                    color: isActive ? '#6C63FF' : '#F5EDE3',
+                                    background: isActive ? 'rgba(108,99,255,0.15)' : 'transparent',
+                                    fontSize: '14px', fontWeight: 700, textDecoration: 'none',
+                                    transition: 'all 0.2s ease',
+                                })}
+                            >
+                                Help
+                            </NavLink>
                         </div>
                         <div className="absolute bottom-10 left-8 right-8">
                             <button
@@ -311,6 +373,9 @@ export default function ManagerLayout() {
                                 {isActive && <div className="w-1 h-1 rounded-full bg-[#0D0D0D]" />}
                                 {tab.label === 'Complaints' && complaintCount > 0 && (
                                     <div className="absolute top-1 right-2 w-2 h-2 bg-[#EF4444] rounded-full" />
+                                )}
+                                {tab.label === 'Audit' && enquiryCount > 0 && (
+                                    <div className="absolute top-1 right-2 w-2 h-2 bg-[#6C63FF] rounded-full" />
                                 )}
                             </NavLink>
                         );

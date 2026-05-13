@@ -199,4 +199,19 @@ router.patch('/notifications/:notificationId/read', requireAuth(['driver']), asy
     }
 });
 
+// ── PATCH /notifications/read-by-trip/:tripId — Bulk-read for a trip ──────────
+router.patch('/notifications/read-by-trip/:tripId', requireAuth(['driver']), async (req, res) => {
+    const { tripId } = req.params;
+    try {
+        await query(
+            'UPDATE driver_notifications SET read = true WHERE driver_id = $1 AND trip_id = $2 AND read = false',
+            [req.user.id, tripId]
+        );
+        return res.status(200).json({ message: 'Notifications marked as read' });
+    } catch (err) {
+        console.error('[drivers] mark-read-by-trip error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 export default router;

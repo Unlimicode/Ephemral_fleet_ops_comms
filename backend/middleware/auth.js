@@ -3,13 +3,18 @@ import { getSession } from '../config/redisHelpers.js';
 import { query } from '../config/db.js';
 
 /**
+ * [FR4] Ephemeral Credential Management — JWT verification pipeline.
+ * [FR1] Role-based access control gate for all manager and driver routes.
+ *
  * Express middleware that protects routes by:
  *   1. Extracting the JWT from the Authorization: Bearer header
  *   2. Checking the Redis blocklist for the token (fast Redis read before crypto)
+ *      WHY: logout stores the token here — this is how revocation is enforced before expiry
  *   3. Verifying the JWT signature and expiry with JWT_SECRET
- *   4. For driver tokens: verifying active_status in the DB so deactivation takes
+ *   4. Checking allowedRoles — enforces RBAC (e.g. drivers cannot access manager routes)
+ *   5. For driver tokens: verifying active_status in the DB so deactivation takes
  *      immediate effect even though the JWT is still cryptographically valid
- *   5. Attaching the decoded payload as req.user and calling next()
+ *   6. Attaching the decoded payload as req.user and calling next()
  */
 export function requireAuth(allowedRoles = []) {
     return async (req, res, next) => {

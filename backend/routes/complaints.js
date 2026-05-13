@@ -13,13 +13,20 @@ import { sendComplaintStatusUpdate } from '../config/mailer.js';
 const router = express.Router();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /:tripId - Public Complaint Lodgment 
+// [FR5] Conditional Persistence — complaint filing triggers message archive.
+// [FR6] Complaint Investigation — complaint record created here, begins the
+//       investigation lifecycle (open → under_investigation → resolved).
+//
+// POST /:tripId - Client Complaint Lodgment
 // ─────────────────────────────────────────────────────────────────────────────
-// The Redis window check (`complaint:window:{tripId}`) is the architectural 
-// enforcement of the 24-hour complaint window. When the TTL expires, Redis 
-// deletes the key automatically, and the endpoint physically cannot process 
-// complaints after that point. This is purpose limitation implemented as a 
-// technical constraint, not a policy. No database timestamp arithmetic is used.
+// The Redis window check (`complaint:window:{tripId}`) is the architectural
+// enforcement of the 24-hour complaint window. When the TTL expires, Redis
+// deletes the key automatically, and the endpoint physically cannot process
+// complaints after that point. This is purpose limitation implemented as a
+// TECHNICAL CONSTRAINT, not a policy. No database timestamp arithmetic is used.
+// WHY: A policy saying "complaints must be filed within 24 hours" can be ignored
+// or worked around. A Redis key that no longer exists cannot be checked successfully —
+// the system is structurally incapable of accepting late complaints.
 // ─────────────────────────────────────────────────────────────────────────────
 router.post('/:tripId', requireClientAuth, async (req, res) => {
     const { tripId } = req.params;
@@ -192,14 +199,18 @@ router.get('/:tripId/status', requireClientAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /:complaintId/messages - Conditional Encryption Investigation Override
+// [FR6] Complaint Investigation — gated message archive access with audit trail.
+//
+// GET /:complaintId/messages - Message Archive Decryption
 // ─────────────────────────────────────────────────────────────────────────────
 // ARCHITECTURAL ACCOUNTABILITY GATEWAY:
-// Message archive access is structurally restricted to 'under_investigation'
-// status bindings. Every individual cryptologic native decryption access dynamically
-// inserts a permanent `MESSAGE_ARCHIVE_ACCESSED` structural audit log natively preserving
-// total accountability. A fleet manager physically cannot access messaging environments 
-// simply because a complaint logically arose — they must structurally formalise investigations.
+// Message archive access is restricted to status = 'under_investigation' ONLY.
+// A manager cannot access messages when status = 'open' or status = 'resolved'.
+// They must first explicitly call PATCH /:id/status to advance the complaint —
+// this is the auditable decision point required by FR6.
+// Every decryption inserts a MESSAGE_ARCHIVE_ACCESSED audit_log entry, making
+// the manager personally accountable for each access. This satisfies DPA 2019
+// s.30 (accountability) and s.41 (audit trail requirements).
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/:complaintId/messages', requireAuth(['fleet_manager']), async (req, res) => {
     const { complaintId } = req.params;

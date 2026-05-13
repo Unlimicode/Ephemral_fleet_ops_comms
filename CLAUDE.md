@@ -301,8 +301,4 @@ cd backend; npm run seed
 - [x] Sprint 20 Batch 8: Client push notifications — `client_push_subscriptions` table (migration 006), `sendClientPushNotification` utility, `POST/DELETE /bookings/push-subscribe`, push fired on driver accept, push permission prompt in BookingLandingPage trip view
 - [x] Sprint 20 Batch 9: Offline resilience — `useOnlineStatus` hook, offline pill in nav, complaint queuing to localStorage with auto-drain; ChatWindow pending message state, mid-session reconnect fix; Africa/Nairobi timezone + EAT label on all date displays; `prefers-reduced-motion` in animations.css
 
-### Outstanding
-- [ ] Complaint status regression — cannot return to `open` from `under_investigation` (backend guard in complaints.js)
-- [ ] Message visibility — chat should open at trip `accepted` status, not be gated on complaint investigation state (verify and fix in complaints/socket layer if still wrong)
-- [ ] SwiftLink SVG logo inconsistency — size/style varies between ManagerLayout, DriverLayout, and BookingLandingPage
-- [ ] Manager dashboard visual redesign — all 6 pages (Dispatch, Drivers, Vehicles, Complaints, Audit, PrivacyDashboard) need Stitch-style refresh (large task)
+- [x] Sprint 21: In-system user guide — ManagerHelpPage (/manager/help), DriverHelpSheet (route-aware bottom sheet), ClientHelpModal (booking-state context, floating ? button on all client pages)
