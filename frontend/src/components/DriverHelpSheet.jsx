@@ -122,7 +122,7 @@ function TripsListContent() {
             <CautionNote>
                 Decline reasons are reviewed by your fleet manager. They are not shared with the client.
             </CautionNote>
-            <HelpImage src="/help/driver/01-trips-list.png" caption="Your Trips list showing Assigned, In Progress, Completed, and Cancelled cards" />
+            <HelpImage src="/help/driver/01-trips-list.jpg" caption="Your Trips list showing Assigned, In Progress, Completed, and Cancelled cards" />
         </>
     );
 }
@@ -162,7 +162,7 @@ function TripDetailContent() {
             <PrivacyNote>
                 After completion, all message content is permanently deleted from the server — unless the client files a complaint within 24 hours.
             </PrivacyNote>
-            <HelpImage src="/help/driver/02-active-trip-chat.png" caption="Active trip page showing the Secure Channel and the Complete Trip button" />
+            <HelpImage src="/help/driver/02-active-trip-chat.jpg" caption="Active trip page showing the Secure Channel and the Complete Trip button" />
         </>
     );
 }
@@ -216,7 +216,7 @@ function NotificationsContent() {
                     Notifications are stored on the server — they are not lost if you clear your browser cache or reinstall the app.
                 </div>
             </div>
-            <HelpImage src="/help/driver/04-notifications-list.png" caption="Notifications page showing trip assignment and cancellation alerts" />
+            <HelpImage src="/help/driver/04-notifications-list.jpg" caption="Notifications page showing trip assignment and cancellation alerts" />
         </>
     );
 }
