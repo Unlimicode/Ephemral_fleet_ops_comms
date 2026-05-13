@@ -137,7 +137,7 @@ export default function ManagerPrivacyDashboardPage() {
                     target_id: data.trip_id,
                     timestamp: data.timestamp || new Date().toISOString(),
                     destruction_hash: data.destruction_hash,
-                    legal_basis: 'DPA 2019 s.25 — Data Minimization',
+                    legal_basis: 'DPA 2019 s.25 — Data Confinement',
                     retention_category: 'ephemeral',
                 }, ...prev].slice(0, 20));
             }
@@ -417,7 +417,7 @@ export default function ManagerPrivacyDashboardPage() {
                         <span className="material-symbols-outlined" style={{ position: 'absolute', top: 0, right: 0, fontSize: '160px', color: '#6C63FF', opacity: 0.04, pointerEvents: 'none', lineHeight: 1, userSelect: 'none' }}>auto_awesome</span>
                         <div style={{ position: 'relative', zIndex: 1 }}>
                             <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(0,0,0,0.4)', marginBottom: '8px' }}>Primary Metric</p>
-                            <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '22px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0D0D0D', marginBottom: '32px' }}>Data Minimization Rate</h2>
+                            <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '22px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0D0D0D', marginBottom: '32px' }}>Data Confinement Rate</h2>
                             <div style={{ lineHeight: 1 }}>
                                 <span style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '96px', fontWeight: 900, letterSpacing: '-0.05em', color: '#6C63FF', lineHeight: 1 }}>
                                     {summary?.minimization_rate || 0}
@@ -425,7 +425,7 @@ export default function ManagerPrivacyDashboardPage() {
                                 <span style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '40px', fontWeight: 900, color: '#6C63FF', opacity: 0.4 }}>%</span>
                             </div>
                             <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.45)', maxWidth: '380px', marginTop: '24px', lineHeight: 1.6 }}>
-                                Percentage of trip data automatically wiped without human intervention. Higher is better.
+                                Percentage of trips where communication data was structurally confined — auto-destroyed at trip boundary with zero manual action. Higher is better.
                             </p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '24px' }}>
                                 {[
@@ -593,7 +593,7 @@ export default function ManagerPrivacyDashboardPage() {
                                 <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'white', boxShadow: '0 4px 20px rgba(108,99,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#6C63FF' }}>security</span>
                                 </div>
-                                <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(0,0,0,0.5)' }}>Minimization</p>
+                                <p style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(0,0,0,0.5)' }}>Confinement</p>
                                 <p style={{ fontSize: '18px', fontWeight: 900, color: '#6C63FF' }}>{summary?.sessions_created || 0}</p>
                             </div>
 
@@ -689,7 +689,7 @@ export default function ManagerPrivacyDashboardPage() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                         <div>
                             <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#0D0D0D', marginBottom: '4px' }}>Destruction Proof Log</h2>
-                            <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>SHA-256 pre-deletion hashes — DPA 2019 s.41 compliance</p>
+                            <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>SHA-256 pre-deletion hashes — DPA 2019 s.25 data confinement proof</p>
                         </div>
                         <span style={{ background: 'rgba(224,90,90,0.1)', color: '#E05A5A', borderRadius: '999px', padding: '4px 12px', fontSize: '10px', fontWeight: 700 }}>Append-Only</span>
                     </div>
@@ -736,7 +736,7 @@ export default function ManagerPrivacyDashboardPage() {
                 <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,0,0,0.05)', height: '40px', display: 'flex', alignItems: 'center', paddingLeft: '32px', gap: '40px' }}>
                     {[
                         { dot: '#00F5A0', label: 'System Online' },
-                        { dot: null, label: 'Privacy Engine Active' },
+                        { dot: null, label: 'Data Confinement Active' },
                         { dot: null, label: 'MEI Framework v1.0' },
                     ].map(({ dot, label }) => (
                         <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
