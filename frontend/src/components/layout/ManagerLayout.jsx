@@ -151,7 +151,23 @@ export default function ManagerLayout() {
                     <div className="flex items-center gap-2">
                         <SwiftlinkLogo height={36} />
                     </div>
-                    <span className="font-bold text-sm">{user?.name?.split(' ')[0] || 'Manager'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="font-bold text-sm">{user?.name?.split(' ')[0] || 'Manager'}</span>
+                        <NavLink
+                            to="/manager/help"
+                            title="Help Guide"
+                            style={({ isActive }) => ({
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: '28px', height: '28px', borderRadius: '50%',
+                                background: isActive ? '#6C63FF' : 'rgba(108,99,255,0.12)',
+                                color: isActive ? '#fff' : '#6C63FF',
+                                fontSize: '13px', fontWeight: 800,
+                                textDecoration: 'none', flexShrink: 0,
+                            })}
+                        >
+                            ?
+                        </NavLink>
+                    </div>
                 </header>
             ) : (
                 /* Desktop/Tablet Pill Nav */
@@ -204,6 +220,23 @@ export default function ManagerLayout() {
                                 {complaintCount > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#EF4444] rounded-full" />}
                             </div>
 
+                            {/* Help button */}
+                            <NavLink
+                                to="/manager/help"
+                                title="Help Guide"
+                                style={({ isActive }) => ({
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    width: '30px', height: '30px', borderRadius: '50%',
+                                    background: isActive ? '#6C63FF' : 'rgba(108,99,255,0.12)',
+                                    color: isActive ? '#fff' : '#6C63FF',
+                                    fontSize: '14px', fontWeight: 800,
+                                    textDecoration: 'none', flexShrink: 0,
+                                    transition: 'all 0.2s ease',
+                                })}
+                            >
+                                ?
+                            </NavLink>
+
                             {isTablet && (
                                 <button
                                     onClick={() => setDrawerOpen(true)}
@@ -253,6 +286,20 @@ export default function ManagerLayout() {
                         </button>
                         <div className="mt-12 flex flex-col gap-2">
                             {renderNavLinks(true)}
+                            <NavLink
+                                to="/manager/help"
+                                onClick={() => setDrawerOpen(false)}
+                                style={({ isActive }) => ({
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    padding: '8px 18px', borderRadius: '9999px',
+                                    color: isActive ? '#6C63FF' : '#F5EDE3',
+                                    background: isActive ? 'rgba(108,99,255,0.15)' : 'transparent',
+                                    fontSize: '14px', fontWeight: 700, textDecoration: 'none',
+                                    transition: 'all 0.2s ease',
+                                })}
+                            >
+                                Help
+                            </NavLink>
                         </div>
                         <div className="absolute bottom-10 left-8 right-8">
                             <button
