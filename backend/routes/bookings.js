@@ -3,7 +3,7 @@ import { query } from '../config/db.js';
 import { setSession, getSession, deleteSession, extendSession } from '../config/redisHelpers.js';
 import client from '../config/redis.js';
 import crypto from 'crypto';
-import { sendEmail } from '../config/mailer.js';
+import { sendEmail, sendBookingConfirmation } from '../config/mailer.js';
 import jwt from 'jsonwebtoken';
 import { requireClientAuth } from '../middleware/clientAuth.js';
 import { emitDashboardEvent } from '../socket/dashboardNamespace.js';
@@ -83,11 +83,7 @@ router.post('/', async (req, res) => {
 
         if (process.env.NODE_ENV !== 'test') {
             try {
-                await sendEmail({
-                    to: client_corporate_email,
-                    subject: 'Fleet Ops: Your Booking Confirmation & Access Link',
-                    text: `Hello ${firstName},\n\nYour trip has been successfully requested and is pending driver assignment.\n\nYou can track and manage your trip securely using this one-time access link:\n${magicLink}\n\nThis link acts as your secure key. Do not share it with anyone.`,
-                });
+                await sendBookingConfirmation(client_corporate_email, magicLink);
             } catch (mailErr) {
                 console.error('[mailer] Booking confirmation email failed:', mailErr.message);
             }
