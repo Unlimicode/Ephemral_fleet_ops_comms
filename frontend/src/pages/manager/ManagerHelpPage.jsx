@@ -1,4 +1,15 @@
 import { useState } from 'react';
+
+function HelpImage({ src, caption }) {
+    const [show, setShow] = useState(true);
+    if (!show) return null;
+    return (
+        <figure style={{ margin: '16px 0 4px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <img src={src} alt={caption} onError={() => setShow(false)} style={{ width: '100%', display: 'block' }} />
+            {caption && <figcaption style={{ padding: '6px 12px', fontSize: '11px', color: '#6B6B6B', background: 'rgba(0,0,0,0.02)', fontStyle: 'italic' }}>{caption}</figcaption>}
+        </figure>
+    );
+}
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper.jsx';
 
@@ -175,6 +186,7 @@ export default function ManagerHelpPage() {
                         <PrivacyNote>
                             SwiftLink uses email magic links instead of passwords. No password is ever created or stored on the system.
                         </PrivacyNote>
+                        <HelpImage src="/help/manager/01-login.png" caption="Login page — enter your work email and click Sign In to receive a magic link" />
                     </div>
                 </HelpSection>
 
@@ -201,6 +213,7 @@ export default function ManagerHelpPage() {
                         <PrivacyNote>
                             The client's corporate email is used only to deliver their access link and trip notifications. It is never visible to the assigned driver at any point.
                         </PrivacyNote>
+                        <HelpImage src="/help/manager/02-new-booking-modal.png" caption="Dispatch page — New Booking form with client details, route, and optional fields" />
                     </div>
                 </HelpSection>
 
@@ -234,6 +247,7 @@ export default function ManagerHelpPage() {
                         <CautionNote>
                             If the timer bar turns red, follow up with the driver directly or reassign to another available driver.
                         </CautionNote>
+                        <HelpImage src="/help/manager/03-assign-driver.png" caption="Booking card with driver dropdown, vehicle dropdown, and optional ETA field" />
                     </div>
                 </HelpSection>
 
@@ -266,6 +280,7 @@ export default function ManagerHelpPage() {
                         <CautionNote>
                             Force-complete is for exceptional cases only. Normally the driver marks trip completion from their own app.
                         </CautionNote>
+                        <HelpImage src="/help/manager/04-dispatch-overview.png" caption="Dispatch dashboard showing Active Trips, Awaiting Acceptance, Drivers panel, and Fleet Status" />
                     </div>
                 </HelpSection>
 
@@ -305,6 +320,7 @@ export default function ManagerHelpPage() {
                         <PrivacyNote>
                             This dashboard provides demonstrable evidence of compliance with the data minimisation and storage limitation principles of data protection law. No session data persists beyond trip completion.
                         </PrivacyNote>
+                        <HelpImage src="/help/manager/05-privacy-dashboard.png" caption="Privacy Dashboard — Session Monitor showing live TTL bars for active trips" />
                     </div>
                 </HelpSection>
 
@@ -344,6 +360,7 @@ export default function ManagerHelpPage() {
                         <PrivacyNote>
                             The message archive is AES-256-GCM encrypted at rest and can only be decrypted while the complaint status is Under Investigation. This is enforced at the server level.
                         </PrivacyNote>
+                        <HelpImage src="/help/manager/06-complaints-page.png" caption="Complaints page with an expanded complaint card showing status dropdown and View Messages button" />
                     </div>
                 </HelpSection>
 
@@ -368,6 +385,7 @@ export default function ManagerHelpPage() {
                         <CautionNote>
                             These exports contain operational and personal data relevant to DPA compliance reviews. Store and transmit them securely.
                         </CautionNote>
+                        <HelpImage src="/help/manager/07-audit-exports.png" caption="Audit page showing the PDF Compliance Report and CSV Audit Log export buttons" />
                     </div>
                 </HelpSection>
 

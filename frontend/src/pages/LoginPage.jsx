@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -14,6 +14,59 @@ function useWindowWidth() {
     return w;
 }
 
+function LoginHelpModal({ open, onClose }) {
+    const [tab, setTab] = useState('manager');
+    useEffect(() => {
+        document.body.style.overflow = open ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
+    }, [open]);
+    return (
+        <>
+            <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 199, opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity 0.25s ease' }} />
+            <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(245,237,227,0.97)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)', borderRadius: '24px 24px 0 0', borderTop: '1px solid rgba(255,255,255,0.7)', boxShadow: '0 -8px 40px rgba(0,0,0,0.12)', maxHeight: '85vh', display: 'flex', flexDirection: 'column', transform: open ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
+                    <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(0,0,0,0.15)' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px 0' }}>
+                    <div>
+                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#0D0D0D', letterSpacing: '-0.02em' }}>How to Sign In</div>
+                        <div style={{ fontSize: '11px', color: '#6B6B6B', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>SwiftLink Login Help</div>
+                    </div>
+                    <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px', color: '#6B6B6B' }}>×</button>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', padding: '16px 20px 0', background: 'rgba(0,0,0,0.03)', margin: '12px 20px 0', borderRadius: '12px' }}>
+                    {[['manager','Fleet Manager'],['driver','Driver'],['client','Client']].map(([k,l]) => (
+                        <button key={k} onClick={() => setTab(k)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 700, background: tab === k ? '#6C63FF' : 'transparent', color: tab === k ? '#fff' : '#6B6B6B', transition: 'all 0.2s ease' }}>{l}</button>
+                    ))}
+                </div>
+                <div style={{ overflowY: 'auto', padding: '16px 20px 40px', flex: 1 }}>
+                    {tab === 'manager' && (<>
+                        <p style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, margin: '0 0 12px' }}>Fleet Managers sign in using a <strong>magic link</strong> — no password required.</p>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>1</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>Select <strong>Fleet Manager</strong> on the toggle above.</span></div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>2</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>Enter your registered <strong>work email address</strong>.</span></div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>3</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>Check your inbox for an email from SwiftLink. Click <strong>"Sign in to SwiftLink"</strong>.</span></div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>4</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>You are taken directly to the Dispatch dashboard. The link is single-use and <strong>expires after 15 minutes</strong>.</span></div>
+                        <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderLeft: '3px solid #F59E0B', borderRadius: '8px', padding: '10px 14px', marginTop: '12px', fontSize: '13px', lineHeight: 1.6, color: '#2D2D2D' }}><span style={{ fontWeight: 700, color: '#F59E0B' }}>Note: </span>The Password field is not used for manager login — only the email is needed.</div>
+                    </>)}
+                    {tab === 'driver' && (<>
+                        <p style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, margin: '0 0 12px' }}>Drivers sign in with their <strong>work email and password</strong> provided by their fleet manager.</p>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>1</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>Select <strong>Driver</strong> on the toggle above.</span></div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>2</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>Enter your <strong>work email</strong> and <strong>temporary password</strong> from the account setup email.</span></div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>3</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>Click <strong>Sign In</strong>. You are taken to your Trips dashboard.</span></div>
+                        <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderLeft: '3px solid #F59E0B', borderRadius: '8px', padding: '10px 14px', marginTop: '12px', fontSize: '13px', lineHeight: 1.6, color: '#2D2D2D' }}><span style={{ fontWeight: 700, color: '#F59E0B' }}>Note: </span>If you have not received your account setup email, contact your fleet manager.</div>
+                    </>)}
+                    {tab === 'client' && (<>
+                        <p style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, margin: '0 0 12px' }}>Clients <strong>do not use this login page</strong>. Access is via a personal booking link sent to your corporate email.</p>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>1</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>Check your corporate inbox for an email with subject <strong>"Your SwiftLink booking link"</strong>.</span></div>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '8px' }}><span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: '50%', background: '#6C63FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>2</span><span style={{ fontSize: '13px', color: '#3D3D3D', lineHeight: 1.6, paddingTop: '2px' }}>Click the link in the email. You are signed in automatically — no password needed.</span></div>
+                        <div style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.2)', borderLeft: '3px solid #6C63FF', borderRadius: '8px', padding: '10px 14px', marginTop: '12px', fontSize: '13px', lineHeight: 1.6, color: '#2D2D2D' }}><span style={{ fontWeight: 700, color: '#6C63FF' }}>Privacy: </span>Your email is never shared with your driver. Check your spam folder if you cannot find the email.</div>
+                    </>)}
+                </div>
+            </div>
+        </>
+    );
+}
+
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -21,6 +74,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState(null);
+    const [helpOpen, setHelpOpen] = useState(false);
     const width = useWindowWidth();
 
     const isMobile = width < 768;
@@ -51,6 +105,7 @@ export default function LoginPage() {
     };
 
     return (
+        <>
         <div style={{
             display: 'flex',
             flexDirection: 'row',
@@ -272,5 +327,17 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+
+        {/* Floating help button */}
+        <button
+            onClick={() => setHelpOpen(true)}
+            className="help-pill help-pill-float"
+            style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 50, border: 'none' }}
+        >
+            ? Help
+        </button>
+
+        <LoginHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+        </>
     );
 }

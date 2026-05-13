@@ -101,18 +101,8 @@ export default function DriverLayout() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span className="font-bold text-sm">{user?.name?.split(' ')[0] || 'Driver'}</span>
-                        <button
-                            onClick={() => setHelpOpen(true)}
-                            title="Help"
-                            style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: '28px', height: '28px', borderRadius: '50%',
-                                background: 'rgba(108,99,255,0.12)', color: '#6C63FF',
-                                border: 'none', cursor: 'pointer',
-                                fontSize: '13px', fontWeight: 800, flexShrink: 0,
-                            }}
-                        >
-                            ?
+                        <button onClick={() => setHelpOpen(true)} title="Help" className="help-pill" style={{ border: 'none' }}>
+                            ? Help
                         </button>
                     </div>
                 </header>
@@ -148,19 +138,8 @@ export default function DriverLayout() {
                                 </span>
                                 <span className="text-[10px] uppercase font-bold text-[#00A86B]">Active Duty</span>
                             </div>
-                            <button
-                                onClick={() => setHelpOpen(true)}
-                                title="Help"
-                                style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    width: '30px', height: '30px', borderRadius: '50%',
-                                    background: 'rgba(108,99,255,0.12)', color: '#6C63FF',
-                                    border: 'none', cursor: 'pointer',
-                                    fontSize: '14px', fontWeight: 800, flexShrink: 0,
-                                    transition: 'background 0.2s ease',
-                                }}
-                            >
-                                ?
+                            <button onClick={() => setHelpOpen(true)} title="Help" className="help-pill" style={{ border: 'none' }}>
+                                ? Help
                             </button>
                         </div>
                     </div>
@@ -180,18 +159,8 @@ export default function DriverLayout() {
                         <button onClick={() => setDrawerOpen(false)} className="absolute top-6 right-6 text-white text-2xl">×</button>
                         <div className="mt-12 flex flex-col gap-2">
                             {renderNavLinks(true)}
-                            <button
-                                onClick={() => { setDrawerOpen(false); setHelpOpen(true); }}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '8px',
-                                    padding: '8px 20px', borderRadius: '9999px',
-                                    color: '#F5EDE3', background: 'transparent',
-                                    border: 'none', cursor: 'pointer',
-                                    fontSize: '14px', fontWeight: 700,
-                                    textAlign: 'left',
-                                }}
-                            >
-                                Help
+                            <button onClick={() => { setDrawerOpen(false); setHelpOpen(true); }} className="help-pill help-pill-dark" style={{ border: 'none' }}>
+                                ? Help
                             </button>
                         </div>
                     </div>

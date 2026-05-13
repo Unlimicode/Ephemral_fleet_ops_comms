@@ -1,4 +1,15 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+
+function HelpImage({ src, caption }) {
+    const [show, setShow] = useState(true);
+    if (!show) return null;
+    return (
+        <figure style={{ margin: '14px 0 4px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <img src={src} alt={caption} onError={() => setShow(false)} style={{ width: '100%', display: 'block' }} />
+            {caption && <figcaption style={{ padding: '6px 12px', fontSize: '11px', color: '#6B6B6B', background: 'rgba(0,0,0,0.02)', fontStyle: 'italic' }}>{caption}</figcaption>}
+        </figure>
+    );
+}
 
 const PURPLE_NOTE = {
     background: 'rgba(108,99,255,0.08)',
@@ -111,6 +122,7 @@ function TripsListContent() {
             <CautionNote>
                 Decline reasons are reviewed by your fleet manager. They are not shared with the client.
             </CautionNote>
+            <HelpImage src="/help/driver/01-trips-list.jpg" caption="Your Trips list showing Assigned, In Progress, Completed, and Cancelled cards" />
         </>
     );
 }
@@ -150,6 +162,7 @@ function TripDetailContent() {
             <PrivacyNote>
                 After completion, all message content is permanently deleted from the server — unless the client files a complaint within 24 hours.
             </PrivacyNote>
+            <HelpImage src="/help/driver/02-active-trip-chat.jpg" caption="Active trip page showing the Secure Channel and the Complete Trip button" />
         </>
     );
 }
@@ -181,6 +194,7 @@ function ProfileContent() {
             <CautionNote>
                 Push notification permissions are tied to your specific browser and device. If you switch to a new phone or browser, you will need to enable notifications again.
             </CautionNote>
+            <HelpImage src="/help/driver/03-profile-push.png" caption="Profile page showing the Enable Notifications toggle" />
         </>
     );
 }
@@ -202,6 +216,7 @@ function NotificationsContent() {
                     Notifications are stored on the server — they are not lost if you clear your browser cache or reinstall the app.
                 </div>
             </div>
+            <HelpImage src="/help/driver/04-notifications-list.jpg" caption="Notifications page showing trip assignment and cancellation alerts" />
         </>
     );
 }

@@ -32,6 +32,8 @@ export default function SwiftlinkHomePage() {
     const [sessionTime, setSessionTime] = useState('01:42:17');
     const [width, setWidth] = useState(window.innerWidth);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [helpOpen, setHelpOpen] = useState(false);
+    const [helpRole, setHelpRole] = useState('client');
 
     useEffect(() => {
         const handleResize = () => setWidth(window.innerWidth);
@@ -156,6 +158,7 @@ export default function SwiftlinkHomePage() {
     };
 
     return (
+        <>
         <div style={{ background: 'var(--bg-base)', color: 'var(--text-dark)', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }}>
 
             {/* ── Nav ── */}
@@ -592,5 +595,75 @@ export default function SwiftlinkHomePage() {
                 </div>
             </footer>
         </div>
+
+        {/* Floating help button */}
+        <button
+            onClick={() => setHelpOpen(true)}
+            className="help-pill help-pill-float"
+            style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 50, border: 'none' }}
+        >
+            ? Help
+        </button>
+
+        {/* Landing help modal */}
+        {helpOpen && (
+            <>
+                <div onClick={() => setHelpOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 199, transition: 'opacity 0.25s ease' }} />
+                <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(245,237,227,0.97)', backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)', borderRadius: '24px 24px 0 0', borderTop: '1px solid rgba(255,255,255,0.7)', boxShadow: '0 -8px 40px rgba(0,0,0,0.12)', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
+                        <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(0,0,0,0.15)' }} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px 0' }}>
+                        <div>
+                            <div style={{ fontSize: '18px', fontWeight: 900, color: '#0D0D0D', letterSpacing: '-0.02em' }}>SwiftLink User Guide</div>
+                            <div style={{ fontSize: '11px', color: '#6B6B6B', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>How it works for each role</div>
+                        </div>
+                        <button onClick={() => setHelpOpen(false)} style={{ background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px', color: '#6B6B6B' }}>×</button>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', padding: '12px 20px 0' }}>
+                        {[['client','Client'],['manager','Fleet Manager'],['driver','Driver']].map(([k,l]) => (
+                            <button key={k} onClick={() => setHelpRole(k)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 700, background: helpRole === k ? '#6C63FF' : 'rgba(0,0,0,0.05)', color: helpRole === k ? '#fff' : '#6B6B6B', transition: 'all 0.2s ease' }}>{l}</button>
+                        ))}
+                    </div>
+                    <div style={{ overflowY: 'auto', padding: '16px 20px 40px', flex: 1, fontSize: '13px', color: '#3D3D3D', lineHeight: 1.7 }}>
+                        {helpRole === 'client' && (<>
+                            <p style={{ fontWeight: 700, color: '#0D0D0D', margin: '0 0 10px' }}>Corporate Trip Clients</p>
+                            <p style={{ margin: '0 0 10px' }}>You are a corporate traveller booked by your fleet manager. You do <strong>not</strong> need to create an account — access arrives in your email.</p>
+                            <div style={{ paddingLeft: '14px', borderLeft: '2px solid rgba(108,99,255,0.3)', marginBottom: '14px' }}>
+                                <div style={{ marginBottom: '6px' }}>• Your fleet manager creates the booking and you receive an email with a secure one-click link.</div>
+                                <div style={{ marginBottom: '6px' }}>• Click the link to open your personal trip dashboard — route, driver details, vehicle, and live chat.</div>
+                                <div style={{ marginBottom: '6px' }}>• Communicate with your driver via the <strong>Secure Channel</strong> during the journey.</div>
+                                <div>• After drop-off you have <strong>24 hours</strong> to file a complaint if needed. Then all data is deleted.</div>
+                            </div>
+                            <div style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.2)', borderLeft: '3px solid #6C63FF', borderRadius: '8px', padding: '10px 14px' }}><span style={{ fontWeight: 700, color: '#6C63FF' }}>Privacy: </span>Your phone number and surname are never stored or visible to your driver. Only your first name is shared.</div>
+                        </>)}
+                        {helpRole === 'manager' && (<>
+                            <p style={{ fontWeight: 700, color: '#0D0D0D', margin: '0 0 10px' }}>Fleet Managers</p>
+                            <p style={{ margin: '0 0 10px' }}>You operate the dispatch dashboard. Sign in via <strong>magic link</strong> — enter your work email and click the link in your inbox.</p>
+                            <div style={{ paddingLeft: '14px', borderLeft: '2px solid rgba(108,99,255,0.3)', marginBottom: '14px' }}>
+                                <div style={{ marginBottom: '6px' }}>• Create bookings for corporate clients from the <strong>Dispatch</strong> page.</div>
+                                <div style={{ marginBottom: '6px' }}>• Assign drivers and vehicles, set ETAs, and monitor trips in real time.</div>
+                                <div style={{ marginBottom: '6px' }}>• Manage your driver roster — add, deactivate, or reactivate drivers.</div>
+                                <div style={{ marginBottom: '6px' }}>• Handle complaints through the investigation lifecycle from the <strong>Complaints</strong> page.</div>
+                                <div>• Export compliance reports (PDF) and full audit logs (CSV) from the <strong>Audit</strong> page.</div>
+                            </div>
+                            <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderLeft: '3px solid #F59E0B', borderRadius: '8px', padding: '10px 14px' }}><span style={{ fontWeight: 700, color: '#F59E0B' }}>Access: </span>Go to the <strong>Login page</strong> and enter your work email. A sign-in link arrives within seconds — no password needed.</div>
+                        </>)}
+                        {helpRole === 'driver' && (<>
+                            <p style={{ fontWeight: 700, color: '#0D0D0D', margin: '0 0 10px' }}>Drivers</p>
+                            <p style={{ margin: '0 0 10px' }}>Your account is created by your fleet manager. Sign in with the <strong>work email and password</strong> from your account setup email.</p>
+                            <div style={{ paddingLeft: '14px', borderLeft: '2px solid rgba(108,99,255,0.3)', marginBottom: '14px' }}>
+                                <div style={{ marginBottom: '6px' }}>• View assigned trips, accept or decline with a reason, and start journeys from the <strong>Trips</strong> page.</div>
+                                <div style={{ marginBottom: '6px' }}>• Communicate with your client via the <strong>Secure Channel</strong> — no phone numbers exchanged.</div>
+                                <div style={{ marginBottom: '6px' }}>• Mark trips complete when the client is safely dropped off. Your session is immediately wiped.</div>
+                                <div>• Enable <strong>push notifications</strong> from your Profile page to receive trip alerts in the background.</div>
+                            </div>
+                            <div style={{ background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.2)', borderLeft: '3px solid #6C63FF', borderRadius: '8px', padding: '10px 14px' }}><span style={{ fontWeight: 700, color: '#6C63FF' }}>Privacy: </span>The client never sees your phone number. Only your first name and vehicle details are shared with them.</div>
+                        </>)}
+                    </div>
+                </div>
+            </>
+        )}
+        </>
     );
 }
