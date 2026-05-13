@@ -1,9 +1,21 @@
 // ─────────────────────────────────────────────────────────────────────────────
+// [FR4] Ephemeral Credential Management — Mandatory TTL enforcement layer.
+// [FR5] Conditional Persistence — complaint:window key managed through this layer.
+// [FR2] EDAT token storage and retrieval goes through setSession/getSession/deleteSession.
+//
 // Redis TTL Helper Layer — Privacy-Preserving Fleet Operations System
 // ─────────────────────────────────────────────────────────────────────────────
 // These helpers enforce TTL as a mandatory parameter — no session data can be
-// stored without an expiration. This is an architectural guarantee of the
-// Mediated Ephemeral Identity framework.
+// stored without an expiration. This is a core architectural guarantee of the
+// Mediated Ephemeral Identity (MEI) framework: all ephemeral state has a
+// guaranteed destruction time enforced by infrastructure, not by cleanup code.
+//
+// Key patterns stored through this layer:
+//   booking_access_token:{token}   — EDAT magic link (FR2), TTL 24h
+//   session:trip:{id}:driver       — driver WebSocket session (FR4), TTL 24h
+//   session:trip:{id}:client       — client WebSocket session (FR4), TTL 24h
+//   complaint:window:{id}          — 24h post-trip complaint window (FR5), TTL 24h
+//   blocklist:{token}              — revoked JWT (FR4), TTL = token remaining life
 // ─────────────────────────────────────────────────────────────────────────────
 
 import client from './redis.js';

@@ -16,7 +16,29 @@
       "Bash(npm uninstall:*)",
       "Bash(node:*)",
       "Bash(npx jest:*)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(git *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\ils\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Programming-Development-Ephemral-fleet-ops-comms\\\\269e27cd-3079-456a-afce-8c0d08880133\\\\tasks\\\\b1zqs2o55.output\" -Wait)",
+      "Bash(Select-String -Pattern \"Test Suites:|Tests:|FAIL\")",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\ils\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Programming-Development-Ephemral-fleet-ops-comms\\\\269e27cd-3079-456a-afce-8c0d08880133\\\\tasks\\\\bd10f1mdx.output\" | Where-Object { $_ -match \"Error|error|Cannot|Syntax\" } | Select-Object -First 20)",
+      "PowerShell(Get-Item *)",
+      "PowerShell(cd D:\\\\Programming\\\\Development\\\\Ephemral_fleet_ops_comms\\\\backend; $env:FORCE_COLOR=0; node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --runInBand 2>&1 | Select-String \"PASS|FAIL|Test Suites:|Tests:\" | Out-String)",
+      "PowerShell(npm test *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\ils\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Programming-Development-Ephemral-fleet-ops-comms\\\\cf1dacaa-8f37-4711-b590-473f36139308\\\\tasks\\\\bevqeeyap.output\" -Wait -Tail 30)",
+      "Bash(Select-Object -First 80)",
+      "Bash(Start-Sleep -Seconds 5)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Get-Content *)",
+      "Bash(psql *)",
+      "Bash(Select-String -Pattern \"Suites|Tests|passed|failed|PASS|FAIL|Error\")",
+      "Bash(Select-String -Pattern \"Suites|Tests|passed|failed|PASS |FAIL |Error\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Format-List)",
+      "Bash(cd \"d:\\\\Programming\\\\Development\\\\Ephemral_fleet_ops_comms\" && git checkout -b chore/chapter4-annotations && mkdir -p docs)"
+    ],
+    "additionalDirectories": [
+      "d:\\Programming\\Development\\Ephemral_fleet_ops_comms\\docs"
     ]
   }
 }

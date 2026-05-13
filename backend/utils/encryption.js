@@ -1,13 +1,25 @@
 import crypto from 'crypto';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// [FR5] Conditional Persistence — AES-256-GCM encryption for message archives.
+// [FR6] Complaint Investigation — decrypt() is called ONLY from the gated
+//       GET /:complaintId/messages endpoint, which requires status='under_investigation'.
+//
 // CONDITIONAL PERSISTENCE ENCRYPTION
 // ─────────────────────────────────────────────────────────────────────────────
-// The encryption key is derived dynamically from JWT_SECRET at runtime and 
-// never stored anywhere — it exists strictly in memory during AES-256-GCM 
-// operations. This guarantees that even if the PostgreSQL database is compromised, 
-// the encrypted_message_archive cannot be decrypted natively without physical 
-// access to the production server environment and secrets.
+// The encryption key is derived dynamically from JWT_SECRET at runtime and
+// never stored anywhere — it exists strictly in memory during AES-256-GCM
+// operations. This guarantees that even if the PostgreSQL database is compromised,
+// the encrypted_message_archive cannot be decrypted without physical access to
+// the production server environment and the JWT_SECRET environment variable.
+//
+// Algorithm choice — AES-256-GCM:
+//   AES-256: 256-bit key, computationally infeasible to brute force
+//   GCM: Authenticated encryption — provides both confidentiality AND integrity.
+//        If the ciphertext is tampered with, decrypt() throws an error rather than
+//        returning corrupted data. This matters for a legal evidence use case.
+//   scryptSync: Key derivation function — deliberately slow to resist brute force
+//               on the key itself. Key is re-derived on every call, never cached.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ALGORITHM = 'aes-256-gcm';

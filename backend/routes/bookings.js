@@ -14,13 +14,16 @@ const router = Router();
 
 
 // ── POST / — Client submits a new booking ────────────────────────────────────
-// Public endpoint. No authentication required.
-// 
+// [FR1] Trip Lifecycle Management — creates the trip record that all other
+//       FRs are bound to. Without this, no EDAT, no session, no complaint window.
+// [FR2] Client Authentication via EDAT — generates the single-use token and
+//       sends it to the corporate email. Token is NEVER returned in the response.
+//
 // PRIVACY/SECURITY ARCHITECTURE:
-// The generated access token is NEVER returned in the API response. 
-// It exists only in Redis and in the email payload sent to the corporate inbox. 
-// This strict separation means only the person holding access to that specific 
-// corporate inbox can complete the authentication. The email inbox acts as 
+// The generated access token is NEVER returned in the API response.
+// It exists only in Redis and in the email payload sent to the corporate inbox.
+// This strict separation means only the person holding access to that specific
+// corporate inbox can complete the authentication. The email inbox acts as
 // a mandatory Second Factor (2FA) for trip management access.
 // ─────────────────────────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
@@ -103,7 +106,10 @@ router.post('/', async (req, res) => {
 });
 
 // ── GET /auth?token={token} — Validate magic link & establish HttpOnly session
-// 
+// [FR2] Client Authentication via EDAT — single-use token validation and
+//       secure HttpOnly cookie session establishment. This is the boundary
+//       where the EDAT (single-use) becomes a session JWT (trip-scoped).
+//
 // PRIVACY/SECURITY ARCHITECTURE:
 // 1. Single-use: The Redis token is deleted immediately upon successful read, preventing replay attacks.
 // 2. Cookie Security Flags:
@@ -111,6 +117,7 @@ router.post('/', async (req, res) => {
 //    - Secure: Travels only over HTTPS in production (neutralizes MiTM).
 //    - SameSite=strict: Browser refuses to send cookie on cross-site requests (neutralizes CSRF).
 // 3. The raw JWT is NEVER returned in the JSON response body.
+// 4. Session TTL is tied to trip duration (pickup_time + 72h) — not an arbitrary fixed window.
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/auth', async (req, res) => {
     const { token } = req.query;
@@ -383,12 +390,12 @@ router.post('/recover', async (req, res) => {
 });
 
 // ── GET /:tripId — View Booking Details (Protected) ──────────────────────────
-// Protected explicit hydration channel for client app usage.
-// PRIVACY/SECURITY ARCHITECTURE:
-// 1. Validates the URL id matches the `req.client.trip_id` decoded from the Http Cookie.
-// 2. Data minimisation: Explicitly filters the JOIN against the `drivers` table
-//    to extract strictly the `full_name`, ensuring `work_email` and `employee_id`
-//    do not leave the backend perimeter.
+// [FR3] Server-Mediated Communication — data minimisation enforced at query level.
+//       The JOIN to drivers returns ONLY d.full_name. work_email and employee_id
+//       are never selected, so the driver's contact details physically cannot
+//       reach the client's device through this endpoint.
+// [FR2] Trip boundary check: req.client.trip_id (decoded from HttpOnly cookie)
+//       must match the URL param — a client cannot view another client's trip.
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/:tripId', requireClientAuth, async (req, res) => {
     const { tripId } = req.params;

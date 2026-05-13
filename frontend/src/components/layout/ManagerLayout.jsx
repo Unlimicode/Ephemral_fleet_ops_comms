@@ -30,6 +30,7 @@ export default function ManagerLayout() {
     const location = useLocation();
     const width = useWindowWidth();
     const [complaintCount, setComplaintCount] = useState(0);
+    const [enquiryCount, setEnquiryCount] = useState(0);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const socketRef = useRef(null);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -40,9 +41,14 @@ export default function ManagerLayout() {
 
     const fetchCounts = useCallback(async () => {
         try {
-            const res = await api.get('/complaints');
-            const open = res.data.filter(c => c.status === 'open').length;
+            const [compRes, enqRes] = await Promise.all([
+                api.get('/complaints'),
+                api.get('/contact'),
+            ]);
+            const open = compRes.data.filter(c => c.status === 'open').length;
             setComplaintCount(open);
+            const newEnq = enqRes.data.filter(e => e.status === 'new').length;
+            setEnquiryCount(newEnq);
         } catch (err) {
             console.error('Failed to fetch counts:', err);
         }
@@ -65,6 +71,10 @@ export default function ManagerLayout() {
 
         socket.on('complaint_filed', () => {
             setComplaintCount(prev => prev + 1);
+        });
+
+        socket.on('new_enquiry', () => {
+            setEnquiryCount(prev => prev + 1);
         });
 
         socket.on('complaint_status_updated', ({ new_status }) => {
@@ -110,6 +120,11 @@ export default function ManagerLayout() {
                 {link.label === 'Complaints' && complaintCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-[10px] text-white">
                         {complaintCount}
+                    </span>
+                )}
+                {link.label === 'Audit' && enquiryCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#6C63FF] text-[10px] text-white">
+                        {enquiryCount}
                     </span>
                 )}
             </NavLink>
@@ -358,6 +373,9 @@ export default function ManagerLayout() {
                                 {isActive && <div className="w-1 h-1 rounded-full bg-[#0D0D0D]" />}
                                 {tab.label === 'Complaints' && complaintCount > 0 && (
                                     <div className="absolute top-1 right-2 w-2 h-2 bg-[#EF4444] rounded-full" />
+                                )}
+                                {tab.label === 'Audit' && enquiryCount > 0 && (
+                                    <div className="absolute top-1 right-2 w-2 h-2 bg-[#6C63FF] rounded-full" />
                                 )}
                             </NavLink>
                         );
