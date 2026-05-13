@@ -39,6 +39,7 @@ export default function DriverActiveTripPage() {
     useEffect(() => {
         fetchTrip();
         fetchComplaint();
+        api.patch(`/drivers/notifications/read-by-trip/${tripId}`).catch(() => {});
         const interval = setInterval(() => { fetchTrip(); fetchComplaint(); }, 10000);
 
         const handleVisibility = () => {
