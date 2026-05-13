@@ -260,10 +260,17 @@ export default function DriverActiveTripPage() {
                         <div style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--text-dark)' }}>{trip.id || 'N/A'}</div>
                     </div>
 
-                    {trip.special_requirements && (
-                        <div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Special Requirements</div>
-                            <div style={{ fontSize: '14px', color: 'var(--text-dark)' }}>{trip.special_requirements}</div>
+                    {trip.notes && (
+                        <div style={{ padding: '10px 12px', borderRadius: '10px', background: 'rgba(108,99,255,0.07)', border: '1px solid rgba(108,99,255,0.18)' }}>
+                            <div style={{ fontSize: '11px', color: '#6C63FF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Manager Instructions</div>
+                            <div style={{ fontSize: '14px', color: 'var(--text-dark)', lineHeight: 1.5 }}>{trip.notes}</div>
+                        </div>
+                    )}
+
+                    {trip.additional_info && (
+                        <div style={{ padding: '10px 12px', borderRadius: '10px', background: 'rgba(13,13,13,0.05)', border: '1px solid rgba(13,13,13,0.08)' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Client Notes</div>
+                            <div style={{ fontSize: '14px', color: 'var(--text-dark)', lineHeight: 1.5 }}>{trip.additional_info}</div>
                         </div>
                     )}
                 </div>

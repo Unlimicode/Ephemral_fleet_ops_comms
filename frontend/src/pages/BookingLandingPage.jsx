@@ -348,6 +348,10 @@ export default function BookingLandingPage() {
     const isOnline = useOnlineStatus();
     const [queuedComplaint, setQueuedComplaint] = useState(null);
 
+    // Contact manager
+    const [contactMsg, setContactMsg] = useState('');
+    const [contactStatus, setContactStatus] = useState('idle'); // idle | sending | sent | error
+
     const authStarted = useRef(false);
 
     // ── Session init ───────────────────────────────────────────────────────────
@@ -544,6 +548,18 @@ export default function BookingLandingPage() {
             // Best-effort — push failure is silent
         } finally {
             setNotifLoading(false);
+        }
+    };
+
+    const handleContactManager = async () => {
+        if (!contactMsg.trim()) return;
+        setContactStatus('sending');
+        try {
+            await api.post('/bookings/contact-manager', { message: contactMsg.trim() });
+            setContactStatus('sent');
+            setContactMsg('');
+        } catch {
+            setContactStatus('error');
         }
     };
 
@@ -924,6 +940,45 @@ export default function BookingLandingPage() {
                                 {editLoading ? 'Saving…' : 'Update'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Contact Fleet Manager */}
+            {!isCancelled && (
+                <div className="reveal-up active mb-10 px-0" style={{ maxWidth: '100%' }}>
+                    <div className="glass-card" style={{ padding: '20px 20px', borderRadius: '20px', margin: '0 0 80px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                            <span style={{ fontSize: '16px' }}>💬</span>
+                            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-dark)' }}>Message Fleet Manager</span>
+                        </div>
+                        {contactStatus === 'sent' ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px', borderRadius: '12px', background: 'rgba(0,168,107,0.08)', border: '1px solid rgba(0,168,107,0.2)' }}>
+                                <span style={{ fontSize: '15px' }}>✓</span>
+                                <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#00A86B' }}>Message sent. Your fleet manager will follow up by email.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <textarea
+                                    value={contactMsg}
+                                    onChange={e => { setContactMsg(e.target.value); if (contactStatus !== 'idle') setContactStatus('idle'); }}
+                                    placeholder="e.g. I need to update my pickup point, or I have a question about my booking…"
+                                    rows={3}
+                                    style={{ width: '100%', background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(13,13,13,0.12)', borderRadius: '12px', padding: '10px 12px', fontSize: '13px', color: 'var(--text-dark)', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '10px' }}
+                                />
+                                {contactStatus === 'error' && (
+                                    <p style={{ fontSize: '12px', color: '#EF4444', fontWeight: 600, margin: '0 0 8px' }}>Failed to send. Please try again.</p>
+                                )}
+                                <button
+                                    onClick={handleContactManager}
+                                    disabled={contactStatus === 'sending' || !contactMsg.trim()}
+                                    style={{ background: 'rgba(13,13,13,0.08)', color: 'var(--text-dark)', borderRadius: '999px', padding: '9px 20px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: contactMsg.trim() ? 'pointer' : 'not-allowed', opacity: (!contactMsg.trim() || contactStatus === 'sending') ? 0.5 : 1 }}
+                                >
+                                    {contactStatus === 'sending' ? 'Sending…' : 'Send Message'}
+                                </button>
+                                <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', marginBottom: 0 }}>Your manager will reply via email to your corporate address.</p>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

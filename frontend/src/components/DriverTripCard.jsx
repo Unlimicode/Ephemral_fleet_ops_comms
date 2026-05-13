@@ -76,10 +76,10 @@ export default function DriverTripCard({ trip, index, onAccept, onDecline }) {
 
             {/* Vehicle & Flight info */}
             <div style={{ marginBottom: trip.notes ? '12px' : '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {trip.registration_number && (
+                {trip.vehicle_reg && (
                     <div style={{ background: 'rgba(13,13,13,0.05)', padding: '4px 10px', borderRadius: '6px' }}>
                         <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>VEHICLE: </span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-dark)', fontWeight: 600 }}>{trip.registration_number} ({trip.type || 'Standard'})</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-dark)', fontWeight: 600 }}>{trip.vehicle_reg}</span>
                     </div>
                 )}
                 {trip.flight_number && (

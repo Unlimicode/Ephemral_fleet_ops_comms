@@ -389,6 +389,43 @@ router.post('/recover', async (req, res) => {
     }
 });
 
+// ── POST /contact-manager — Client sends a message to the fleet manager ──────
+router.post('/contact-manager', requireClientAuth, async (req, res) => {
+    const { client_corporate_email, trip_id } = req.client;
+    const { message } = req.body;
+
+    if (!message?.trim()) {
+        return res.status(400).json({ error: 'Message is required' });
+    }
+
+    try {
+        const tripResult = await query(
+            `SELECT client_first_name, pickup_location, destination, pickup_time FROM trips WHERE id = $1`,
+            [trip_id]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Trip not found' });
+        }
+
+        const { client_first_name, pickup_location, destination, pickup_time } = tripResult.rows[0];
+        const pickupLabel = new Date(pickup_time).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+        if (process.env.NODE_ENV !== 'test') {
+            await sendEmail({
+                to: process.env.CONTACT_ENQUIRY_EMAIL || process.env.MAIL_FROM,
+                subject: `Client Message — ${client_first_name} · Trip #${trip_id.slice(0, 8).toUpperCase()}`,
+                text: `Message from ${client_first_name} (${client_corporate_email}):\n\n${message.trim()}\n\nTrip: ${pickup_location} → ${destination}\nPickup: ${pickupLabel} EAT\nTrip ID: ${trip_id}`,
+            });
+        }
+
+        return res.status(200).json({ message: 'Your message has been sent to the fleet manager.' });
+    } catch (err) {
+        console.error('[bookings] contact-manager error:', err);
+        return res.status(500).json({ error: 'Failed to send message' });
+    }
+});
+
 // ── GET /:tripId — View Booking Details (Protected) ──────────────────────────
 // [FR3] Server-Mediated Communication — data minimisation enforced at query level.
 //       The JOIN to drivers returns ONLY d.full_name. work_email and employee_id

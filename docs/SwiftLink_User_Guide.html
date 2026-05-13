@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>SwiftLink — User Guide</title>
+<style>
+  body {
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #1a1a1a;
+    margin: 2.54cm 2.54cm 2.54cm 2.54cm;
+    max-width: 17cm;
+  }
+
+  /* Cover page */
+  .cover {
+    page-break-after: always;
+    text-align: center;
+    padding-top: 5cm;
+  }
+  .cover-system { font-size: 36pt; font-weight: 700; color: #0D0D0D; letter-spacing: -1px; margin-bottom: 6pt; }
+  .cover-subtitle { font-size: 16pt; color: #444; margin-bottom: 48pt; }
+  .cover-meta { font-size: 11pt; color: #555; line-height: 2; }
+  .cover-line { border: none; border-top: 2px solid #6C63FF; width: 80px; margin: 24pt auto; }
+
+  /* Table of contents */
+  .toc-title { font-size: 16pt; font-weight: 700; margin-bottom: 14pt; }
+  .toc-part { font-weight: 700; font-size: 11pt; margin: 10pt 0 2pt; }
+  .toc-item { font-size: 10.5pt; margin: 3pt 0 3pt 16pt; color: #1a1a1a; }
+  .page-break { page-break-before: always; }
+
+  /* Headings */
+  h1 {
+    font-size: 20pt;
+    font-weight: 700;
+    color: #0D0D0D;
+    margin: 0 0 6pt;
+    padding-bottom: 6pt;
+    border-bottom: 2px solid #6C63FF;
+    page-break-after: avoid;
+  }
+  h2 {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #0D0D0D;
+    margin: 20pt 0 6pt;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #2D2D2D;
+    margin: 14pt 0 4pt;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #3D3D3D;
+    margin: 10pt 0 4pt;
+    page-break-after: avoid;
+  }
+
+  p { margin: 0 0 8pt; }
+  ul, ol { margin: 4pt 0 10pt 18pt; padding: 0; }
+  li { margin-bottom: 4pt; }
+
+  /* Part header — used to open each of the three main sections */
+  .part-header {
+    background: #0D0D0D;
+    color: #F5EDE3;
+    padding: 18pt 20pt;
+    border-radius: 6pt;
+    margin-bottom: 18pt;
+  }
+  .part-header .part-label {
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.6;
+    margin-bottom: 4pt;
+  }
+  .part-header .part-title { font-size: 18pt; font-weight: 700; margin: 0; }
+  .part-header .part-desc { font-size: 10pt; opacity: 0.75; margin-top: 6pt; }
+
+  /* Note boxes */
+  .note {
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    font-size: 10.5pt;
+    line-height: 1.6;
+  }
+  .note-privacy {
+    background: #f0eeff;
+    border-left: 4pt solid #6C63FF;
+    border: 1pt solid #d4cfff;
+    border-left: 4pt solid #6C63FF;
+  }
+  .note-caution {
+    background: #fffbf0;
+    border: 1pt solid #fde68a;
+    border-left: 4pt solid #F59E0B;
+  }
+  .note-info {
+    background: #f0f9ff;
+    border: 1pt solid #bae6fd;
+    border-left: 4pt solid #0ea5e9;
+  }
+  .note strong { color: inherit; }
+  .note-label { font-weight: 700; }
+  .note-label-privacy { color: #6C63FF; }
+  .note-label-caution { color: #b45309; }
+  .note-label-info { color: #0369a1; }
+
+  /* Numbered steps */
+  .steps { list-style: none; margin: 6pt 0 10pt; padding: 0; }
+  .steps li {
+    display: flex;
+    gap: 10pt;
+    align-items: flex-start;
+    margin-bottom: 6pt;
+    font-size: 10.5pt;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 20pt;
+    height: 20pt;
+    border-radius: 50%;
+    background: #6C63FF;
+    color: #fff;
+    font-size: 9pt;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1pt;
+  }
+  .step-body { flex: 1; line-height: 1.6; padding-top: 1pt; }
+
+  /* Status table */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8pt 0 14pt;
+    font-size: 10.5pt;
+  }
+  th {
+    background: #0D0D0D;
+    color: #F5EDE3;
+    padding: 7pt 10pt;
+    text-align: left;
+    font-size: 10pt;
+    font-weight: 700;
+  }
+  td {
+    padding: 7pt 10pt;
+    border-bottom: 1pt solid #e5e7eb;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Status badge */
+  .badge {
+    display: inline-block;
+    padding: 2pt 7pt;
+    border-radius: 9999pt;
+    font-size: 9pt;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-pending  { background: #fef9c3; color: #854d0e; border: 1pt solid #fde047; }
+  .badge-accepted { background: #dbeafe; color: #1e40af; border: 1pt solid #93c5fd; }
+  .badge-active   { background: #dcfce7; color: #15803d; border: 1pt solid #86efac; }
+  .badge-complete { background: #f3f4f6; color: #374151; border: 1pt solid #d1d5db; }
+  .badge-cancel   { background: #fee2e2; color: #991b1b; border: 1pt solid #fca5a5; }
+
+  /* Section divider */
+  .divider {
+    border: none;
+    border-top: 1pt solid #e5e7eb;
+    margin: 18pt 0;
+  }
+
+  /* Screenshot placeholder */
+  .screenshot-slot {
+    border: 1.5pt dashed #d1d5db;
+    border-radius: 6pt;
+    padding: 20pt;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 10pt;
+    margin: 10pt 0 14pt;
+    background: #fafafa;
+  }
+  .screenshot-slot .slot-label { font-weight: 700; color: #6b7280; font-size: 10.5pt; }
+  .screenshot-slot .slot-caption { font-size: 9.5pt; font-style: italic; color: #9ca3af; margin-top: 4pt; }
+
+  /* Footer note */
+  .doc-footer {
+    margin-top: 40pt;
+    padding-top: 10pt;
+    border-top: 1pt solid #e5e7eb;
+    font-size: 9pt;
+    color: #9ca3af;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     COVER PAGE
+══════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-system">SwiftLink</div>
+  <div class="cover-subtitle">Fleet Operations and Communications Platform</div>
+  <hr class="cover-line" />
+  <div class="cover-subtitle" style="font-size:18pt; margin-bottom:8pt;">User Guide</div>
+  <div class="cover-meta">
+    <div>Ian Lemashon Sopia</div>
+    <div>SCT221-0593/2022</div>
+    <div>Department of Computing, School of Computing and Information Technology</div>
+    <div>Jomo Kenyatta University of Agriculture and Technology (JKUAT)</div>
+    <div style="margin-top:12pt;">BSC Computer Technology — Final Year Project, 2025/2026</div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     TABLE OF CONTENTS
+══════════════════════════════════════════════════════════ -->
+<div class="page-break">
+<div class="toc-title">Table of Contents</div>
+
+<div class="toc-part">1. System Overview</div>
+<div class="toc-item">1.1 &nbsp; Introduction</div>
+<div class="toc-item">1.2 &nbsp; User Roles</div>
+<div class="toc-item">1.3 &nbsp; Accessing the System</div>
+<div class="toc-item">1.4 &nbsp; Trip Status Flow</div>
+
+<div class="toc-part">2. Fleet Manager Guide</div>
+<div class="toc-item">2.1 &nbsp; Logging In (Magic Link)</div>
+<div class="toc-item">2.2 &nbsp; Dispatch Dashboard — Overview</div>
+<div class="toc-item">2.3 &nbsp; Creating a Trip Booking</div>
+<div class="toc-item">2.4 &nbsp; Assigning a Driver and Vehicle</div>
+<div class="toc-item">2.5 &nbsp; Monitoring Active Trips</div>
+<div class="toc-item">2.6 &nbsp; Managing Drivers</div>
+<div class="toc-item">2.7 &nbsp; Managing Vehicles</div>
+<div class="toc-item">2.8 &nbsp; Privacy Dashboard and Session Monitor</div>
+<div class="toc-item">2.9 &nbsp; Managing Complaints</div>
+<div class="toc-item">2.10  Compliance and Audit Export</div>
+
+<div class="toc-part">3. Driver Guide</div>
+<div class="toc-item">3.1 &nbsp; Logging In (Password)</div>
+<div class="toc-item">3.2 &nbsp; Trips List — Understanding Trip Cards</div>
+<div class="toc-item">3.3 &nbsp; Accepting a Trip</div>
+<div class="toc-item">3.4 &nbsp; Declining a Trip</div>
+<div class="toc-item">3.5 &nbsp; Active Trip — Chat and Completion</div>
+<div class="toc-item">3.6 &nbsp; Profile and Push Notifications</div>
+<div class="toc-item">3.7 &nbsp; Notifications History</div>
+
+<div class="toc-part">4. Client (Corporate Booker) Guide</div>
+<div class="toc-item">4.1 &nbsp; Receiving and Opening Your Booking Link</div>
+<div class="toc-item">4.2 &nbsp; Booking Confirmed — Awaiting Driver Assignment</div>
+<div class="toc-item">4.3 &nbsp; Driver Assigned — Before the Trip Starts</div>
+<div class="toc-item">4.4 &nbsp; Trip in Progress</div>
+<div class="toc-item">4.5 &nbsp; Trip Ended — Filing a Complaint</div>
+<div class="toc-item">4.6 &nbsp; Accessing Your Booking History</div>
+
+<div class="toc-part">5. In-System Help Reference</div>
+<div class="toc-item">5.1 &nbsp; Manager Help Page</div>
+<div class="toc-item">5.2 &nbsp; Driver Help Sheet</div>
+<div class="toc-item">5.3 &nbsp; Client Help Modal</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION 1 — SYSTEM OVERVIEW
+══════════════════════════════════════════════════════════ -->
+<div class="page-break">
+<h1>1. System Overview</h1>
+
+<h2>1.1 Introduction</h2>
+<p>SwiftLink is a privacy-preserving fleet operations and communications platform designed for small corporate fleet operators in Kenya. It enables fleet managers to book, dispatch, and monitor trips on behalf of corporate clients, while providing drivers and clients with a secure, ephemeral channel to communicate during a trip — without either party ever exposing personal contact details to the other.</p>
+<p>The platform is delivered as a Progressive Web App (PWA), making it installable on Android and iOS devices without requiring an app store download. All three user roles access the system through a single web URL, with the interface adapting to each role after authentication.</p>
+
+<h2>1.2 User Roles</h2>
+<table>
+  <tr><th>Role</th><th>Who they are</th><th>How they access the system</th><th>Default landing page</th></tr>
+  <tr><td><strong>Fleet Manager</strong></td><td>Operations staff responsible for dispatching drivers and managing the fleet</td><td>Email magic link (passwordless)</td><td>/manager/dispatch</td></tr>
+  <tr><td><strong>Driver</strong></td><td>Drivers employed by the fleet operator</td><td>Username and password</td><td>/driver/trips</td></tr>
+  <tr><td><strong>Client</strong></td><td>Corporate employees being transported on company business</td><td>Single-use email link sent per booking</td><td>/booking</td></tr>
+</table>
+
+<h2>1.3 Accessing the System</h2>
+<p>SwiftLink is accessed through a web browser. No software installation is required, though drivers and clients may install it as a PWA for a native-app experience:</p>
+<ul>
+  <li><strong>Android (Chrome):</strong> Tap the browser menu → "Add to Home Screen"</li>
+  <li><strong>iOS (Safari):</strong> Tap the Share icon → "Add to Home Screen"</li>
+</ul>
+<div class="note note-info">
+  <span class="note-label note-label-info">Note: </span>
+  Installing as a PWA is optional. The full system works in any modern mobile or desktop browser without installation.
+</div>
+
+<h2>1.4 Trip Status Flow</h2>
+<p>Every trip in SwiftLink moves through a defined set of states. Understanding these states is important for all three user roles.</p>
+<table>
+  <tr><th>Status</th><th>Meaning</th><th>Who can act</th></tr>
+  <tr><td><span class="badge badge-pending">Pending</span></td><td>Booking submitted — no driver assigned yet</td><td>Fleet Manager (assign driver), Client (cancel)</td></tr>
+  <tr><td><span class="badge badge-accepted">Accepted</span></td><td>Driver and vehicle assigned — driver has not yet started the trip</td><td>Driver (accept/decline), Client (cancel)</td></tr>
+  <tr><td><span class="badge badge-active">In Progress</span></td><td>Driver confirmed pickup — trip is underway, chat channel is open</td><td>Driver (complete), Fleet Manager (force-complete)</td></tr>
+  <tr><td><span class="badge badge-complete">Completed</span></td><td>Driver confirmed drop-off — session destroyed, 24-hour complaint window opens</td><td>Client (file complaint within 24h)</td></tr>
+  <tr><td><span class="badge badge-cancel">Cancelled</span></td><td>Client cancelled the booking (only possible at Pending or Accepted)</td><td>No further action</td></tr>
+</table>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 1.1 — Trip Status Flow Diagram]</div>
+  <div class="slot-caption">pending → accepted → in_progress → completed · cancelled branch from pending/accepted</div>
+</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION 2 — FLEET MANAGER GUIDE
+══════════════════════════════════════════════════════════ -->
+<div class="page-break">
+<div class="part-header">
+  <div class="part-label">Part 2</div>
+  <div class="part-title">Fleet Manager Guide</div>
+  <div class="part-desc">Creating bookings, dispatching drivers, monitoring trips, handling complaints, and exporting compliance reports</div>
+</div>
+
+<h2>2.1 Logging In (Magic Link)</h2>
+<p>SwiftLink uses passwordless email authentication for fleet managers. No password is ever created or stored.</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Navigate to the SwiftLink login page and select the <strong>Manager</strong> tab.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Enter your registered work email address and click <strong>"Send Sign-In Link"</strong>.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Check your inbox for an email from SwiftLink with the subject <em>"Sign in to SwiftLink"</em>. It arrives within seconds.</span></li>
+  <li><span class="step-num">4</span><span class="step-body">Click <strong>"Sign in to SwiftLink"</strong> in the email. You are taken directly to the Dispatch dashboard — no password required.</span></li>
+</ol>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  The sign-in link is <strong>single-use and expires after 15 minutes</strong>. If it has expired, return to the login page and enter your email again to receive a fresh link.
+</div>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  Magic link authentication is used in place of passwords. No credential is ever created or stored on the system.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.1 — Manager Login Page]</div>
+  <div class="slot-caption">Login page showing Manager tab selected with email input field</div>
+</div>
+
+<hr class="divider" />
+
+<h2>2.2 Dispatch Dashboard — Overview</h2>
+<p>After logging in, the fleet manager lands on the Dispatch page. This is the operational centre of the platform. It is divided into four main panels:</p>
+<table>
+  <tr><th>Panel</th><th>What it shows</th></tr>
+  <tr><td><strong>Active Trips</strong> (top-left)</td><td>All trips currently in progress — driver name, vehicle registration, and a force-complete button</td></tr>
+  <tr><td><strong>Awaiting Acceptance</strong> (bottom-right)</td><td>Trips assigned to a driver that have not been accepted yet, with an elapsed time indicator</td></tr>
+  <tr><td><strong>Drivers</strong> (right panel)</td><td>All drivers as avatar initials — purple = available, teal = on trip, grey = offline</td></tr>
+  <tr><td><strong>Fleet Status</strong> (right panel)</td><td>Vehicles currently deployed vs total fleet capacity, with a progress bar</td></tr>
+</table>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.2 — Dispatch Dashboard Overview]</div>
+  <div class="slot-caption">Full dispatch page showing all four panels with sample live data</div>
+</div>
+
+<hr class="divider" />
+
+<h2>2.3 Creating a Trip Booking</h2>
+<p>Trip bookings are created by the fleet manager on behalf of a corporate client.</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">From the Dispatch page, click <strong>"+ New Booking"</strong> in the top-right corner. A modal form appears.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Enter the client's <strong>first name</strong> and <strong>corporate email address</strong>. Only the first name is stored in the trip record — no surname, no phone number.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Enter the <strong>pickup location</strong> and <strong>destination</strong>.</span></li>
+  <li><span class="step-num">4</span><span class="step-body">Set the <strong>pickup date and time</strong>.</span></li>
+  <li><span class="step-num">5</span><span class="step-body"><em>(Optional)</em> Enter a <strong>flight number</strong> if this is an airport pickup or drop-off. The driver sees this on their trip card.</span></li>
+  <li><span class="step-num">6</span><span class="step-body"><em>(Optional)</em> Enter <strong>special instructions</strong> — notes visible only to the assigned driver (e.g. "VIP delegation — display name card on arrival").</span></li>
+  <li><span class="step-num">7</span><span class="step-body">Review the <strong>"Send booking access link"</strong> toggle. When ON (default), the client receives an email with a magic link to their personal trip dashboard. Set to OFF for internal trips where the client does not need app access.</span></li>
+  <li><span class="step-num">8</span><span class="step-body">Click <strong>"Create Booking"</strong>. The booking appears immediately in the Incoming Bookings panel with status <span class="badge badge-pending">Pending</span>.</span></li>
+</ol>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  The client's corporate email is used only to deliver their access link and trip status notifications. It is never visible to the assigned driver at any point.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.3 — New Booking Modal]</div>
+  <div class="slot-caption">Create booking modal with all fields visible</div>
+</div>
+
+<hr class="divider" />
+
+<h2>2.4 Assigning a Driver and Vehicle</h2>
+<p>Once a booking is created, the fleet manager assigns an available driver and vehicle to it.</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">In the <strong>Incoming Bookings</strong> panel on the Dispatch page, locate the pending booking card.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Review the trip details: client first name, route, pickup time, and any special instructions.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Select an <strong>available driver</strong> from the driver dropdown.</span></li>
+  <li><span class="step-num">4</span><span class="step-body">Select a <strong>vehicle</strong> from the vehicle dropdown. The vehicle make, model, and registration plate are shown to the client once the driver accepts.</span></li>
+  <li><span class="step-num">5</span><span class="step-body"><em>(Optional)</em> Enter an <strong>ETA</strong> — the estimated arrival time at the pickup point. This is shown to the client as a reference time.</span></li>
+  <li><span class="step-num">6</span><span class="step-body">Click <strong>"Assign"</strong>.</span></li>
+</ol>
+<p><strong>What happens after assignment:</strong></p>
+<ul>
+  <li>The booking status changes from <span class="badge badge-pending">Pending</span> to <span class="badge badge-accepted">Accepted</span>.</li>
+  <li>The driver receives a push notification directing them to open the app and review the assignment.</li>
+  <li>The booking moves to the <strong>Awaiting Acceptance</strong> column. A timer bar shows how long the assignment has been waiting — it turns amber after 10 minutes and red after 20 minutes.</li>
+  <li>Once the driver accepts, the client receives a push notification with the driver's first name and vehicle details.</li>
+</ul>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  If the timer bar turns red, follow up with the driver directly or reassign the trip to another available driver. Drivers cannot be prompted again from the platform — contact must be made out-of-band.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.4 — Booking Card with Assignment Controls]</div>
+  <div class="slot-caption">Pending booking card showing driver dropdown, vehicle dropdown, ETA input, and Assign button</div>
+</div>
+
+<hr class="divider" />
+
+<h2>2.5 Monitoring Active Trips</h2>
+<p>Once a driver accepts a trip, it appears in the <strong>Active Trips</strong> panel on the Dispatch page.</p>
+<h3>Reading the Active Trips Panel</h3>
+<table>
+  <tr><th>Column</th><th>Meaning</th></tr>
+  <tr><td>Driver name</td><td>First name and surname of the assigned driver</td></tr>
+  <tr><td>Vehicle registration</td><td>The vehicle currently in use</td></tr>
+  <tr><td>Client</td><td>Client first name</td></tr>
+  <tr><td>Route</td><td>Pickup → Destination</td></tr>
+  <tr><td>Complete button</td><td>Force-completes the trip (use only when driver is unreachable)</td></tr>
+</table>
+
+<h3>Force-Completing a Trip</h3>
+<p>This action is available for exceptional cases only — for example, when a driver is unreachable and cannot complete the trip themselves.</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Locate the trip row in the Active Trips panel.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Click <strong>"Complete"</strong>. An inline confirm/cancel prompt appears.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Click <strong>"Confirm"</strong> to proceed.</span></li>
+</ol>
+<p>The trip is marked completed, both driver and client session keys are immediately destroyed from the server, and the client enters a 24-hour complaint window.</p>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  Force-complete permanently destroys the session. The action cannot be undone. Use it only when normal trip completion is not possible.
+</div>
+
+<hr class="divider" />
+
+<h2>2.6 Managing Drivers</h2>
+<p>Navigate to <strong>Drivers</strong> from the pill navigation bar.</p>
+<h3>Adding a New Driver</h3>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Click <strong>"Add Driver"</strong>.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Enter the driver's <strong>full name</strong>, <strong>employee ID</strong>, and a <strong>password</strong> they will use to log in.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Click <strong>"Save"</strong>. The driver appears in the roster and can now log in on their device.</span></li>
+</ol>
+<h3>Deactivating a Driver</h3>
+<p>A deactivated driver cannot log in and will not appear in the assignment dropdown on the Dispatch page. Their historical trip records are preserved. To deactivate, click <strong>"Deactivate"</strong> on the driver row and confirm.</p>
+<h3>Driver Availability</h3>
+<p>Availability is set automatically by the system: a driver becomes unavailable the moment they accept a trip and available again once the trip is completed.</p>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.6 — Drivers Page]</div>
+  <div class="slot-caption">Drivers roster showing driver list with status indicators and Add Driver button</div>
+</div>
+
+<hr class="divider" />
+
+<h2>2.7 Managing Vehicles</h2>
+<p>Navigate to <strong>Vehicles</strong> from the pill navigation bar.</p>
+<h3>Adding a Vehicle</h3>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Click <strong>"Add Vehicle"</strong>.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Enter the vehicle's <strong>registration plate</strong>, <strong>make</strong> (e.g. Toyota), and <strong>model</strong> (e.g. Prado).</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Click <strong>"Save"</strong>. The vehicle is now available for assignment in the Dispatch form.</span></li>
+</ol>
+<h3>Removing a Vehicle</h3>
+<p>A vehicle can be removed from the fleet if it is no longer in service. Click <strong>"Remove"</strong> on the vehicle row and confirm. Active trips using that vehicle are not affected; the vehicle is simply removed from the assignment options going forward.</p>
+<p>The vehicle's make and model are shared with the client when a driver accepts a trip, giving the client enough information to identify the approaching vehicle.</p>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.7 — Vehicles Page]</div>
+  <div class="slot-caption">Vehicle inventory page showing fleet list with registration, make, model, and Remove button</div>
+</div>
+
+<hr class="divider" />
+
+<h2>2.8 Privacy Dashboard and Session Monitor</h2>
+<p>Navigate to <strong>Privacy Dashboard</strong> (labelled <em>Dashboard</em> in the nav) from the pill navigation bar.</p>
+<h3>What a Session Is</h3>
+<p>When a driver accepts a trip, SwiftLink creates two cryptographic session keys in Redis (an in-memory data store) — one for the driver and one for the client. These keys:</p>
+<ul>
+  <li>Authenticate both parties to the secure chat relay — messages cannot be sent without a valid session key</li>
+  <li>Define the TTL (Time-To-Live), after which session data is automatically deleted</li>
+  <li>Are destroyed immediately and permanently when the driver completes the trip</li>
+</ul>
+<p>This architecture ensures that all chat data is ephemeral by design — it exists only for the duration of the trip and cannot be recovered afterwards.</p>
+<h3>Reading the Session Monitor</h3>
+<table>
+  <tr><th>TTL Badge Colour</th><th>Meaning</th></tr>
+  <tr><td><span style="color:#15803d;font-weight:700;">Green</span></td><td>More than 50% of session time remaining — trip is in early stage</td></tr>
+  <tr><td><span style="color:#b45309;font-weight:700;">Amber</span></td><td>25–50% remaining — trip is likely nearing completion</td></tr>
+  <tr><td><span style="color:#991b1b;font-weight:700;">Red</span></td><td>Less than 25% remaining — session will expire soon</td></tr>
+</table>
+<p>Each row in the monitor shows the trip ID, client and driver TTL badges, and the complaint window TTL (24 hours from completion, counting down live).</p>
+<h3>The Destruction Proof Log</h3>
+<p>Every session destruction event is written to the audit log with a timestamp and a <strong>SHA-256 destruction hash</strong>. This hash is computed from the session content at the moment of deletion and serves as cryptographic evidence that the session was properly wiped — not merely abandoned or hidden. The Destruction Proof Log panel on the Privacy Dashboard displays these entries in a filterable table.</p>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  This dashboard provides demonstrable evidence of compliance with the data minimisation and storage limitation principles of data protection law. No session data persists beyond trip completion.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.8 — Privacy Dashboard with Session Monitor]</div>
+  <div class="slot-caption">Privacy Dashboard showing live session rows with TTL badges and destruction proof log below</div>
+</div>
+
+<hr class="divider" />
+
+<h2>2.9 Managing Complaints</h2>
+<p>Navigate to <strong>Complaints</strong> from the pill navigation bar. A red notification badge on the nav item shows the number of open complaints.</p>
+<h3>Complaint Statuses</h3>
+<table>
+  <tr><th>Status</th><th>Meaning</th></tr>
+  <tr><td><span class="badge" style="background:#fee2e2;color:#991b1b;border:1pt solid #fca5a5;">Open</span></td><td>Filed by the client — no investigation started yet</td></tr>
+  <tr><td><span class="badge" style="background:#dbeafe;color:#1e40af;border:1pt solid #93c5fd;">Under Investigation</span></td><td>Investigation active — encrypted message archive is accessible</td></tr>
+  <tr><td><span class="badge" style="background:#dcfce7;color:#15803d;border:1pt solid #86efac;">Resolved</span></td><td>Investigation complete — no further status changes permitted</td></tr>
+</table>
+<h3>Starting an Investigation</h3>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Click a complaint row to expand the full complaint detail card.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Use the status dropdown to select <strong>"Under Investigation"</strong>.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">The <strong>"View Messages"</strong> button becomes active. Click it to decrypt and read the message archive from the trip.</span></li>
+  <li><span class="step-num">4</span><span class="step-body">Review the conversation between the driver and client.</span></li>
+  <li><span class="step-num">5</span><span class="step-body">Record your findings in the <strong>investigation notes</strong> field (saved automatically).</span></li>
+  <li><span class="step-num">6</span><span class="step-body">Click <strong>"Notify Driver"</strong> if you need to formally inform the driver that a review is in progress.</span></li>
+  <li><span class="step-num">7</span><span class="step-body">When complete, use the dropdown to select <strong>"Resolved"</strong>.</span></li>
+</ol>
+<p>If you need to pause mid-investigation, use the dropdown to return the status to <strong>Open</strong>. The message archive becomes inaccessible again until the investigation is restarted.</p>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  The message archive is AES-256-GCM encrypted at rest. It can only be decrypted while the complaint status is <strong>Under Investigation</strong>. This restriction is enforced at the server level — the server refuses to return the archive in any other state, regardless of what the client sends.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.9 — Complaints Page with Expanded Complaint Card]</div>
+  <div class="slot-caption">Complaint expanded showing status dropdown set to Under Investigation and View Messages button active</div>
+</div>
+
+<hr class="divider" />
+
+<h2>2.10 Compliance and Audit Export</h2>
+<p>Navigate to <strong>Audit</strong> from the pill navigation bar. A purple notification badge on the nav item shows the number of new contact enquiries awaiting review.</p>
+<h3>Available Exports</h3>
+<table>
+  <tr><th>Export</th><th>Format</th><th>Contents</th></tr>
+  <tr><td>DPA Compliance Report</td><td>PDF</td><td>System overview, all session destruction events with timestamps and SHA-256 destruction hashes, data retention policy summary</td></tr>
+  <tr><td>Audit Log</td><td>CSV</td><td>Every logged system action — actor ID, role, action type, target resource, timestamp, additional details</td></tr>
+</table>
+<h3>Generating an Export</h3>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Click <strong>"Export Compliance Report (PDF)"</strong> to generate and download the compliance PDF immediately.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Click <strong>"Export Audit Log (CSV)"</strong> to download the full raw audit log as a spreadsheet-compatible CSV file.</span></li>
+</ol>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  These exports contain operational and personal data that may be relevant to data subject access requests and regulatory reviews. Treat them as sensitive documents and transmit them securely.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 2.10 — Audit Page with Export Controls]</div>
+  <div class="slot-caption">Audit page showing export buttons and audit log table with filters</div>
+</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION 3 — DRIVER GUIDE
+══════════════════════════════════════════════════════════ -->
+<div class="page-break">
+<div class="part-header">
+  <div class="part-label">Part 3</div>
+  <div class="part-title">Driver Guide</div>
+  <div class="part-desc">Logging in, accepting and completing trips, communicating with clients, and managing push notifications</div>
+</div>
+
+<h2>3.1 Logging In (Password)</h2>
+<p>Driver accounts are created by the fleet manager, who sets the initial credentials. Drivers log in with an employee ID and password.</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Navigate to the SwiftLink login page and select the <strong>Driver</strong> tab.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Enter your <strong>employee ID</strong> and <strong>password</strong> as provided by your fleet manager.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Tap <strong>"Sign In"</strong>. You are taken to your Trips list.</span></li>
+</ol>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  If you cannot log in, contact your fleet manager. They can reset your credentials from the Drivers management page.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 3.1 — Driver Login Page]</div>
+  <div class="slot-caption">Login page with Driver tab selected, showing employee ID and password fields</div>
+</div>
+
+<hr class="divider" />
+
+<h2>3.2 Trips List — Understanding Trip Cards</h2>
+<p>The Trips page shows all trips assigned to your account. Each trip card displays a status badge that summarises what action (if any) is required.</p>
+<table>
+  <tr><th>Badge</th><th>Colour</th><th>What it means</th></tr>
+  <tr><td><span class="badge badge-accepted">Assigned</span></td><td>Amber</td><td>You have been assigned this trip. Review the details and accept or decline before the pickup time.</td></tr>
+  <tr><td><span class="badge badge-active">In Progress</span></td><td>Green (pulsing)</td><td>The trip is active. Tap "View Active Trip" to open the trip interface and chat channel.</td></tr>
+  <tr><td><span class="badge badge-complete">Completed</span></td><td>Grey</td><td>Trip is done. Session data has been permanently wiped.</td></tr>
+  <tr><td><span class="badge badge-cancel">Cancelled</span></td><td>Red</td><td>The client cancelled this booking. No action needed from you.</td></tr>
+</table>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 3.2 — Driver Trips List]</div>
+  <div class="slot-caption">Trips list showing cards with different status badges</div>
+</div>
+
+<hr class="divider" />
+
+<h2>3.3 Accepting a Trip</h2>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Read the full trip card: client first name, pickup location, destination, pickup time, and assigned vehicle.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">If a <strong>purple note box</strong> is present on the card, read it carefully — it contains special instructions from your fleet manager (e.g. flight numbers, VIP notes).</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Tap <strong>"Accept"</strong>.</span></li>
+</ol>
+<p>When you accept:</p>
+<ul>
+  <li>The trip moves to <span class="badge badge-active">In Progress</span>.</li>
+  <li>A secure chat session opens — you and the client can now communicate.</li>
+  <li>The client receives a push notification showing your first name and their vehicle details.</li>
+  <li>Your status becomes <strong>On Trip</strong> in the fleet manager's dashboard — you will not appear in the assignment dropdown for other trips.</li>
+</ul>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  Once you accept, the client can see your <strong>first name</strong>, vehicle make, model, and registration plate. No other personal details are shared with them at any point.
+</div>
+
+<hr class="divider" />
+
+<h2>3.4 Declining a Trip</h2>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Tap <strong>"Decline"</strong> on an Assigned trip card.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Enter a reason in the text field. This is <strong>required</strong> and cannot be left blank. Examples: "Vehicle mechanical issue", "Medical emergency", "Road closure on route".</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Tap <strong>"Confirm Decline"</strong>.</span></li>
+</ol>
+<p>The trip returns to the fleet manager for reassignment. Your decline reason is logged and reviewed by your manager — it is not shared with the client.</p>
+
+<hr class="divider" />
+
+<h2>3.5 Active Trip — Chat and Completion</h2>
+<p>Tap <strong>"View Active Trip"</strong> on an In Progress card to open the full trip interface. This page shows your trip manifest at the top and the secure chat panel below.</p>
+
+<h3>Using the Secure Chat Channel</h3>
+<p>The <strong>Secure Channel</strong> (🔒) panel is the only authorised way to communicate with your client during a trip. You will not see the client's phone number or email at any point — all messages are relayed through SwiftLink's server so neither party's contact details are ever exposed.</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Type your message in the box at the bottom of the Secure Channel panel.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Tap <strong>Send</strong>. The client receives the message in real time.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">If you briefly lose signal, any message you sent shows a <strong>⏳</strong> icon. It will be delivered automatically when your connection is restored. Keep the app open in the background.</span></li>
+</ol>
+
+<h3>Completing the Trip</h3>
+<p>When the client has been safely dropped off at their destination:</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Tap <strong>"Complete Trip — Dropped Off ✓"</strong>.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">The trip ends immediately. Both your session and the client's session are destroyed on the server. The chat channel closes.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">The client enters a 24-hour window during which they can file a complaint if needed.</span></li>
+</ol>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  After completion, all message content is permanently deleted from the server — unless the client files a complaint within 24 hours. In that case, the archive is preserved solely for the fleet manager's investigation, then deleted on resolution.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 3.5 — Active Trip Page with Secure Channel Open]</div>
+  <div class="slot-caption">Active trip showing trip manifest at top and Secure Channel chat panel with Complete Trip button</div>
+</div>
+
+<hr class="divider" />
+
+<h2>3.6 Profile and Push Notifications</h2>
+<p>Navigate to <strong>Profile</strong> from the bottom navigation bar.</p>
+<h3>Your Profile Details</h3>
+<p>Your full name and employee ID are set by your fleet manager when your account is created. If any details are incorrect, contact your fleet manager to have them updated — you cannot edit these yourself.</p>
+<h3>Enabling Push Notifications</h3>
+<p>Push notifications alert you when a new trip has been assigned to you, or when a trip has been cancelled by the client.</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Tap <strong>"Enable Notifications"</strong> on your profile page.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Your browser shows a permission prompt — tap <strong>"Allow"</strong>.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">The toggle turns on. You will receive alerts even when the app is in the background or the screen is off.</span></li>
+</ol>
+<div class="note note-info">
+  <span class="note-label note-label-info">Note: </span>
+  Push notification permissions are tied to your specific browser and device. If you switch to a new phone or a different browser, you will need to enable notifications again from the Profile page.
+</div>
+<p><strong>If you denied permission by mistake:</strong> Open your browser settings, find SwiftLink in the site permissions list, change <em>Blocked</em> to <em>Allowed</em>, then return to the Profile page and tap "Enable Notifications" again.</p>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 3.6 — Driver Profile Page]</div>
+  <div class="slot-caption">Profile page showing driver details and push notification toggle</div>
+</div>
+
+<hr class="divider" />
+
+<h2>3.7 Notifications History</h2>
+<p>Navigate to <strong>Notifications</strong> from the bottom navigation bar. This page shows a history of every trip notification sent to your account on this device.</p>
+<ul>
+  <li><strong>Trip assigned</strong> notifications show the client first name, pickup location, destination, and pickup time.</li>
+  <li><strong>Cancellation</strong> notifications are shown with a red indicator. Your fleet manager will follow up about reassignment if needed.</li>
+  <li>Notifications are stored on the server — they are not lost if you clear your browser cache or reinstall the PWA.</li>
+</ul>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 3.7 — Driver Notifications Page]</div>
+  <div class="slot-caption">Notifications list showing trip-assigned and cancellation notification cards</div>
+</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION 4 — CLIENT GUIDE
+══════════════════════════════════════════════════════════ -->
+<div class="page-break">
+<div class="part-header">
+  <div class="part-label">Part 4</div>
+  <div class="part-title">Client Guide</div>
+  <div class="part-desc">Accessing your booking, tracking your trip, communicating with your driver, filing complaints, and viewing booking history</div>
+</div>
+
+<h2>4.1 Receiving and Opening Your Booking Link</h2>
+<p>Clients do not create accounts on SwiftLink. Access is granted per booking via a single-use link sent to your corporate email address when your fleet manager creates your trip.</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Check your inbox for an email from SwiftLink with the subject <strong>"Your SwiftLink booking link"</strong>.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Open the email and tap or click the link in the message body.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">You are taken directly to your personal trip dashboard — <strong>no password required</strong>. The link signs you in automatically on first open.</span></li>
+</ol>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  The link is single-use and expires after <strong>15 minutes</strong> if unused. If it has expired, contact your fleet manager to resend it. Check your <strong>spam or junk folder</strong> if you cannot find the email.
+</div>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  Your email address is used only to deliver your booking link and send trip status notifications. It is never shared with your driver. Your driver sees only your first name.
+</div>
+
+<h3>What Your Email Is Used For</h3>
+<ul>
+  <li>Delivering your booking access link</li>
+  <li>Sending trip status updates (driver assigned, trip complete)</li>
+  <li>Allowing you to recover access to your booking history</li>
+</ul>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 4.1 — Booking Landing Page (Booking Form State)]</div>
+  <div class="slot-caption">Booking landing page as first seen after opening the magic link — trip awaiting driver</div>
+</div>
+
+<hr class="divider" />
+
+<h2>4.2 Booking Confirmed — Awaiting Driver Assignment</h2>
+<p>After opening your link, if no driver has been assigned yet, your trip dashboard shows a <span class="badge badge-pending">Pending</span> status. This means your booking has been received and your fleet manager is currently assigning a driver and vehicle.</p>
+<ul>
+  <li>You do not need to do anything at this stage.</li>
+  <li>The page updates automatically when a driver is assigned.</li>
+  <li>You may receive a push notification the moment your driver is confirmed — enable notifications on the prompt shown on your screen.</li>
+</ul>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  If your pickup time is approaching and no driver has been assigned, contact your fleet manager directly.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 4.2 — Trip Pending State]</div>
+  <div class="slot-caption">Trip dashboard showing Pending status badge and "Awaiting driver assignment" message</div>
+</div>
+
+<hr class="divider" />
+
+<h2>4.3 Driver Assigned — Before the Trip Starts</h2>
+<p>Once your fleet manager assigns a driver and they accept, your trip status changes to <span class="badge badge-accepted">Accepted</span>. Your dashboard updates to show:</p>
+<ul>
+  <li>Your driver's <strong>first name</strong></li>
+  <li>Their vehicle — <strong>make, model, and registration plate</strong></li>
+  <li>An <strong>ETA</strong> (estimated arrival time at your pickup point), if your fleet manager set one</li>
+</ul>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  You will not see your driver's phone number. All communication goes through the secure in-app chat, which protects both you and the driver.
+</div>
+
+<h3>Messaging Your Driver</h3>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Scroll down to the <strong>Secure Channel</strong> section on your trip page.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Type your message in the text box and tap <strong>Send</strong>.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Your driver receives it in real time. Use this to confirm pickup landmarks, share updates, or flag last-minute changes.</span></li>
+</ol>
+
+<h3>Cancelling Your Trip</h3>
+<p>You can cancel while the trip status is <span class="badge badge-pending">Pending</span> or <span class="badge badge-accepted">Accepted</span>:</p>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Tap <strong>"Cancel Trip"</strong> on your trip page.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Confirm the cancellation when prompted.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Your fleet manager and driver (if already assigned) are notified automatically.</span></li>
+</ol>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  Cancellation is not available once the driver has started the journey (status <span class="badge badge-active">In Progress</span>). Contact your fleet manager directly in that case.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 4.3 — Driver Assigned State]</div>
+  <div class="slot-caption">Trip dashboard showing driver card with first name, vehicle details, ETA badge, and Secure Channel panel</div>
+</div>
+
+<hr class="divider" />
+
+<h2>4.4 Trip in Progress</h2>
+<p>Once your driver confirms your pickup, the trip status changes to <span class="badge badge-active">In Progress</span>. The secure chat channel is open.</p>
+
+<h3>Communicating During the Trip</h3>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Use the <strong>Secure Channel</strong> section on your screen to communicate with your driver.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Type your message and tap <strong>Send</strong>.</span></li>
+  <li><span class="step-num">3</span><span class="step-body">If your signal drops briefly, your message shows a <strong>⏳</strong> icon and will be delivered automatically when connectivity is restored.</span></li>
+</ol>
+<p>If something goes wrong during the trip, use the chat to raise it with your driver first. If the issue cannot be resolved through chat, contact your fleet manager directly by phone.</p>
+
+<h3>What Happens to Your Data</h3>
+<p>The moment your driver taps "Complete Trip", the system destroys both your session and the driver's session on the server. Message content is permanently deleted at this point — unless you file a complaint within 24 hours, in which case the archive is preserved for your fleet manager's investigation only.</p>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  SwiftLink is built on a privacy-by-design model. Trip sessions are ephemeral — data is not kept beyond what is strictly necessary for the operation.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 4.4 — Active Trip with Chat Open]</div>
+  <div class="slot-caption">In Progress trip view with Secure Channel open and messages visible</div>
+</div>
+
+<hr class="divider" />
+
+<h2>4.5 Trip Ended — Filing a Complaint</h2>
+<p>When the trip is marked complete, your dashboard transitions to the post-trip view. You have up to <strong>24 hours</strong> to file a complaint if something went wrong.</p>
+<h3>Filing a Complaint</h3>
+<ol class="steps">
+  <li><span class="step-num">1</span><span class="step-body">Scroll to the <strong>"File a Complaint"</strong> section on your trip page. A countdown timer shows how much time you have remaining.</span></li>
+  <li><span class="step-num">2</span><span class="step-body">Select a <strong>complaint category</strong> from the dropdown (e.g. "Driver conduct", "Route deviation", "Vehicle condition").</span></li>
+  <li><span class="step-num">3</span><span class="step-body">Describe what happened in the text field.</span></li>
+  <li><span class="step-num">4</span><span class="step-body">Tap <strong>"Submit Complaint"</strong>.</span></li>
+</ol>
+<p>Your message history from the trip is preserved and your fleet manager is notified. You can track the investigation status on the same page as it progresses from <em>Open</em> to <em>Under Investigation</em> to <em>Resolved</em>.</p>
+<div class="note note-caution">
+  <span class="note-label note-label-caution">Caution: </span>
+  After the 24-hour window closes, your message history is <strong>permanently deleted</strong>. If you intend to file a complaint, do not wait — act as soon as possible after the trip ends.
+</div>
+
+<h3>If the Trip Was Cancelled</h3>
+<p>If the trip was cancelled before it started, the booking session was closed at the point of cancellation. Contact your fleet manager if you need a new booking arranged.</p>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 4.5 — Completed Trip — Complaint Section]</div>
+  <div class="slot-caption">Completed trip view showing 24-hour countdown timer and File a Complaint form</div>
+</div>
+
+<hr class="divider" />
+
+<h2>4.6 Accessing Your Booking History</h2>
+<p>To view a history of all your previous trips without having an active booking link, you can request a recovery link from your fleet manager, or use the <strong>"Access booking history"</strong> option on the booking page if you have an expired link.</p>
+<h3>What the History View Shows</h3>
+<ul>
+  <li>All trips registered under your corporate email address</li>
+  <li>Pickup location and destination</li>
+  <li>Pickup date and time (displayed in East Africa Time)</li>
+  <li>Assigned driver (first name) and vehicle</li>
+  <li>Trip status</li>
+</ul>
+<h3>Limitations of the History View</h3>
+<p>History access is a <strong>temporary, read-only session</strong> valid for <strong>2 hours</strong> from when you opened the recovery link. You cannot edit or cancel bookings from this view. To make changes to an upcoming booking, contact your fleet manager.</p>
+<ul>
+  <li><strong>Message content</strong> from completed trips is not retained unless a complaint was filed — this is by design.</li>
+  <li><strong>Cancelled trips</strong> appear in the list with their status — route and booking details are preserved.</li>
+</ul>
+<div class="note note-privacy">
+  <span class="note-label note-label-privacy">Privacy: </span>
+  Your history session expires automatically after 2 hours. This limits the exposure of your booking records if you are using a shared or unattended device.
+</div>
+
+<div class="screenshot-slot">
+  <div class="slot-label">[Figure 4.6 — Booking History Page]</div>
+  <div class="slot-caption">Booking history page listing all trips under the client's corporate email</div>
+</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION 5 — IN-SYSTEM HELP REFERENCE
+══════════════════════════════════════════════════════════ -->
+<div class="page-break">
+<h1>5. In-System Help Reference</h1>
+<p>SwiftLink includes a built-in contextual help system accessible from within the application. Each user role has a help entry point appropriate to their interface:</p>
+<table>
+  <tr><th>Role</th><th>Entry Point</th><th>Implementation</th></tr>
+  <tr><td>Fleet Manager</td><td>The <strong>? Help</strong> button at the right end of the navigation bar, present on every manager page</td><td>Full dedicated help page at <code>/manager/help</code> — scrollable, sections collapsible, all topics covered in a single view</td></tr>
+  <tr><td>Driver</td><td>The <strong>? Help</strong> pill in the top navigation header, visible on every driver page</td><td>Bottom sheet that slides up — content adapts based on the current route (trips list, active trip, profile, or notifications)</td></tr>
+  <tr><td>Client</td><td>The floating <strong>? Help</strong> button fixed to the bottom-right corner of both client pages</td><td>Bottom sheet that slides up — content adapts based on the current booking state (pending, accepted, active, ended, or history)</td></tr>
+</table>
+
+<h2>5.1 Manager Help Page</h2>
+<p>The manager help page is a full reference document covering all seven operational areas: authentication, creating bookings, assigning drivers, monitoring active trips, the Privacy Dashboard, complaints management, and compliance exports. Sections are expandable/collapsible. Screenshots are embedded next to their relevant procedures.</p>
+
+<h2>5.2 Driver Help Sheet</h2>
+<p>The driver help sheet is a route-aware bottom sheet. The content displayed depends on which driver page is currently open:</p>
+<table>
+  <tr><th>Active Route</th><th>Help Content Shown</th></tr>
+  <tr><td>/driver/trips or /driver/trips/active</td><td>Trip status guide, how to accept a trip, how to decline a trip</td></tr>
+  <tr><td>/driver/trips/:tripId</td><td>Active trip guide — chat usage, completing the trip, post-trip data deletion</td></tr>
+  <tr><td>/driver/profile</td><td>Profile details, enabling push notifications, resetting browser permissions</td></tr>
+  <tr><td>/driver/notifications</td><td>Notifications history guide</td></tr>
+</table>
+
+<h2>5.3 Client Help Modal</h2>
+<p>The client help modal is a context-aware bottom sheet. The content switches automatically based on the current trip state:</p>
+<table>
+  <tr><th>Trip State</th><th>Help Content Shown</th></tr>
+  <tr><td>No trip / booking form</td><td>How booking links work, what the email is used for, what to expect after signing in</td></tr>
+  <tr><td>Pending (no driver yet)</td><td>What to do while waiting, who to contact if pickup is approaching</td></tr>
+  <tr><td>Accepted (driver assigned)</td><td>Driver card explanation, how to chat, how to cancel</td></tr>
+  <tr><td>In Progress</td><td>Chat usage during the trip, what happens to data, how to file a complaint after</td></tr>
+  <tr><td>Completed or Cancelled</td><td>24-hour complaint window, permanent deletion warning, how to request a new booking</td></tr>
+  <tr><td>Booking history view</td><td>What the history shows, why it is read-only, 2-hour session expiry</td></tr>
+</table>
+
+<div class="doc-footer">
+  SwiftLink User Guide &nbsp;·&nbsp; BSC Computer Technology Final Year Project &nbsp;·&nbsp; Ian Lemashon Sopia, SCT221-0593/2022 &nbsp;·&nbsp; JKUAT &nbsp;·&nbsp; 2025/2026
+</div>
+</div>
+
+</body>
+</html>
