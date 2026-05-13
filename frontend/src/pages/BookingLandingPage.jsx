@@ -4,6 +4,7 @@ import api from '../api/axios';
 import ChatWindow from '../components/ChatWindow';
 import SwiftlinkLogo from '../components/SwiftlinkLogo';
 import useOnlineStatus from '../hooks/useOnlineStatus';
+import ClientHelpModal from '../components/ClientHelpModal';
 
 const modalLabelStyle = { fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'block' };
 const modalInputStyle = { width: '100%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '10px 14px', fontSize: '13px', color: 'white', outline: 'none', marginBottom: '16px', boxSizing: 'border-box' };
@@ -201,6 +202,7 @@ const BookingFormView = () => {
                     </div>
                 </div>
             </div>
+            <ClientHelpModal context="booking-form" />
         </div>
     );
 };
@@ -306,6 +308,7 @@ const HistoryView = ({ onBookNew }) => {
                     </div>
                 </div>
             )}
+            <ClientHelpModal context="history" />
         </div>
     );
 };
@@ -581,6 +584,11 @@ export default function BookingLandingPage() {
     const formatEta = (eta) => new Date(eta).toLocaleTimeString('en-KE', {
         timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit',
     });
+
+    const helpContext = isInProgress ? 'trip-active'
+        : isAccepted   ? 'trip-accepted'
+        : isPending    ? 'trip-pending'
+        : 'trip-ended';
 
     return (
         <div className="min-h-screen bg-[#F5EDE3] relative overflow-hidden flex flex-col">
@@ -978,6 +986,8 @@ export default function BookingLandingPage() {
                     </div>
                 </div>
             )}
+
+            <ClientHelpModal context={helpContext} />
         </div>
     );
 }
