@@ -1,3 +1,28 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Trips Router — Manager and Driver actions on the trip lifecycle.
+//
+// STATUS FLOW (the spine of the whole system):
+//
+//   pending ──assign──▶ accepted ──driver-accepts──▶ in_progress ──complete──▶ completed
+//      │                    │
+//      └─client-cancels──▶ cancelled  ◀─client-cancels (also allowed here)
+//
+//   pending      Client submitted booking. No driver yet.
+//   accepted     Manager picked driver + vehicle (PATCH /:tripId/assign).
+//                  Push sent to driver. Driver can accept or reject.
+//   in_progress  Driver accepted (PATCH /:tripId/accept).
+//                  Redis sessions created → chat channel opens.
+//                  Push sent to client with driver first name + vehicle.
+//   completed    Driver marked drop-off (PATCH /:tripId/complete).
+//                  Redis sessions destroyed → channel permanently closes.
+//                  complaint:window key created with 24h TTL.
+//   cancelled    Client cancelled at pending or accepted (NOT in_progress).
+//
+// AUDIT: every state transition writes to audit_log (DPA 2019 s.41).
+// ATOMICITY: assign/reassign use BEGIN/COMMIT to prevent two managers from
+// double-booking the same driver or vehicle concurrently.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { Router } from 'express';
 import { query } from '../config/db.js';
 import pool from '../config/db.js';

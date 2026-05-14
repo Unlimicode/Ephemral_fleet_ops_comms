@@ -1,3 +1,32 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Manager Privacy Dashboard — the FYP's research surface.
+//
+// This page makes the MEI framework's privacy guarantees *visible* to a fleet
+// manager and (more importantly) verifiable for the dissertation. It is the UI
+// counterpart to the encryption + TTL + audit-log machinery on the backend.
+//
+// WHAT EACH PANEL SHOWS:
+//   - Active sessions      — Redis session:trip:* keys currently alive, with
+//                            live countdown of remaining TTL. When a TTL hits
+//                            zero, the session physically dies — this proves
+//                            ephemeral identity is enforced by infrastructure,
+//                            not by code that "remembers" to delete things.
+//   - Live event feed      — session_created / session_destroyed / complaint_filed
+//                            events streamed over the /dashboard Socket.IO
+//                            namespace; gives a real-time view of data lifecycle.
+//   - Destruction events   — SHA-256 destruction hashes (utils/encryption.js
+//                            computeDestructionHash) written to audit_log on
+//                            session expiry. Proof-of-erasure without retaining
+//                            the destroyed content itself (DPA 2019 s.41).
+//   - Compliance report    — minimisation rate, complaint-window expirations,
+//                            archive access counts — the headline metrics the
+//                            dissertation argues SwiftLink improves.
+//
+// DATA SOURCES: /api/dashboard/* (backend/routes/dashboard.js) for snapshots,
+// /dashboard Socket.IO namespace (backend/socket/dashboardNamespace.js) for live
+// updates. PDF export goes through utils/compliancePdf.js.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import api from '../api/axios';

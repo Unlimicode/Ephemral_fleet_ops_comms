@@ -1,3 +1,32 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Complaints Router — Complaint lifecycle and conditional message archive access.
+//
+// STATUS FLOW:
+//
+//   open ──manager-opens-investigation──▶ under_investigation ──resolve──▶ resolved
+//     ▲                                          │
+//     └──manager-reopens-from-investigation──────┘     (resolved is terminal)
+//
+//   open                  Client just filed it. Manager can see metadata only.
+//   under_investigation   Manager has explicitly opened it. ONLY in this state
+//                         can encrypted message archive be decrypted (gated by
+//                         GET /:complaintId/messages) — every decrypt writes an
+//                         audit_log entry (FR6 accountability).
+//   resolved              Terminal. No transitions out — resolved complaints
+//                         cannot be reopened (enforced at PATCH /:id/status).
+//
+// CONDITIONAL PERSISTENCE (FR5):
+//   - The 24h complaint window is enforced by `complaint:window:{tripId}` in
+//     Redis (created on trip complete, TTL 86400s). When the key expires, the
+//     POST endpoint physically rejects the complaint — privacy is a structural
+//     constraint, not a policy check.
+//   - On complaint filing, the buffered Redis chat messages are AES-256-GCM
+//     encrypted (utils/encryption.js) and moved into complaints.encrypted_message_archive.
+//     The Redis copy is deleted immediately — no duplicate storage.
+//   - If no complaint is filed within 24h, the Redis buffer self-expires and
+//     the messages are gone forever. No nightly cleanup job needed.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { requireClientAuth } from '../middleware/clientAuth.js';

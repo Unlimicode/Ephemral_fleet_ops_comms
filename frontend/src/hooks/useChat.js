@@ -1,3 +1,24 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// useChat — Driver ↔ Client real-time chat hook (Socket.IO client side).
+//
+// FLOW:
+//   1. Mount with { tripId, token, role } — opens a Socket.IO connection to the
+//      backend relay namespace (backend/socket/io.js).
+//   2. Backend verifies the role's credential (JWT for driver/manager, HttpOnly
+//      cookie for client) and that session:trip:{tripId}:{role} exists in Redis.
+//   3. On join, the server replays buffered messages (`message_history`) so a
+//      reconnecting participant catches up without duplicates.
+//   4. While connected, sendMessage() emits `send_message`; the server fan-outs
+//      `receive_message` to everyone in room `trip:{tripId}` and pushes a copy
+//      to the Redis buffer (for conditional persistence if a complaint is filed).
+//   5. When the trip completes, the server emits `session_closed` — we set
+//      sessionClosed and disconnect. Channel is now permanently dead.
+//
+// RECONNECT POLICY: infinite retries with exponential backoff (1s → 30s).
+// connect_error is silent — transient drops are normal; only `auth_error` (a
+// permanent server-side rejection) bubbles up as `error` to the UI.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
