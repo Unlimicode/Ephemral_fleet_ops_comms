@@ -10,12 +10,16 @@ const formatTimeAgo = (iso) => {
     return Math.floor(mins / 1440) + 'd ago';
 };
 
+const TYPE_CONFIG = {
+    trip_assigned:      { bg: 'rgba(108,99,255,0.1)',  icon: 'directions_car', color: '#6C63FF' },
+    trip_unassigned:    { bg: 'rgba(255,165,0,0.1)',   icon: 'cancel',         color: '#F59E0B' },
+    complaint_review:   { bg: 'rgba(224,90,90,0.1)',   icon: 'report',         color: '#E05A5A' },
+    investigation_note: { bg: 'rgba(108,99,255,0.1)',  icon: 'edit_note',      color: '#6C63FF' },
+    direct_message:     { bg: 'rgba(0,212,255,0.1)',   icon: 'forum',          color: '#0098B8' },
+};
+
 const TypeIcon = ({ type }) => {
-    const configs = {
-        trip_assigned: { bg: 'rgba(108,99,255,0.1)', icon: 'directions_car', color: '#6C63FF' },
-        complaint_review: { bg: 'rgba(224,90,90,0.1)', icon: 'report', color: '#E05A5A' },
-    };
-    const cfg = configs[type] || { bg: 'rgba(0,0,0,0.06)', icon: 'notifications', color: 'rgba(0,0,0,0.4)' };
+    const cfg = TYPE_CONFIG[type] || { bg: 'rgba(0,0,0,0.06)', icon: 'notifications', color: 'rgba(0,0,0,0.4)' };
     return (
         <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: cfg.bg, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '20px', color: cfg.color }}>{cfg.icon}</span>
@@ -59,8 +63,15 @@ export default function DriverNotificationsPage() {
         }
     };
 
+    const [expandedId, setExpandedId] = useState(null);
+
     const handleCardClick = async (n) => {
         if (!n.read) await markAsRead(n.id);
+        // Investigation notes and direct messages are read-in-place, not navigation targets.
+        if (n.type === 'investigation_note' || n.type === 'direct_message') {
+            setExpandedId(prev => prev === n.id ? null : n.id);
+            return;
+        }
         if (n.trip_id) navigate(`/driver/trips/${n.trip_id}`);
     };
 
@@ -135,43 +146,64 @@ export default function DriverNotificationsPage() {
                 {/* Notification list */}
                 {!loading && notifications.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {notifications.map(n => (
-                            <div
-                                key={n.id}
-                                className="notif-card"
-                                onClick={() => handleCardClick(n)}
-                                style={{
-                                    padding: '20px 24px',
-                                    borderLeft: n.read ? '3px solid transparent' : '3px solid #6C63FF',
-                                    background: n.read ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.75)',
-                                    opacity: n.read ? 0.8 : 1,
-                                    cursor: n.trip_id ? 'pointer' : 'default',
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-                                    <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', flex: 1 }}>
-                                        <TypeIcon type={n.type} />
-                                        <div style={{ flex: 1 }}>
-                                            <p style={{ fontSize: '14px', fontWeight: 700, color: '#0D0D0D', margin: 0 }}>{n.title}</p>
-                                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.55)', marginTop: '4px', lineHeight: 1.4, margin: '4px 0 0' }}>{n.body}</p>
-                                            <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.35)', marginTop: '6px', fontFamily: "'JetBrains Mono', monospace", margin: '6px 0 0' }}>{formatTimeAgo(n.created_at)}</p>
+                        {notifications.map(n => {
+                            const isExpandable = n.type === 'investigation_note' || n.type === 'direct_message';
+                            const isExpanded = expandedId === n.id;
+                            const showPreview = !isExpanded;
+                            const previewBody = n.body && n.body.length > 140 && showPreview
+                                ? n.body.slice(0, 140) + '…'
+                                : n.body;
+                            return (
+                                <div
+                                    key={n.id}
+                                    className="notif-card"
+                                    onClick={() => handleCardClick(n)}
+                                    style={{
+                                        padding: '20px 24px',
+                                        borderLeft: n.read ? '3px solid transparent' : '3px solid #6C63FF',
+                                        background: n.read ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.75)',
+                                        opacity: n.read ? 0.9 : 1,
+                                        cursor: (n.trip_id || isExpandable) ? 'pointer' : 'default',
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                                        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', flex: 1 }}>
+                                            <TypeIcon type={n.type} />
+                                            <div style={{ flex: 1 }}>
+                                                <p style={{ fontSize: '14px', fontWeight: 700, color: '#0D0D0D', margin: 0 }}>{n.title}</p>
+                                                {isExpandable && isExpanded ? (
+                                                    <div style={{ marginTop: '8px', background: 'rgba(108,99,255,0.06)', borderLeft: '3px solid #6C63FF', borderRadius: '8px', padding: '12px 14px' }}>
+                                                        <p style={{ fontSize: '13px', color: '#0D0D0D', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{n.body}</p>
+                                                    </div>
+                                                ) : (
+                                                    <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.55)', lineHeight: 1.4, margin: '4px 0 0' }}>{previewBody}</p>
+                                                )}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
+                                                    <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.35)', fontFamily: "'JetBrains Mono', monospace", margin: 0 }}>{formatTimeAgo(n.created_at)}</p>
+                                                    {isExpandable && (
+                                                        <span style={{ fontSize: '11px', color: '#6C63FF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                                            {isExpanded ? 'Hide' : 'Read note'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ flexShrink: 0, paddingTop: '2px' }}>
+                                            {!n.read ? (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600, color: '#6C63FF', padding: 0 }}
+                                                >
+                                                    Mark read
+                                                </button>
+                                            ) : (
+                                                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'rgba(0,200,0,0.4)' }}>check_circle</span>
+                                            )}
                                         </div>
                                     </div>
-                                    <div style={{ flexShrink: 0, paddingTop: '2px' }}>
-                                        {!n.read ? (
-                                            <button
-                                                onClick={() => markAsRead(n.id)}
-                                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600, color: '#6C63FF', padding: 0 }}
-                                            >
-                                                Mark read
-                                            </button>
-                                        ) : (
-                                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'rgba(0,200,0,0.4)' }}>check_circle</span>
-                                        )}
-                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -430,10 +430,12 @@ router.patch('/:complaintId/status', requireAuth(['fleet_manager']), async (req,
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PATCH /:complaintId/notes - Investigation Documentation
+// Also pushes the note to the assigned driver as a notification so they can
+// read the manager's reasoning from the driver app.
 // ─────────────────────────────────────────────────────────────────────────────
 router.patch('/:complaintId/notes', requireAuth(['fleet_manager']), async (req, res) => {
     const { complaintId } = req.params;
-    const { notes } = req.body;
+    const { notes, notify_driver = true } = req.body;
 
     if (notes === undefined || typeof notes !== 'string' || !notes.trim()) {
         return res.status(400).json({ error: 'notes must be a non-empty string' });
@@ -444,6 +446,36 @@ router.patch('/:complaintId/notes', requireAuth(['fleet_manager']), async (req, 
             `UPDATE complaints SET investigation_notes = $1 WHERE id = $2`,
             [notes, complaintId]
         );
+
+        if (notify_driver) {
+            try {
+                const tripRes = await pool.query(
+                    `SELECT t.id AS trip_id, t.assigned_driver_id
+                     FROM trips t JOIN complaints c ON t.id = c.trip_id
+                     WHERE c.id = $1`,
+                    [complaintId]
+                );
+                const driverId = tripRes.rows[0]?.assigned_driver_id;
+                const tripId = tripRes.rows[0]?.trip_id;
+                if (driverId) {
+                    await pool.query(
+                        `INSERT INTO driver_notifications (driver_id, trip_id, type, title, body)
+                         VALUES ($1, $2, 'investigation_note', 'Investigation note from Manager', $3)`,
+                        [driverId, tripId, notes.trim()]
+                    );
+                    if (process.env.NODE_ENV !== 'test') {
+                        sendPushNotification(driverId, {
+                            title: 'Investigation note from Manager',
+                            body: notes.trim().slice(0, 120),
+                            type: 'investigation_note',
+                            tripId,
+                        }).catch(() => {});
+                    }
+                }
+            } catch (notifyErr) {
+                console.error('[complaints] notify driver of notes failed:', notifyErr.message);
+            }
+        }
 
         return res.status(200).json({ message: 'Investigation notes updated.' });
     } catch (err) {

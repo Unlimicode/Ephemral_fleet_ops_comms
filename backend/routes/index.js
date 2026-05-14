@@ -15,6 +15,7 @@ import pushRouter from './push.js';
 import complaintsRouter from './complaints.js';
 import contactRouter from './contact.js';
 import flightsRouter from './flights.js';
+import messagesRouter from './messages.js';
 
 const router = Router();
 
@@ -49,5 +50,8 @@ router.use('/api/contact', contactRouter);
 
 // Flight info (AviationStack proxy, Redis-cached)
 router.use('/api/flights', flightsRouter);
+
+// Always-on direct message threads (manager ↔ driver, manager ↔ client)
+router.use('/api/messages', messagesRouter);
 
 export default router;

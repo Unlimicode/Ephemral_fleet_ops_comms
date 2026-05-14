@@ -10,10 +10,13 @@ import ManagerComplaintsPage from './pages/manager/ManagerComplaintsPage.jsx';
 import ManagerDashboardPage from './pages/ManagerPrivacyDashboardPage.jsx';
 import ManagerAuditPage from './pages/manager/ManagerAuditPage.jsx';
 import ManagerHelpPage from './pages/manager/ManagerHelpPage.jsx';
+import ManagerMessagesPage from './pages/manager/ManagerMessagesPage.jsx';
+import DriverResetPasswordPage from './pages/DriverResetPasswordPage.jsx';
 import DriverTripsPage from './pages/driver/DriverTripsPage.jsx';
 import DriverActiveTripPage from './pages/driver/DriverActiveTripPage.jsx';
 import DriverProfilePage from './pages/driver/DriverProfilePage.jsx';
 import DriverNotificationsPage from './pages/driver/DriverNotificationsPage.jsx';
+import DriverManagerPage from './pages/driver/DriverManagerPage.jsx';
 import BookingLandingPage from './pages/BookingLandingPage.jsx';
 import SwiftlinkHomePage from './pages/SwiftlinkHomePage.jsx';
 import BookingHistoryPage from './pages/BookingHistoryPage.jsx';
@@ -50,6 +53,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/booking" element={<BookingLandingPage />} />
         <Route path="/booking/history" element={<BookingHistoryPage />} />
+        <Route path="/driver/reset-password/:token" element={<DriverResetPasswordPage />} />
 
         {/* Fleet manager routes — nested under ManagerLayout */}
         <Route
@@ -65,6 +69,7 @@ export default function App() {
           <Route path="/manager/complaints" element={<ManagerComplaintsPage />} />
           <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
           <Route path="/manager/audit" element={<ManagerAuditPage />} />
+          <Route path="/manager/messages" element={<ManagerMessagesPage />} />
           <Route path="/manager/help" element={<ManagerHelpPage />} />
         </Route>
 
@@ -80,6 +85,7 @@ export default function App() {
           <Route path="/driver/trips/:tripId" element={<DriverActiveTripPage />} />
           <Route path="/driver/profile" element={<DriverProfilePage />} />
           <Route path="/driver/notifications" element={<DriverNotificationsPage />} />
+          <Route path="/driver/manager" element={<DriverManagerPage />} />
         </Route>
       </Routes>
     </ToastProvider>

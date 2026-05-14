@@ -77,6 +77,7 @@ export default function ManagerAuditPage() {
     const [activeTab, setActiveTab] = useState('audit');
     const [enquiries, setEnquiries] = useState([]);
     const [enquiriesLoading, setEnquiriesLoading] = useState(false);
+    const [enquiriesError, setEnquiriesError] = useState('');
 
     const { addToast } = useToast();
     const width = useWindowWidth();
@@ -121,11 +122,16 @@ export default function ManagerAuditPage() {
 
     const fetchEnquiries = useCallback(async () => {
         setEnquiriesLoading(true);
+        setEnquiriesError('');
         try {
             const res = await api.get('/contact');
-            setEnquiries(res.data);
-        } catch {
-            addToast('Could not load enquiries.', 'error');
+            const list = Array.isArray(res.data) ? res.data : (res.data?.enquiries || []);
+            setEnquiries(list);
+        } catch (err) {
+            console.error('Enquiries fetch failed:', err);
+            const msg = err.response?.data?.error || err.message || 'Could not load enquiries.';
+            setEnquiriesError(msg);
+            addToast(msg, 'error');
         } finally {
             setEnquiriesLoading(false);
         }
@@ -356,7 +362,7 @@ export default function ManagerAuditPage() {
                                     Data Confinement Report
                                 </h2>
                                 <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', fontWeight: 500, margin: '4px 0 0 0' }}>
-                                    DPA 2019 s.25 · Trip data structurally confined to lifecycle boundary
+                                    Trip data structurally confined to its lifecycle boundary
                                 </p>
                             </div>
                             <button
@@ -633,10 +639,20 @@ export default function ManagerAuditPage() {
                             {enquiriesLoading && (
                                 <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.4)', fontWeight: 500 }}>Loading enquiries…</p>
                             )}
-                            {!enquiriesLoading && enquiries.length === 0 && (
+                            {!enquiriesLoading && enquiriesError && (
+                                <div style={{ padding: '20px', borderLeft: '3px solid #E05A5A', background: 'rgba(224,90,90,0.06)', borderRadius: '12px' }}>
+                                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#E05A5A', margin: '0 0 8px' }}>Failed to load enquiries</p>
+                                    <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.55)', margin: '0 0 12px' }}>{enquiriesError}</p>
+                                    <button
+                                        onClick={fetchEnquiries}
+                                        style={{ background: '#E05A5A', color: 'white', borderRadius: '999px', padding: '8px 18px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                    >Retry</button>
+                                </div>
+                            )}
+                            {!enquiriesLoading && !enquiriesError && enquiries.length === 0 && (
                                 <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.4)', fontWeight: 500 }}>No enquiries yet.</p>
                             )}
-                            {!enquiriesLoading && enquiries.map(enq => (
+                            {!enquiriesLoading && !enquiriesError && enquiries.map(enq => (
                                 <div key={enq.id} style={{ padding: '20px 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                                         <div>

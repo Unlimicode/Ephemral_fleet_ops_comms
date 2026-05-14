@@ -166,7 +166,7 @@ export default function ManagerPrivacyDashboardPage() {
                     target_id: data.trip_id,
                     timestamp: data.timestamp || new Date().toISOString(),
                     destruction_hash: data.destruction_hash,
-                    legal_basis: 'DPA 2019 s.25 — Data Confinement',
+                    legal_basis: 'Trip data confinement',
                     retention_category: 'ephemeral',
                 }, ...prev].slice(0, 20));
             }
@@ -718,7 +718,7 @@ export default function ManagerPrivacyDashboardPage() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                         <div>
                             <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#0D0D0D', marginBottom: '4px' }}>Destruction Proof Log</h2>
-                            <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>SHA-256 pre-deletion hashes — DPA 2019 s.25 data confinement proof</p>
+                            <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>SHA-256 pre-deletion hashes — proof of trip-data confinement</p>
                         </div>
                         <span style={{ background: 'rgba(224,90,90,0.1)', color: '#E05A5A', borderRadius: '999px', padding: '4px 12px', fontSize: '10px', fontWeight: 700 }}>Append-Only</span>
                     </div>

@@ -389,6 +389,17 @@ router.post('/recover', async (req, res) => {
 // ── GET /flight-info — Client: flight data for their trip's flight_number ─────
 // Shares the same Redis cache key as /api/flights/info so manager lookups
 // warm the cache for the client automatically (and vice versa).
+const toEAT = (iso) => {
+    if (!iso) return null;
+    try {
+        return new Date(iso).toLocaleString('en-KE', {
+            timeZone: 'Africa/Nairobi',
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false,
+        }) + ' EAT';
+    } catch { return null; }
+};
+
 router.get('/flight-info', requireClientAuth, async (req, res) => {
     const { trip_id } = req.client;
     try {
@@ -417,8 +428,9 @@ router.get('/flight-info', requireClientAuth, async (req, res) => {
 
         const flights = json.data;
         if (!flights || flights.length === 0) {
-            await getSession(cacheKey) || null; // don't double-write
-            return res.json({ found: false });
+            const empty = { found: false, searched: { iata, date }, message: 'No flight found for that IATA code and date.' };
+            await setSession(cacheKey, empty, 300);
+            return res.json(empty);
         }
 
         const f = flights[0];
@@ -426,21 +438,31 @@ router.get('/flight-info', requireClientAuth, async (req, res) => {
             found: true,
             flight_status: f.flight_status,
             flight_iata: f.flight?.iata,
+            airline: f.airline?.name,
             departure: {
                 airport: f.departure?.airport,
                 iata: f.departure?.iata,
+                terminal: f.departure?.terminal,
+                gate: f.departure?.gate,
                 scheduled: f.departure?.scheduled,
                 estimated: f.departure?.estimated,
                 actual: f.departure?.actual,
+                scheduled_eat: toEAT(f.departure?.scheduled),
+                estimated_eat: toEAT(f.departure?.estimated),
+                actual_eat: toEAT(f.departure?.actual),
+                delay: f.departure?.delay,
             },
             arrival: {
                 airport: f.arrival?.airport,
                 iata: f.arrival?.iata,
+                terminal: f.arrival?.terminal,
+                gate: f.arrival?.gate,
                 scheduled: f.arrival?.scheduled,
                 estimated: f.arrival?.estimated,
                 actual: f.arrival?.actual,
-                terminal: f.arrival?.terminal,
-                gate: f.arrival?.gate,
+                scheduled_eat: toEAT(f.arrival?.scheduled),
+                estimated_eat: toEAT(f.arrival?.estimated),
+                actual_eat: toEAT(f.arrival?.actual),
                 delay: f.arrival?.delay,
             },
         };

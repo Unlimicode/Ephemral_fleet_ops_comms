@@ -293,25 +293,44 @@ export default function ManagerDriversPage() {
                                                         {d.current_trip_id ? d.current_trip_id.slice(0, 8) + '...' : '—'}
                                                     </td>
                                                     <td style={{ padding: '14px 24px', textAlign: 'right' }}>
-                                                        {d.active_status ? (
-                                                            <button
-                                                                onClick={() => { setSelectedDriver(d); setShowDeactivateModal(true); }}
-                                                                style={{ fontSize: '13px', fontWeight: 600, color: '#E05A5A', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px', borderRadius: '999px', transition: 'background 0.2s', fontFamily: "'Be Vietnam Pro', sans-serif" }}
-                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(224,90,90,0.08)'; }}
-                                                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-                                                            >
-                                                                Deactivate
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => { setSelectedDriver(d); setShowReactivateModal(true); }}
-                                                                style={{ fontSize: '13px', fontWeight: 600, color: '#00A86B', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px', borderRadius: '999px', transition: 'background 0.2s', fontFamily: "'Be Vietnam Pro', sans-serif" }}
-                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,168,107,0.08)'; }}
-                                                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
-                                                            >
-                                                                Reactivate
-                                                            </button>
-                                                        )}
+                                                        <div style={{ display: 'inline-flex', gap: '4px', justifyContent: 'flex-end' }}>
+                                                            {d.active_status && (
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await api.post(`/roster/drivers/${d.driver_id}/reset-password`);
+                                                                            addToast('Reset link sent to driver email.', 'success');
+                                                                        } catch (err) {
+                                                                            addToast(err.response?.data?.error || 'Could not send reset link.', 'error');
+                                                                        }
+                                                                    }}
+                                                                    style={{ fontSize: '13px', fontWeight: 600, color: '#6C63FF', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px', borderRadius: '999px', transition: 'background 0.2s', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(108,99,255,0.08)'; }}
+                                                                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                                                                >
+                                                                    Reset password
+                                                                </button>
+                                                            )}
+                                                            {d.active_status ? (
+                                                                <button
+                                                                    onClick={() => { setSelectedDriver(d); setShowDeactivateModal(true); }}
+                                                                    style={{ fontSize: '13px', fontWeight: 600, color: '#E05A5A', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px', borderRadius: '999px', transition: 'background 0.2s', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(224,90,90,0.08)'; }}
+                                                                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                                                                >
+                                                                    Deactivate
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => { setSelectedDriver(d); setShowReactivateModal(true); }}
+                                                                    style={{ fontSize: '13px', fontWeight: 600, color: '#00A86B', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px', borderRadius: '999px', transition: 'background 0.2s', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,168,107,0.08)'; }}
+                                                                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                                                                >
+                                                                    Reactivate
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             );

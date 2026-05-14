@@ -348,6 +348,47 @@ export const sendComplaintStatusUpdate = async (to, complaintId, newStatus, inve
     await sendEmail({ to, subject: `Complaint update — ${label}`, text, html });
 };
 
+// ── Driver password reset ─────────────────────────────────────────────────────
+export const sendDriverPasswordReset = async (to, driverFullName, resetUrl) => {
+    const firstName = (driverFullName || '').split(' ')[0] || 'there';
+    const text =
+        `Hi ${firstName},\n\n` +
+        `Your fleet manager has issued a password reset for your SwiftLink driver account.\n\n` +
+        `Open this link to set a new password (expires in 1 hour, single-use):\n${resetUrl}\n\n` +
+        `If you did not request this, you can safely ignore this email.`;
+
+    const html = buildHtml(`
+      <div style="display:inline-block;background:rgba(108,99,255,0.10);color:#6C63FF;border:1px solid rgba(108,99,255,0.25);
+                  border-radius:9999px;padding:4px 14px;font-size:11px;font-weight:800;letter-spacing:0.1em;
+                  text-transform:uppercase;margin-bottom:20px;">
+        Password Reset
+      </div>
+      <h2 style="margin:0 0 10px;font-size:24px;font-weight:900;letter-spacing:-0.03em;color:#1a1a1a;line-height:1.2;">
+        Set a new password
+      </h2>
+      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#444444;">
+        Hi ${firstName} — your fleet manager has issued a password reset for your driver account.
+        Use the button below to choose a new password.
+      </p>
+      <div style="text-align:center;margin:0 0 28px;">
+        <a href="${resetUrl}"
+           style="display:inline-block;background:#1a1a1a;color:#ffffff;padding:15px 36px;border-radius:10px;
+                  text-decoration:none;font-weight:800;font-size:15px;font-family:system-ui,sans-serif;
+                  letter-spacing:-0.01em;">
+          Set new password →
+        </a>
+      </div>
+      <p style="margin:0 0 8px;font-size:12px;color:#888888;line-height:1.5;">
+        This link expires in <strong>1 hour</strong> and can only be used once.
+      </p>
+      <p style="margin:0;font-size:12px;color:#888888;line-height:1.5;">
+        If you did not request this, you can safely ignore this email — your password will not change.
+      </p>
+    `);
+
+    await sendEmail({ to, subject: 'Reset your SwiftLink driver password', text, html });
+};
+
 // ── 6. Corporate contact enquiry ──────────────────────────────────────────────
 export async function sendContactEnquiry({ name, company, email, message }) {
     await client.transactionalEmails.sendTransacEmail({

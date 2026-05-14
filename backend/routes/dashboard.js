@@ -429,13 +429,13 @@ router.get('/compliance-report', requireAuth(['fleet_manager']), async (req, res
 
         const periodLabel = from && to ? `between ${from} and ${to}` : 'across all recorded time';
         const executiveSummary =
-            `SwiftLink processed ${sessionsCreated} booking session${sessionsCreated !== 1 ? 's' : ''} ${periodLabel}. ` +
-            `Of ${totalCompleted} completed trip${totalCompleted !== 1 ? 's' : ''}, ${messagesWiped} (${minimizationRate}%) ` +
-            `resulted in permanent data erasure — messages resided exclusively in Redis and were automatically purged when the TTL expired. ` +
-            `${messagesPersisted} trip${messagesPersisted !== 1 ? 's' : ''} (${preservationRate}%) triggered conditional preservation ` +
-            `due to a complaint filed within the 24-hour window. ` +
-            `Driver credentials were revoked in ${revocationRate}% of issued sessions, demonstrating reliable lifecycle ` +
-            `termination under the Mediated Ephemeral Identity Framework.`;
+            `SwiftLink handled ${sessionsCreated} trip${sessionsCreated !== 1 ? 's' : ''} ${periodLabel}. ` +
+            `Of ${totalCompleted} completed trip${totalCompleted !== 1 ? 's' : ''}, ${messagesWiped} ` +
+            `(${minimizationRate}%) reached a fully confined state — every credential, session, and message buffer ` +
+            `was destroyed at trip end and no client identifiers ever reached the driver. ` +
+            `${messagesPersisted} trip${messagesPersisted !== 1 ? 's' : ''} (${preservationRate}%) retained an encrypted ` +
+            `message archive because a complaint was filed within the 24-hour window. ` +
+            `Driver credentials were revoked in ${revocationRate}% of issued sessions.`;
 
         // Log the export (outside test env to avoid ECONNREFUSED)
         if (process.env.NODE_ENV !== 'test') {
@@ -524,12 +524,12 @@ router.get('/compliance-report', requireAuth(['fleet_manager']), async (req, res
             period: { from: fromTs || 'all time', to: toTs || 'all time' },
             operator: 'SwiftLink Fleet Operations',
             framework: 'Mediated Ephemeral Identity Framework',
-            regulatory_basis: 'Kenya Data Protection Act 2019, Section 25 — Data Minimization',
             architecture_note:
-                'Message content is stored in Redis with TTL enforcement. Permanent storage occurs only when a ' +
-                'complaint is filed within the 24-hour window. This constraint is enforced at the architectural ' +
-                'level — there is no database write for message content except under the complaint-triggered ' +
-                'conditional persistence flow.',
+                'How SwiftLink confines trip data: client contact identifiers (email, surname, phone) never reach the ' +
+                'driver — the schema has no column to hold them. Driver-client messages live in Redis with a ' +
+                'session-bound TTL and are deleted on trip completion. Persistent storage of message content only ' +
+                'happens when a client files a complaint inside the 24-hour window; otherwise nothing about the trip ' +
+                'communication survives.',
 
             compliance,
 

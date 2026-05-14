@@ -11,6 +11,75 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
+// ── GET /auth/reset/:token — Validate a password reset token (public) ────────
+router.get('/auth/reset/:token', async (req, res) => {
+    const { token } = req.params;
+    try {
+        const result = await query(
+            `SELECT pr.driver_id, pr.expires_at, pr.used_at, d.full_name, d.work_email
+             FROM driver_password_resets pr
+             JOIN drivers d ON d.id = pr.driver_id
+             WHERE pr.token = $1`,
+            [token]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Invalid reset link' });
+        }
+        const row = result.rows[0];
+        if (row.used_at) return res.status(410).json({ error: 'This link has already been used' });
+        if (new Date(row.expires_at) < new Date()) {
+            return res.status(410).json({ error: 'This link has expired' });
+        }
+        return res.status(200).json({
+            valid: true,
+            driver_name: row.full_name,
+            driver_email: row.work_email,
+        });
+    } catch (err) {
+        console.error('[drivers] reset validate error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── POST /auth/reset/:token — Submit a new password (public) ─────────────────
+router.post('/auth/reset/:token', async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    try {
+        const tokenRow = await query(
+            'SELECT driver_id, expires_at, used_at FROM driver_password_resets WHERE token = $1',
+            [token]
+        );
+        if (tokenRow.rows.length === 0) return res.status(404).json({ error: 'Invalid reset link' });
+        const row = tokenRow.rows[0];
+        if (row.used_at) return res.status(410).json({ error: 'This link has already been used' });
+        if (new Date(row.expires_at) < new Date()) {
+            return res.status(410).json({ error: 'This link has expired' });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 12);
+
+        await query('UPDATE drivers SET password_hash = $1 WHERE id = $2', [passwordHash, row.driver_id]);
+        await query('UPDATE driver_password_resets SET used_at = NOW() WHERE token = $1', [token]);
+
+        await query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['DRIVER_PASSWORD_RESET_COMPLETED', row.driver_id, 'driver', row.driver_id, {}]
+        );
+
+        return res.status(200).json({ message: 'Password updated. You can now log in.' });
+    } catch (err) {
+        console.error('[drivers] reset submit error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ── POST /auth/login — Driver Login ──────────────────────────────────────────
 // Authenticates a driver via work_email and password.
 // Checks active_status to ensure revoked drivers cannot access the system.

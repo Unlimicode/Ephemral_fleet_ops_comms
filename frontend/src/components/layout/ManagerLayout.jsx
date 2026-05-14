@@ -8,6 +8,7 @@ import SwiftlinkLogo from '../SwiftlinkLogo.jsx';
 const NAV_LINKS = [
     { to: '/manager/dashboard', label: 'Dashboard', icon: '🔒' },
     { to: '/manager/dispatch', label: 'Dispatch', icon: '⚡' },
+    { to: '/manager/messages', label: 'Messages', icon: '💬' },
     { to: '/manager/drivers', label: 'Drivers', icon: '👥' },
     { to: '/manager/vehicles', label: 'Vehicles', icon: '🚗' },
     { to: '/manager/complaints', label: 'Complaints', icon: '⚠️' },

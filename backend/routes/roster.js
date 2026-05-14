@@ -3,7 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import pool from '../config/db.js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { sendEmail } from '../config/mailer.js';
+import { sendEmail, sendDriverPasswordReset } from '../config/mailer.js';
 import { getSession, setSession } from '../config/redisHelpers.js';
 
 const router = express.Router();
@@ -156,6 +156,64 @@ router.patch('/drivers/:driverId/reactivate', requireAuth(['fleet_manager']), as
 
     } catch (err) {
         console.error('[roster] PATCH /reactivate error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /drivers/:driverId/reset-password — Manager-issued password reset link
+// Generates a single-use token, stores it in driver_password_resets with a
+// 1h expiry, and emails the driver a link to set a new password themselves.
+// Replaces the temp-password copy/paste flow.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/drivers/:driverId/reset-password', requireAuth(['fleet_manager']), async (req, res) => {
+    const { driverId } = req.params;
+    const fleetManagerId = req.user.id;
+
+    try {
+        const driverCheck = await pool.query(
+            'SELECT id, full_name, work_email FROM drivers WHERE id = $1 AND fleet_manager_id = $2',
+            [driverId, fleetManagerId]
+        );
+        if (driverCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Driver not found' });
+        }
+        const driver = driverCheck.rows[0];
+
+        // Invalidate previous unused tokens for this driver
+        await pool.query(
+            'DELETE FROM driver_password_resets WHERE driver_id = $1 AND used_at IS NULL',
+            [driverId]
+        );
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        await pool.query(
+            `INSERT INTO driver_password_resets (token, driver_id, issued_by, expires_at)
+             VALUES ($1, $2, $3, $4)`,
+            [token, driverId, fleetManagerId, expiresAt]
+        );
+
+        const resetUrl = `${process.env.CLIENT_ORIGIN}/driver/reset-password/${token}`;
+
+        await pool.query(
+            `INSERT INTO audit_log (action_type, actor_id, actor_role, target_id, details)
+             VALUES ($1, $2, $3, $4, $5)`,
+            ['DRIVER_PASSWORD_RESET_ISSUED', fleetManagerId, 'fleet_manager', driverId, { driver_email: driver.work_email }]
+        );
+
+        if (process.env.NODE_ENV !== 'test') {
+            try {
+                await sendDriverPasswordReset(driver.work_email, driver.full_name, resetUrl);
+            } catch (mailErr) {
+                console.error('[roster] reset email failed:', mailErr.message);
+            }
+        }
+
+        return res.status(200).json({ message: 'Reset link sent to driver email.' });
+    } catch (err) {
+        console.error('[roster] reset-password error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
