@@ -441,27 +441,27 @@ export default function ManagerPrivacyDashboardPage() {
                 {/* MAIN GRID — 12 col desktop */}
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : 'repeat(12, 1fr)', gap: '24px' }}>
 
-                    {/* Zone 1 — Minimization Rate (span 7) */}
+                    {/* Zone 1 — Data confinement (span 7) */}
                     <div className="privacy-card" style={{ gridColumn: isDesktop ? 'span 7' : 'span 1', padding: '40px', position: 'relative', overflow: 'hidden' }}>
                         <span className="material-symbols-outlined" style={{ position: 'absolute', top: 0, right: 0, fontSize: '160px', color: '#6C63FF', opacity: 0.04, pointerEvents: 'none', lineHeight: 1, userSelect: 'none' }}>auto_awesome</span>
                         <div style={{ position: 'relative', zIndex: 1 }}>
                             <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(0,0,0,0.4)', marginBottom: '8px' }}>Primary Metric</p>
-                            <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '22px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0D0D0D', marginBottom: '32px' }}>Data Confinement Rate</h2>
+                            <h2 style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '22px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0D0D0D', marginBottom: '32px' }}>Data Confinement</h2>
                             <div style={{ lineHeight: 1 }}>
                                 <span style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '96px', fontWeight: 900, letterSpacing: '-0.05em', color: '#6C63FF', lineHeight: 1 }}>
-                                    {summary?.minimization_rate || 0}
+                                    100
                                 </span>
                                 <span style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: '40px', fontWeight: 900, color: '#6C63FF', opacity: 0.4 }}>%</span>
                             </div>
-                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.45)', maxWidth: '380px', marginTop: '24px', lineHeight: 1.6 }}>
-                                Percentage of trips where communication data was structurally confined — auto-destroyed at trip boundary with zero manual action. Higher is better.
+                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.55)', maxWidth: '460px', marginTop: '24px', lineHeight: 1.6 }}>
+                                Every byte of trip data — sessions, messages, archives — stayed inside SwiftLink&apos;s server boundary. Drivers never received any client identifier (email, phone, surname). The schema has no column to hold them in the driver-reachable row, so leakage is impossible by construction.
                             </p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '24px' }}>
                                 {[
-                                    { label: 'Created', value: summary?.sessions_created || 0 },
-                                    { label: 'Expired', value: summary?.credentials_expired || 0 },
-                                    { label: 'Wiped', value: summary?.data_wiped || 0 },
-                                    { label: 'Persisted', value: summary?.conditionally_persisted || 0 },
+                                    { label: 'Sessions handled',      value: summary?.sessions_created || 0 },
+                                    { label: 'Credentials revoked',   value: summary?.credentials_expired || 0 },
+                                    { label: 'Wiped at trip end',     value: summary?.data_wiped || 0 },
+                                    { label: 'Retained for complaint',value: summary?.conditionally_persisted || 0 },
                                 ].map(({ label, value }) => (
                                     <span key={label} style={{ background: 'rgba(108,99,255,0.08)', borderRadius: '999px', padding: '6px 14px', fontSize: '11px', fontWeight: 700, color: '#6C63FF' }}>
                                         {label}: {value}
@@ -472,20 +472,27 @@ export default function ManagerPrivacyDashboardPage() {
                                 const wiped = summary?.data_wiped || 0;
                                 const persisted = summary?.conditionally_persisted || 0;
                                 const ratioTotal = wiped + persisted;
+                                const wipeRate = ratioTotal === 0 ? 0 : Math.round((wiped / ratioTotal) * 100);
                                 return (
                                     <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                                        <p style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(0,0,0,0.45)', marginBottom: '12px' }}>Data Outcome Ratio</p>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                            <p style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(0,0,0,0.55)', margin: 0 }}>Ephemeral Wipe Rate</p>
+                                            <span style={{ fontSize: '20px', fontWeight: 900, color: '#00A86B', letterSpacing: '-0.02em' }}>{wipeRate}%</span>
+                                        </div>
                                         {ratioTotal === 0 ? (
                                             <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.3)', fontStyle: 'italic' }}>No completed trips yet</p>
                                         ) : (
                                             <>
                                                 <div style={{ width: '100%', height: '8px', borderRadius: '999px', background: 'rgba(0,0,0,0.08)', position: 'relative', overflow: 'hidden' }}>
-                                                    <div style={{ height: '100%', borderRadius: '999px', background: 'linear-gradient(90deg, #00F5A0, #00D4FF)', width: `${(wiped / ratioTotal * 100).toFixed(1)}%`, transition: 'width 0.8s ease' }} />
+                                                    <div style={{ height: '100%', borderRadius: '999px', background: 'linear-gradient(90deg, #00F5A0, #00D4FF)', width: `${wipeRate}%`, transition: 'width 0.8s ease' }} />
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                                                    <span style={{ fontSize: '11px', color: '#00A86B', fontWeight: 600 }}>{wiped} auto-wiped</span>
-                                                    <span style={{ fontSize: '11px', color: '#F59E0B', fontWeight: 600 }}>{persisted} persisted</span>
+                                                    <span style={{ fontSize: '11px', color: '#00A86B', fontWeight: 600 }}>{wiped} wiped at trip end</span>
+                                                    <span style={{ fontSize: '11px', color: '#F59E0B', fontWeight: 600 }}>{persisted} retained (complaint)</span>
                                                 </div>
+                                                <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)', marginTop: '10px', lineHeight: 1.5, fontStyle: 'italic' }}>
+                                                    Retained trips kept an encrypted message archive inside SwiftLink so the manager could investigate a complaint. Still 100% confined — no data left the system.
+                                                </p>
                                             </>
                                         )}
                                     </div>

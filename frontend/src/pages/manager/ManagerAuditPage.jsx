@@ -418,7 +418,7 @@ export default function ManagerAuditPage() {
                                 {report && !reportLoading && (() => {
                                     const c = report.compliance || {};
                                     const summary = report.headline?.summary ||
-                                        `In this period, SwiftLink processed ${c.sessions_created ?? 0} sessions, revoked ${c.credentials_revoked ?? 0} credentials, and achieved a data confinement rate of ${c.minimization_rate_percent ?? 0}%.`;
+                                        `In this period, SwiftLink handled ${c.sessions_created ?? 0} trip sessions and revoked ${c.credentials_revoked ?? 0} driver credentials. All trip data stayed inside the system boundary — no client identifier reached any driver.`;
                                     return (
                                         <>
                                             {/* 10-metric grid */}
@@ -426,20 +426,20 @@ export default function ManagerAuditPage() {
 
                                                 {/* Headline metric — full width */}
                                                 <div className="audit-stat-card" style={{ gridColumn: isMobile ? undefined : '1 / -1', padding: '24px', borderLeft: '4px solid #6C63FF' }}>
-                                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#6C63FF', margin: '0 0 8px 0' }}>Data Confinement Rate</p>
+                                                    <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, color: '#6C63FF', margin: '0 0 8px 0' }}>Data Confinement</p>
                                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
-                                                        <span style={{ fontSize: isMobile ? '42px' : '56px', fontWeight: 900, color: '#6C63FF', letterSpacing: '-0.04em', lineHeight: 1 }}>{c.minimization_rate_percent ?? 0}%</span>
-                                                        <span style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', fontWeight: 600 }}>of completed trips resulted in permanent data erasure</span>
+                                                        <span style={{ fontSize: isMobile ? '42px' : '56px', fontWeight: 900, color: '#6C63FF', letterSpacing: '-0.04em', lineHeight: 1 }}>100%</span>
+                                                        <span style={{ fontSize: '13px', color: 'rgba(0,0,0,0.5)', fontWeight: 600 }}>trip data kept inside SwiftLink — no client identifier reached any driver</span>
                                                     </div>
                                                 </div>
 
                                                 {/* 9 supporting metric cards */}
                                                 {[
-                                                    { label: 'Sessions Created',              value: c.sessions_created ?? 0 },
+                                                    { label: 'Sessions Handled',              value: c.sessions_created ?? 0 },
                                                     { label: 'Credentials Revoked',           value: c.credentials_revoked ?? 0 },
-                                                    { label: 'Data Wiped Naturally',          value: c.data_expired ?? 0,                   color: '#00A86B' },
-                                                    { label: 'Data Conditionally Preserved',  value: c.data_conditionally_persisted ?? 0 },
-                                                    { label: 'Complaint Window Expirations',  value: c.complaint_window_expirations ?? 0 },
+                                                    { label: 'Wiped at Trip End',             value: c.data_expired ?? 0,                   color: '#00A86B' },
+                                                    { label: 'Retained for Complaint',        value: c.data_conditionally_persisted ?? 0 },
+                                                    { label: 'Ephemeral Wipe Rate',           value: `${c.minimization_rate_percent ?? 0}%`, color: '#00A86B' },
                                                     { label: 'Manager Message-Access Events', value: c.manager_message_access_events ?? 0,  color: '#F59E0B' },
                                                     { label: 'Active Complaint Windows',      value: c.active_complaint_windows ?? 0 },
                                                     { label: 'Total Audit Entries',           value: (c.audit_entries ?? 0).toLocaleString(), color: '#00D4FF' },

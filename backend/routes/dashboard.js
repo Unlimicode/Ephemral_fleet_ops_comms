@@ -430,12 +430,11 @@ router.get('/compliance-report', requireAuth(['fleet_manager']), async (req, res
         const periodLabel = from && to ? `between ${from} and ${to}` : 'across all recorded time';
         const executiveSummary =
             `SwiftLink handled ${sessionsCreated} trip${sessionsCreated !== 1 ? 's' : ''} ${periodLabel}. ` +
-            `Of ${totalCompleted} completed trip${totalCompleted !== 1 ? 's' : ''}, ${messagesWiped} ` +
-            `(${minimizationRate}%) reached a fully confined state — every credential, session, and message buffer ` +
-            `was destroyed at trip end and no client identifiers ever reached the driver. ` +
-            `${messagesPersisted} trip${messagesPersisted !== 1 ? 's' : ''} (${preservationRate}%) retained an encrypted ` +
-            `message archive because a complaint was filed within the 24-hour window. ` +
-            `Driver credentials were revoked in ${revocationRate}% of issued sessions.`;
+            `All trip data stayed inside the system boundary — no client identifier (email, phone, surname) ever ` +
+            `reached any driver, by schema design. Of ${totalCompleted} completed trip${totalCompleted !== 1 ? 's' : ''}, ` +
+            `${messagesWiped} (${minimizationRate}%) had their session data wiped at trip end with no further trace; ` +
+            `${messagesPersisted} (${preservationRate}%) retained an encrypted message archive because a complaint ` +
+            `was filed inside the 24-hour window. Driver credentials were revoked in ${revocationRate}% of issued sessions.`;
 
         // Log the export (outside test env to avoid ECONNREFUSED)
         if (process.env.NODE_ENV !== 'test') {

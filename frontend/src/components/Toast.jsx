@@ -1,17 +1,22 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 const ToastContext = createContext(null);
 
 export function ToastProvider({ children }) {
     const [toast, setToast] = useState(null);
 
-    const addToast = (message, type = 'success') => {
+    // Stable reference — must not be recreated on each render, otherwise any
+    // consumer that uses addToast in a useEffect or useCallback dependency
+    // will infinite-loop (new addToast → new callback → effect re-fires).
+    const addToast = useCallback((message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
-    };
+    }, []);
+
+    const ctxValue = useMemo(() => ({ addToast }), [addToast]);
 
     return (
-        <ToastContext.Provider value={{ addToast }}>
+        <ToastContext.Provider value={ctxValue}>
             {children}
             {toast && (
                 <div style={{

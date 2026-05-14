@@ -125,8 +125,13 @@ export function generateCompliancePDF(report) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(108, 99, 255);
-    doc.text(`Data Wipe Rate: ${c.minimization_rate_percent ?? 0}%`, margin, y);
-    y += 12;
+    doc.text(`Ephemeral Wipe Rate: ${c.minimization_rate_percent ?? 0}%`, margin, y);
+    y += 6;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 107, 107);
+    doc.text('(Wiped vs retained ratio for completed trips — both outcomes stay inside SwiftLink.)', margin, y);
+    y += 10;
     addDivider([200, 200, 210], 0.3);
 
     // ── COMMUNICATION CHANNEL ───────────────────────────────────────
