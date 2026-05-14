@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import api from '../../api/axios.js';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -44,9 +44,14 @@ export default function ManagerDispatchPage() {
     const [newBookingForm, setNewBookingForm] = useState({
         client_corporate_email: '', client_first_name: '',
         pickup_location: '', destination: '',
-        pickup_time: '', flight_number: '', notes: '',
+        pickup_time: '', flight_number: '', notes: '', additional_info: '',
         send_magic_link: true
     });
+    const [dmTripId, setDmTripId] = useState(null);
+    const [tripDms, setTripDms] = useState([]);
+    const [dmInput, setDmInput] = useState('');
+    const [sendingDm, setSendingDm] = useState(false);
+    const dmTripIdRef = useRef(null);
 
     const fetchData = useCallback(async () => {
         try {
@@ -84,6 +89,11 @@ export default function ManagerDispatchPage() {
         socket.on('complaint_filed', fetchData);
         socket.on('booking_updated', fetchData);
         socket.on('booking_cancelled', fetchData);
+        socket.on('direct_message', (data) => {
+            if (dmTripIdRef.current && data.trip_id === dmTripIdRef.current) {
+                setTripDms(prev => [...prev, { id: Date.now(), sender_role: data.sender_role, body: data.body, created_at: data.created_at }]);
+            }
+        });
 
         return () => {
             clearInterval(pollInterval);
@@ -98,6 +108,16 @@ export default function ManagerDispatchPage() {
         document.addEventListener('visibilitychange', handleVisibility);
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [fetchData]);
+
+    useEffect(() => {
+        dmTripIdRef.current = dmTripId;
+        if (!dmTripId) { setTripDms([]); return; }
+        api.get(`/trips/${dmTripId}/direct-messages`).then(r => setTripDms(r.data)).catch(() => {});
+        const poll = setInterval(() => {
+            api.get(`/trips/${dmTripId}/direct-messages`).then(r => setTripDms(r.data)).catch(() => {});
+        }, 10000);
+        return () => clearInterval(poll);
+    }, [dmTripId]);
 
     const handleAssign = async (tripId, driverId, vehicleId, eta = null) => {
         try {
@@ -134,17 +154,33 @@ export default function ManagerDispatchPage() {
                 pickup_time: newBookingForm.pickup_time,
                 flight_number: newBookingForm.flight_number.trim() || null,
                 notes: newBookingForm.notes.trim() || null,
+                additional_info: newBookingForm.additional_info.trim() || null,
                 send_magic_link: newBookingForm.send_magic_link,
             };
             await api.post('/trips', payload);
             addToast('Booking created successfully.', 'success');
             setShowNewBooking(false);
-            setNewBookingForm({ client_corporate_email: '', client_first_name: '', pickup_location: '', destination: '', pickup_time: '', flight_number: '', notes: '', send_magic_link: true });
+            setNewBookingForm({ client_corporate_email: '', client_first_name: '', pickup_location: '', destination: '', pickup_time: '', flight_number: '', notes: '', additional_info: '', send_magic_link: true });
             await fetchData();
         } catch (err) {
             addToast(err.response?.data?.error || 'Failed to create booking.', 'error');
         } finally {
             setSubmittingBooking(false);
+        }
+    };
+
+    const handleSendDm = async () => {
+        if (!dmInput.trim() || sendingDm || !dmTripId) return;
+        setSendingDm(true);
+        try {
+            await api.post(`/trips/${dmTripId}/direct-message`, { body: dmInput.trim() });
+            setDmInput('');
+            const res = await api.get(`/trips/${dmTripId}/direct-messages`);
+            setTripDms(res.data);
+        } catch (err) {
+            addToast(err.response?.data?.error || 'Failed to send message.', 'error');
+        } finally {
+            setSendingDm(false);
         }
     };
 
@@ -318,19 +354,25 @@ export default function ManagerDispatchPage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                             {activeTrips.map(trip => (
                                                 <div key={trip.id} style={{ background: 'rgba(255,255,255,0.6)', borderRadius: '16px', padding: '12px 16px', border: '1px solid rgba(255,255,255,0.8)' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                        <div style={{ minWidth: 0 }}>
                                                             <p style={{ fontSize: '13px', fontWeight: 700, color: '#0D0D0D' }}>{trip.driver_name || 'Driver'}</p>
                                                             <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)', marginTop: '2px' }}>{trip.vehicle_reg || 'Vehicle'}</p>
+                                                            <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.35)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{trip.client_first_name}{trip.client_corporate_email ? ` · ${trip.client_corporate_email}` : ''}</p>
                                                         </div>
-                                                        {confirmingTripId === trip.id ? (
-                                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                                <button onClick={async () => { await handleComplete(trip.id); setConfirmingTripId(null); }} disabled={completing} style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '999px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: completing ? 'not-allowed' : 'pointer', opacity: completing ? 0.6 : 1 }}>{completing ? 'Completing...' : 'Confirm'}</button>
-                                                                <button onClick={() => setConfirmingTripId(null)} style={{ background: 'rgba(0,0,0,0.08)', color: '#0D0D0D', border: 'none', borderRadius: '999px', padding: '6px 14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                                                            </div>
-                                                        ) : (
-                                                            <button onClick={() => setConfirmingTripId(trip.id)} style={{ background: 'rgba(108,99,255,0.1)', color: '#6C63FF', border: 'none', borderRadius: '999px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Complete</button>
-                                                        )}
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, marginLeft: '8px' }}>
+                                                            {confirmingTripId === trip.id ? (
+                                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                                    <button onClick={async () => { await handleComplete(trip.id); setConfirmingTripId(null); }} disabled={completing} style={{ background: '#6C63FF', color: 'white', border: 'none', borderRadius: '999px', padding: '5px 12px', fontSize: '11px', fontWeight: 700, cursor: completing ? 'not-allowed' : 'pointer', opacity: completing ? 0.6 : 1 }}>{completing ? '...' : 'Confirm'}</button>
+                                                                    <button onClick={() => setConfirmingTripId(null)} style={{ background: 'rgba(0,0,0,0.08)', color: '#0D0D0D', border: 'none', borderRadius: '999px', padding: '5px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>✕</button>
+                                                                </div>
+                                                            ) : (
+                                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                                    <button onClick={() => setDmTripId(trip.id)} style={{ background: 'rgba(0,212,255,0.1)', color: '#0098B8', border: 'none', borderRadius: '999px', padding: '5px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>DM</button>
+                                                                    <button onClick={() => setConfirmingTripId(trip.id)} style={{ background: 'rgba(108,99,255,0.1)', color: '#6C63FF', border: 'none', borderRadius: '999px', padding: '5px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>Done</button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -485,9 +527,10 @@ export default function ManagerDispatchPage() {
                                                     const barWidth = Math.max(0, (1 - mins / 30) * 100);
                                                     return (
                                                         <div key={t.id} style={{ background: 'rgba(255,255,255,0.6)', borderRadius: '14px', padding: '12px 14px', border: '1px solid rgba(255,255,255,0.8)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <div>
+                                                            <div style={{ minWidth: 0 }}>
                                                                 <p style={{ fontSize: '13px', fontWeight: 700, color: '#0D0D0D' }}>{t.driver_name || 'Driver'}</p>
                                                                 <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)', marginTop: '2px' }}>{t.vehicle_reg || 'Vehicle'}</p>
+                                                                <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.3)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.client_first_name || ''}{t.client_corporate_email ? ` · ${t.client_corporate_email}` : ''}</p>
                                                             </div>
                                                             <div style={{ textAlign: 'right' }}>
                                                                 <p style={{ fontSize: '11px', color: 'rgba(0,0,0,0.4)', fontFamily: 'JetBrains Mono, monospace' }}>{timeAgo(t.updated_at)}</p>
@@ -609,10 +652,16 @@ export default function ManagerDispatchPage() {
 
                                         {/* Notes */}
                                         <div>
-                                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Special Instructions</label>
+                                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Driver Instructions</label>
                                             <textarea value={newBookingForm.notes} onChange={e => setNewBookingForm(f => ({ ...f, notes: e.target.value }))}
-                                                rows={3} placeholder="Any special requirements for the driver..."
-                                                style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px' }} />
+                                                rows={2} placeholder="Internal notes for the driver…"
+                                                style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', minHeight: '64px' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(0,0,0,0.4)', marginBottom: '6px' }}>Client Notes</label>
+                                            <textarea value={newBookingForm.additional_info} onChange={e => setNewBookingForm(f => ({ ...f, additional_info: e.target.value }))}
+                                                rows={2} placeholder="Special requirements from the client (luggage, accessibility, etc.)…"
+                                                style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.8)', fontSize: '14px', color: '#0D0D0D', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', minHeight: '64px' }} />
                                         </div>
 
                                         {/* Magic link toggle */}
@@ -676,6 +725,74 @@ export default function ManagerDispatchPage() {
                                                 showSenderLabels
                                             />
                                         </div>
+                                    </div>
+                                </>
+                            );
+                        })()}
+
+                        {/* DM Panel — manager ↔ driver, separate from client relay */}
+                        {dmTripId && (() => {
+                            const dmTrip = [...activeTrips, ...assignedTrips].find(t => t.id === dmTripId);
+                            const isActive = dmTrip?.status === 'in_progress';
+                            const formatDmTime = (iso) => {
+                                if (!iso) return '';
+                                return new Date(iso).toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit', hour12: false }) + ' EAT';
+                            };
+                            return (
+                                <>
+                                    <div onClick={() => setDmTripId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, backdropFilter: 'blur(4px)' }} />
+                                    <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: isMobile ? '100%' : '380px', zIndex: 51, display: 'flex', flexDirection: 'column', background: 'rgba(13,13,13,0.97)', borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.08)', boxShadow: '-8px 0 40px rgba(0,0,0,0.4)' }}>
+                                        {/* Header */}
+                                        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                                            <button onClick={() => setDmTripId(null)} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'rgba(240,242,247,0.7)' }}>close</span>
+                                            </button>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#F0F2F7', letterSpacing: '-0.03em' }}>
+                                                    {dmTrip?.driver_name || 'Driver'} — Manager Channel
+                                                </p>
+                                                <p style={{ margin: 0, fontSize: '10px', color: isActive ? '#00D4FF' : 'rgba(240,242,247,0.35)', fontWeight: 700, marginTop: '1px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                                    {isActive ? 'Live — driver can reply' : 'Read-only — trip not active'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {/* Messages */}
+                                        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            {tripDms.length === 0 && (
+                                                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: '40px' }}>No messages yet.</p>
+                                            )}
+                                            {tripDms.map((dm) => {
+                                                const isMe = dm.sender_role === 'fleet_manager';
+                                                return (
+                                                    <div key={dm.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                                                        <div style={{ maxWidth: '82%', background: isMe ? 'rgba(108,99,255,0.28)' : 'rgba(255,255,255,0.08)', borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '10px 14px' }}>
+                                                            <p style={{ fontSize: '13px', color: 'rgba(245,237,227,0.9)', margin: 0, lineHeight: 1.5 }}>{dm.body}</p>
+                                                        </div>
+                                                        <span style={{ fontSize: '10px', color: 'rgba(245,237,227,0.25)', marginTop: '3px', marginLeft: '4px', marginRight: '4px' }}>
+                                                            {isMe ? 'You' : 'Driver'} · {formatDmTime(dm.created_at)}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        {/* Input — only when trip is in_progress */}
+                                        {isActive ? (
+                                            <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '10px', flexShrink: 0 }}>
+                                                <textarea
+                                                    value={dmInput}
+                                                    onChange={e => setDmInput(e.target.value)}
+                                                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendDm(); } }}
+                                                    placeholder="Message driver…"
+                                                    rows={2}
+                                                    style={{ flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '12px 14px', fontSize: '13px', color: '#F5EDE3', resize: 'none', outline: 'none', fontFamily: 'inherit', lineHeight: 1.5 }}
+                                                />
+                                                <button onClick={handleSendDm} disabled={sendingDm || !dmInput.trim()} style={{ background: sendingDm || !dmInput.trim() ? 'rgba(108,99,255,0.3)' : '#6C63FF', border: 'none', borderRadius: '14px', padding: '0 18px', color: '#fff', fontSize: '18px', cursor: sendingDm || !dmInput.trim() ? 'default' : 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>↑</button>
+                                            </div>
+                                        ) : (
+                                            <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                                                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', textAlign: 'center', fontWeight: 600 }}>Messaging available only during active trips</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             );

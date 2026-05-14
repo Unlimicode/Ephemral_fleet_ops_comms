@@ -30,7 +30,7 @@ router.get('/', requireAuth(['fleet_manager']), async (req, res) => {
 
 // ── POST / — Create New Trip Booking ──────────────────────────────────────────
 router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
-    const { client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number = null, notes = null, send_magic_link = false } = req.body;
+    const { client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number = null, notes = null, additional_info = null, send_magic_link = false } = req.body;
 
     if (!client_corporate_email || !client_first_name || !pickup_location || !destination || !pickup_time) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -38,10 +38,10 @@ router.post('/', requireAuth(['fleet_manager']), async (req, res) => {
 
     try {
         const result = await query(
-            `INSERT INTO trips (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `INSERT INTO trips (client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes, additional_info)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING *`,
-            [client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes]
+            [client_corporate_email, client_first_name, pickup_location, destination, pickup_time, flight_number, notes, additional_info]
         );
 
         const trip = result.rows[0];
@@ -396,6 +396,63 @@ router.patch('/:tripId/force-complete', requireAuth(['fleet_manager']), async (r
     } catch (err) {
         console.error('[trips] force-complete error:', err.message, err.stack);
         return res.status(500).json({ error: 'Internal server error', details: err.message });
+    }
+});
+
+// ── GET /:tripId/direct-messages — Manager reads DMs with driver ─────────────
+router.get('/:tripId/direct-messages', requireAuth(['fleet_manager']), async (req, res) => {
+    const { tripId } = req.params;
+    try {
+        const result = await query(
+            'SELECT id, sender_role, body, created_at FROM direct_messages WHERE trip_id = $1 ORDER BY created_at ASC',
+            [tripId]
+        );
+        return res.json(result.rows);
+    } catch (err) {
+        console.error('[trips] direct-messages fetch error:', err.message);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── POST /:tripId/direct-message — Manager sends DM to driver ────────────────
+router.post('/:tripId/direct-message', requireAuth(['fleet_manager']), async (req, res) => {
+    const { tripId } = req.params;
+    const { body } = req.body;
+    if (!body?.trim()) return res.status(400).json({ error: 'Message body required' });
+    try {
+        const tripCheck = await query(
+            'SELECT status, assigned_driver_id FROM trips WHERE id = $1',
+            [tripId]
+        );
+        if (!tripCheck.rows.length) return res.status(404).json({ error: 'Trip not found' });
+        if (tripCheck.rows[0].status !== 'in_progress') return res.status(403).json({ error: 'Direct messaging only available during active trips' });
+
+        const result = await query(
+            'INSERT INTO direct_messages (trip_id, sender_role, body) VALUES ($1, $2, $3) RETURNING *',
+            [tripId, 'fleet_manager', body.trim()]
+        );
+
+        const driverId = tripCheck.rows[0].assigned_driver_id;
+        if (driverId) {
+            await query(
+                `INSERT INTO driver_notifications (driver_id, trip_id, type, title, body)
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [driverId, tripId, 'direct_message', 'Message from Manager', body.trim()]
+            );
+            if (process.env.NODE_ENV !== 'test') {
+                sendPushNotification(driverId, {
+                    title: 'Message from Manager',
+                    body: body.trim().slice(0, 80),
+                    type: 'direct_message',
+                    tripId,
+                }).catch(() => {});
+            }
+        }
+
+        return res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('[trips] direct-message send error:', err.message);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 

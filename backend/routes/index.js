@@ -14,6 +14,7 @@ import dashboardRouter from './dashboard.js';
 import pushRouter from './push.js';
 import complaintsRouter from './complaints.js';
 import contactRouter from './contact.js';
+import flightsRouter from './flights.js';
 
 const router = Router();
 
@@ -45,5 +46,8 @@ router.use('/api/complaints', complaintsRouter);
 
 // Public contact enquiries
 router.use('/api/contact', contactRouter);
+
+// Flight info (AviationStack proxy, Redis-cached)
+router.use('/api/flights', flightsRouter);
 
 export default router;

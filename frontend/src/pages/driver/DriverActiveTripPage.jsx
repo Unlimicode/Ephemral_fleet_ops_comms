@@ -4,6 +4,25 @@ import api from '../../api/axios.js';
 import { useToast } from '../../components/Toast.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import ChatWindow from '../../components/ChatWindow.jsx';
+import useFlightInfo from '../../hooks/useFlightInfo.js';
+
+const FLIGHT_STATUS = {
+    scheduled: { label: 'Scheduled', color: '#6C63FF', bg: 'rgba(108,99,255,0.15)' },
+    active:    { label: 'Airborne',  color: '#00D4FF', bg: 'rgba(0,212,255,0.15)' },
+    landed:    { label: 'Landed',    color: '#00A86B', bg: 'rgba(0,245,160,0.15)' },
+    cancelled: { label: 'Cancelled', color: '#E05A5A', bg: 'rgba(224,90,90,0.1)' },
+    diverted:  { label: 'Diverted',  color: '#F59E0B', bg: 'rgba(245,158,11,0.2)' },
+};
+
+function formatEAT(isoStr) {
+    if (!isoStr) return null;
+    return new Date(isoStr).toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit', hour12: false }) + ' EAT';
+}
+
+function formatEATDate(isoStr) {
+    if (!isoStr) return null;
+    return new Date(isoStr).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }) + ' EAT';
+}
 
 export default function DriverActiveTripPage() {
     const { tripId } = useParams();
@@ -13,6 +32,16 @@ export default function DriverActiveTripPage() {
     const [trip, setTrip] = useState(null);
     const [loading, setLoading] = useState(true);
     const [complaint, setComplaint] = useState(null);
+    const [dms, setDms] = useState([]);
+    const [dmInput, setDmInput] = useState('');
+    const [sendingDm, setSendingDm] = useState(false);
+
+    const flightDate = trip?.pickup_time ? new Date(trip.pickup_time).toISOString().split('T')[0] : null;
+    const { data: flightInfo, loading: flightLoading, error: flightError, load: loadFlight } = useFlightInfo(
+        trip?.flight_number || null,
+        flightDate,
+        !!trip?.flight_number
+    );
 
     const fetchTrip = useCallback(async () => {
         try {
@@ -36,11 +65,21 @@ export default function DriverActiveTripPage() {
         }
     }, [tripId]);
 
+    const fetchDms = useCallback(async () => {
+        try {
+            const res = await api.get(`/driver/trips/${tripId}/direct-messages`);
+            setDms(res.data);
+        } catch {
+            // silent — DM table may not be migrated yet in all envs
+        }
+    }, [tripId]);
+
     useEffect(() => {
         fetchTrip();
         fetchComplaint();
+        fetchDms();
         api.patch(`/drivers/notifications/read-by-trip/${tripId}`).catch(() => {});
-        const interval = setInterval(() => { fetchTrip(); fetchComplaint(); }, 10000);
+        const interval = setInterval(() => { fetchTrip(); fetchComplaint(); fetchDms(); }, 10000);
 
         const handleVisibility = () => {
             if (document.visibilityState === 'visible') fetchTrip();
@@ -51,7 +90,7 @@ export default function DriverActiveTripPage() {
             clearInterval(interval);
             document.removeEventListener('visibilitychange', handleVisibility);
         };
-    }, [fetchTrip, fetchComplaint, tripId]);
+    }, [fetchTrip, fetchComplaint, fetchDms, tripId]);
 
     const handleStartTrip = async () => {
         try {
@@ -70,6 +109,21 @@ export default function DriverActiveTripPage() {
             navigate('/driver/trips');
         } catch {
             addToast('Failed to complete trip.', 'error');
+        }
+    };
+
+    const handleSendDm = async () => {
+        if (!dmInput.trim() || sendingDm) return;
+        setSendingDm(true);
+        try {
+            await api.post(`/driver/trips/${tripId}/direct-message`, { body: dmInput.trim() });
+            setDmInput('');
+            await fetchDms();
+        } catch (err) {
+            const msg = err.response?.data?.error || 'Failed to send message.';
+            addToast(msg, 'error');
+        } finally {
+            setSendingDm(false);
         }
     };
 
@@ -192,12 +246,77 @@ export default function DriverActiveTripPage() {
                     </div>
                 </div>
 
-                {trip.flight_number && (
-                    <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(13,13,13,0.04)', padding: '12px 16px', borderRadius: '12px' }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--text-dark)', fontWeight: 600 }}>🛬 {trip.flight_number}</span>
-                        <span style={{ background: 'rgba(0,212,255,0.15)', color: '#00D4FF', padding: '4px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: 700 }}>TRACKING</span>
-                    </div>
-                )}
+                {trip.flight_number && (() => {
+                    const fStatus = FLIGHT_STATUS[flightInfo?.flight_status] || null;
+                    const hasDetails = flightInfo?.found;
+                    const hasBottom = hasDetails || (flightError && !hasDetails);
+                    const depTime = flightInfo?.departure?.actual || flightInfo?.departure?.estimated || flightInfo?.departure?.scheduled;
+                    const arrTime = flightInfo?.arrival?.actual || flightInfo?.arrival?.estimated || flightInfo?.arrival?.scheduled;
+                    return (
+                        <div style={{ marginTop: '20px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(13,13,13,0.04)', padding: '12px 16px', borderRadius: hasBottom ? '12px 12px 0 0' : '12px' }}>
+                                <span style={{ fontFamily: 'monospace', fontSize: '14px', color: 'var(--text-dark)', fontWeight: 600 }}>✈ {trip.flight_number}</span>
+                                {flightLoading ? (
+                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Checking…</span>
+                                ) : fStatus ? (
+                                    <span style={{ background: fStatus.bg, color: fStatus.color, padding: '4px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>{fStatus.label}</span>
+                                ) : (
+                                    <span style={{ background: 'rgba(0,212,255,0.15)', color: '#00D4FF', padding: '4px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: 700 }}>TRACKING</span>
+                                )}
+                            </div>
+                            {hasDetails && (
+                                <div style={{ background: 'rgba(13,13,13,0.04)', borderTop: '1px solid rgba(13,13,13,0.06)', padding: '12px 16px', borderRadius: '0 0 12px 12px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>From</span>
+                                        <span style={{ color: 'var(--text-dark)', textAlign: 'right' }}>{flightInfo.departure.airport || flightInfo.departure.iata || '—'}</span>
+                                    </div>
+                                    {depTime && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+                                                {flightInfo.departure.actual ? 'Departed' : flightInfo.departure.estimated ? 'Est. Dep.' : 'Sched. Dep.'}
+                                            </span>
+                                            <span style={{ color: 'var(--text-dark)', fontWeight: 700, fontFamily: 'monospace' }}>{formatEATDate(depTime)}</span>
+                                        </div>
+                                    )}
+                                    <div style={{ borderTop: '1px solid rgba(13,13,13,0.06)', margin: '2px 0' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Arriving</span>
+                                        <span style={{ color: 'var(--text-dark)', textAlign: 'right' }}>{flightInfo.arrival.airport || flightInfo.arrival.iata || '—'}</span>
+                                    </div>
+                                    {arrTime && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+                                                {flightInfo.arrival.actual ? 'Landed' : flightInfo.arrival.estimated ? 'Est. Arr.' : 'Sched. Arr.'}
+                                            </span>
+                                            <span style={{ color: flightInfo.arrival.delay > 0 ? '#F59E0B' : 'var(--text-dark)', fontWeight: 700, fontFamily: 'monospace' }}>{formatEATDate(arrTime)}</span>
+                                        </div>
+                                    )}
+                                    {flightInfo.arrival.delay > 0 && (
+                                        <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                            <span style={{ color: '#F59E0B', fontWeight: 700 }}>⚠ Delay</span>
+                                            <span style={{ color: '#F59E0B', fontWeight: 700 }}>+{flightInfo.arrival.delay} min</span>
+                                        </div>
+                                    )}
+                                    {(flightInfo.arrival.terminal || flightInfo.arrival.gate) && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Terminal / Gate</span>
+                                            <span style={{ color: 'var(--text-dark)', fontWeight: 600 }}>
+                                                {[flightInfo.arrival.terminal && `T${flightInfo.arrival.terminal}`, flightInfo.arrival.gate && `G${flightInfo.arrival.gate}`].filter(Boolean).join(' · ')}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <button onClick={loadFlight} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', textAlign: 'right', padding: 0, alignSelf: 'flex-end' }}>↻ Refresh</button>
+                                </div>
+                            )}
+                            {flightError && !hasDetails && (
+                                <div style={{ background: 'rgba(224,90,90,0.07)', borderTop: '1px solid rgba(224,90,90,0.15)', padding: '10px 16px', borderRadius: '0 0 12px 12px', fontSize: '12px', color: '#E05A5A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>{flightError}</span>
+                                    <button onClick={loadFlight} style={{ background: 'none', border: 'none', color: '#E05A5A', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}>Retry</button>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
             </section>
 
             {/* Section 2: Action Buttons */}
@@ -250,7 +369,67 @@ export default function DriverActiveTripPage() {
                 </div>
             </section>
 
-            {/* Section 4: Trip Details */}
+            {/* Section 4: Manager Direct Messages */}
+            {isInProgress && (
+                <section className="glass-card-dark reveal-up stagger-4" style={{ margin: '0 20px', padding: '24px', borderRadius: '24px', border: '1px solid rgba(108,99,255,0.2)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#6C63FF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Manager Channel</span>
+                        <span style={{ fontSize: '11px', color: 'rgba(245,237,227,0.35)', fontWeight: 600 }}>— private, not visible to client</span>
+                    </div>
+
+                    {/* Message list */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto', marginBottom: '16px' }}>
+                        {dms.length === 0 ? (
+                            <p style={{ fontSize: '12px', color: 'rgba(245,237,227,0.3)', textAlign: 'center', margin: '12px 0' }}>No messages yet. Send one below.</p>
+                        ) : dms.map((dm) => {
+                            const isMe = dm.sender_role === 'driver';
+                            return (
+                                <div key={dm.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                                    <div style={{
+                                        maxWidth: '82%',
+                                        background: isMe ? 'rgba(108,99,255,0.25)' : 'rgba(255,255,255,0.08)',
+                                        borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                                        padding: '10px 14px',
+                                    }}>
+                                        <p style={{ fontSize: '13px', color: 'rgba(245,237,227,0.9)', margin: 0, lineHeight: 1.5 }}>{dm.body}</p>
+                                    </div>
+                                    <span style={{ fontSize: '10px', color: 'rgba(245,237,227,0.25)', marginTop: '3px', marginLeft: '4px', marginRight: '4px' }}>
+                                        {isMe ? 'You' : 'Manager'} · {formatEAT(dm.created_at)}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Input */}
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <textarea
+                            value={dmInput}
+                            onChange={(e) => setDmInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendDm(); } }}
+                            placeholder="Message manager…"
+                            rows={2}
+                            style={{
+                                flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                                borderRadius: '14px', padding: '12px 14px', fontSize: '13px', color: '#F5EDE3',
+                                resize: 'none', outline: 'none', fontFamily: 'inherit', lineHeight: 1.5
+                            }}
+                        />
+                        <button
+                            onClick={handleSendDm}
+                            disabled={sendingDm || !dmInput.trim()}
+                            style={{
+                                background: sendingDm || !dmInput.trim() ? 'rgba(108,99,255,0.3)' : '#6C63FF',
+                                border: 'none', borderRadius: '14px', padding: '0 18px',
+                                color: '#fff', fontSize: '18px', cursor: sendingDm || !dmInput.trim() ? 'default' : 'pointer',
+                                transition: 'background 0.2s'
+                            }}
+                        >↑</button>
+                    </div>
+                </section>
+            )}
+
+            {/* Section 5: Trip Details */}
             <section className="glass-card reveal-up stagger-4" style={{ margin: '0 20px', padding: '24px', borderRadius: '24px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', margin: '0 0 16px 0' }}>Manifest Details</h3>
 

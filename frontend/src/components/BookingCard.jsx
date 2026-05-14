@@ -1,10 +1,42 @@
 import { useState } from 'react';
+import useFlightInfo from '../hooks/useFlightInfo.js';
+
+const FLIGHT_STATUS = {
+    scheduled: { label: 'Scheduled', color: '#6C63FF', bg: 'rgba(108,99,255,0.12)' },
+    active:    { label: 'Airborne',  color: '#00D4FF', bg: 'rgba(0,212,255,0.12)' },
+    landed:    { label: 'Landed',    color: '#00A86B', bg: 'rgba(0,245,160,0.12)' },
+    cancelled: { label: 'Cancelled', color: '#E05A5A', bg: 'rgba(224,90,90,0.1)' },
+    diverted:  { label: 'Diverted',  color: '#F59E0B', bg: 'rgba(245,158,11,0.15)' },
+};
+
+function formatEAT(isoStr) {
+    if (!isoStr) return null;
+    return new Date(isoStr).toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit', hour12: false }) + ' EAT';
+}
+
+function formatEATDate(isoStr) {
+    if (!isoStr) return null;
+    return new Date(isoStr).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }) + ' EAT';
+}
 
 export default function BookingCard({ booking, drivers, vehicles, onAssign, index = 0 }) {
     const [selectedDriver, setSelectedDriver] = useState('');
     const [selectedVehicle, setSelectedVehicle] = useState('');
     const [eta, setEta] = useState('');
     const [assigning, setAssigning] = useState(false);
+    const [showFlight, setShowFlight] = useState(false);
+
+    const flightDate = booking.pickup_time ? new Date(booking.pickup_time).toISOString().split('T')[0] : null;
+    const { data: flightInfo, loading: flightLoading, error: flightError, load: loadFlight } = useFlightInfo(
+        booking.flight_number || null,
+        flightDate,
+        false
+    );
+
+    const handleFlightReveal = () => {
+        setShowFlight(true);
+        if (!flightInfo && !flightLoading) loadFlight();
+    };
 
     const isPending = booking.status === 'pending';
     const statusColor = isPending ? 'rgba(255,180,0,0.15)' : 'rgba(0,245,160,0.15)';
@@ -46,11 +78,89 @@ export default function BookingCard({ booking, drivers, vehicles, onAssign, inde
                 </p>
             </div>
 
-            {booking.flight_number && (
-                <div style={{ marginBottom: '12px', fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono, monospace' }}>
-                    ✈️ {booking.flight_number}
-                </div>
-            )}
+            {booking.flight_number && (() => {
+                const fStatus = FLIGHT_STATUS[flightInfo?.flight_status] || null;
+                const arrivalTime = flightInfo?.arrival?.actual || flightInfo?.arrival?.estimated || flightInfo?.arrival?.scheduled;
+                return (
+                    <div style={{ marginBottom: '12px' }}>
+                        {/* Flight badge row — click to load */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(13,13,13,0.04)', padding: '8px 12px', borderRadius: showFlight && (flightInfo || flightLoading || flightError) ? '10px 10px 0 0' : '10px', cursor: showFlight ? 'default' : 'pointer' }}
+                            onClick={!showFlight ? handleFlightReveal : undefined}>
+                            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '13px', color: 'var(--text-dark)', fontWeight: 600 }}>✈ {booking.flight_number}</span>
+                            {!showFlight && (
+                                <span style={{ fontSize: '10px', fontWeight: 700, color: '#6C63FF', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Check →</span>
+                            )}
+                            {showFlight && flightLoading && (
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Loading…</span>
+                            )}
+                            {showFlight && !flightLoading && fStatus && (
+                                <span style={{ background: fStatus.bg, color: fStatus.color, padding: '3px 8px', borderRadius: '50px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>{fStatus.label}</span>
+                            )}
+                        </div>
+                        {/* Details panel */}
+                        {showFlight && flightInfo?.found && (() => {
+                            const depTime = flightInfo.departure?.actual || flightInfo.departure?.estimated || flightInfo.departure?.scheduled;
+                            return (
+                            <div style={{ background: 'rgba(13,13,13,0.03)', borderTop: '1px solid rgba(13,13,13,0.06)', padding: '10px 12px', borderRadius: '0 0 10px 10px', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>From</span>
+                                    <span style={{ color: 'var(--text-dark)' }}>{flightInfo.departure.airport || flightInfo.departure.iata || '—'}</span>
+                                </div>
+                                {depTime && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+                                            {flightInfo.departure.actual ? 'Departed' : flightInfo.departure.estimated ? 'Est. Dep.' : 'Sched. Dep.'}
+                                        </span>
+                                        <span style={{ color: 'var(--text-dark)', fontWeight: 700, fontFamily: 'monospace' }}>{formatEATDate(depTime)}</span>
+                                    </div>
+                                )}
+                                <div style={{ borderTop: '1px solid rgba(13,13,13,0.06)', margin: '1px 0' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>To</span>
+                                    <span style={{ color: 'var(--text-dark)' }}>{flightInfo.arrival.airport || flightInfo.arrival.iata || '—'}</span>
+                                </div>
+                                {arrivalTime && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+                                            {flightInfo.arrival.actual ? 'Landed' : flightInfo.arrival.estimated ? 'Est. Arrival' : 'Sched. Arrival'}
+                                        </span>
+                                        <span style={{ color: flightInfo.arrival.delay > 0 ? '#F59E0B' : 'var(--text-dark)', fontWeight: 700, fontFamily: 'monospace' }}>{formatEATDate(arrivalTime)}</span>
+                                    </div>
+                                )}
+                                {flightInfo.arrival.delay > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                        <span style={{ color: '#F59E0B', fontWeight: 700 }}>⚠ Delay</span>
+                                        <span style={{ color: '#F59E0B', fontWeight: 700 }}>+{flightInfo.arrival.delay} min</span>
+                                    </div>
+                                )}
+                                {(flightInfo.arrival.terminal || flightInfo.arrival.gate) && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Terminal / Gate</span>
+                                        <span style={{ color: 'var(--text-dark)' }}>
+                                            {[flightInfo.arrival.terminal && `T${flightInfo.arrival.terminal}`, flightInfo.arrival.gate && `G${flightInfo.arrival.gate}`].filter(Boolean).join(' · ')}
+                                        </span>
+                                    </div>
+                                )}
+                                <button onClick={() => { loadFlight(); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, cursor: 'pointer', textAlign: 'right', padding: 0, alignSelf: 'flex-end' }}>
+                                    ↻ Refresh
+                                </button>
+                            </div>
+                            );
+                        })()}
+                        {showFlight && flightInfo && !flightInfo.found && !flightLoading && (
+                            <div style={{ background: 'rgba(13,13,13,0.03)', borderTop: '1px solid rgba(13,13,13,0.06)', padding: '8px 12px', borderRadius: '0 0 10px 10px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                                No flight data found for this date.
+                            </div>
+                        )}
+                        {showFlight && flightError && !flightInfo && (
+                            <div style={{ background: 'rgba(224,90,90,0.06)', borderTop: '1px solid rgba(224,90,90,0.12)', padding: '8px 12px', borderRadius: '0 0 10px 10px', fontSize: '11px', color: '#E05A5A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>{flightError}</span>
+                                <button onClick={loadFlight} style={{ background: 'none', border: 'none', color: '#E05A5A', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}>Retry</button>
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {booking.special_requirements && (
                 <div style={{ marginBottom: '16px', fontSize: '13px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>

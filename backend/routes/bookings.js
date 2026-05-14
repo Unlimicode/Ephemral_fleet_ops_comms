@@ -386,6 +386,78 @@ router.post('/recover', async (req, res) => {
 });
 
 // ── POST /contact-manager — Client sends a message to the fleet manager ──────
+// ── GET /flight-info — Client: flight data for their trip's flight_number ─────
+// Shares the same Redis cache key as /api/flights/info so manager lookups
+// warm the cache for the client automatically (and vice versa).
+router.get('/flight-info', requireClientAuth, async (req, res) => {
+    const { trip_id } = req.client;
+    try {
+        const tripResult = await query(
+            'SELECT flight_number, pickup_time FROM trips WHERE id = $1',
+            [trip_id]
+        );
+        const trip = tripResult.rows[0];
+        if (!trip?.flight_number) return res.json({ found: false });
+
+        const iata = trip.flight_number.replace(/\s+/g, '').toUpperCase();
+        const date = new Date(trip.pickup_time).toISOString().split('T')[0];
+        const cacheKey = `flight:${iata}:${date}`;
+
+        const cached = await getSession(cacheKey);
+        if (cached) return res.json({ ...cached, cached: true });
+
+        const apiKey = process.env.AVIATIONSTACK_KEY;
+        if (!apiKey) return res.status(503).json({ error: 'Flight lookup not configured' });
+
+        const url = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${iata}&flight_date=${date}`;
+        const response = await fetch(url);
+        const json = await response.json();
+
+        if (json.error) return res.status(502).json({ error: json.error.message || 'AviationStack error' });
+
+        const flights = json.data;
+        if (!flights || flights.length === 0) {
+            await getSession(cacheKey) || null; // don't double-write
+            return res.json({ found: false });
+        }
+
+        const f = flights[0];
+        const result = {
+            found: true,
+            flight_status: f.flight_status,
+            flight_iata: f.flight?.iata,
+            departure: {
+                airport: f.departure?.airport,
+                iata: f.departure?.iata,
+                scheduled: f.departure?.scheduled,
+                estimated: f.departure?.estimated,
+                actual: f.departure?.actual,
+            },
+            arrival: {
+                airport: f.arrival?.airport,
+                iata: f.arrival?.iata,
+                scheduled: f.arrival?.scheduled,
+                estimated: f.arrival?.estimated,
+                actual: f.arrival?.actual,
+                terminal: f.arrival?.terminal,
+                gate: f.arrival?.gate,
+                delay: f.arrival?.delay,
+            },
+        };
+
+        const status = f.flight_status?.toLowerCase();
+        const ttl = (status === 'landed' || status === 'cancelled') ? 3600
+            : status === 'active' ? 180
+            : (() => { const mins = (new Date(f.departure?.scheduled) - Date.now()) / 60000; return mins < 120 ? 300 : 1800; })();
+        await setSession(cacheKey, result, ttl);
+
+        return res.json({ ...result, cached: false });
+    } catch (err) {
+        console.error('[bookings] flight-info error:', err.message);
+        return res.status(502).json({ error: 'Failed to fetch flight data' });
+    }
+});
+
 router.post('/contact-manager', requireClientAuth, async (req, res) => {
     const { client_corporate_email, trip_id } = req.client;
     const { message } = req.body;

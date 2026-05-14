@@ -249,6 +249,60 @@ router.patch('/:tripId/complete', requireAuth(['driver']), async (req, res) => {
     }
 });
 
+// ── GET /:tripId/direct-messages — Driver reads DMs with manager ─────────────
+router.get('/:tripId/direct-messages', requireAuth(['driver']), async (req, res) => {
+    const { tripId } = req.params;
+    const driverId = req.user.id;
+    try {
+        const tripCheck = await query(
+            'SELECT id FROM trips WHERE id = $1 AND assigned_driver_id = $2',
+            [tripId, driverId]
+        );
+        if (!tripCheck.rows.length) return res.status(404).json({ error: 'Trip not found' });
+        const result = await query(
+            'SELECT id, sender_role, body, created_at FROM direct_messages WHERE trip_id = $1 ORDER BY created_at ASC',
+            [tripId]
+        );
+        return res.json(result.rows);
+    } catch (err) {
+        console.error('[driverTrips] direct-messages fetch error:', err.message);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ── POST /:tripId/direct-message — Driver sends DM to manager ────────────────
+router.post('/:tripId/direct-message', requireAuth(['driver']), async (req, res) => {
+    const { tripId } = req.params;
+    const driverId = req.user.id;
+    const { body } = req.body;
+    if (!body?.trim()) return res.status(400).json({ error: 'Message body required' });
+    try {
+        const tripCheck = await query(
+            'SELECT status FROM trips WHERE id = $1 AND assigned_driver_id = $2',
+            [tripId, driverId]
+        );
+        if (!tripCheck.rows.length) return res.status(404).json({ error: 'Trip not found' });
+        if (tripCheck.rows[0].status !== 'in_progress') return res.status(403).json({ error: 'Direct messaging only available during active trips' });
+
+        const result = await query(
+            'INSERT INTO direct_messages (trip_id, sender_role, body) VALUES ($1, $2, $3) RETURNING *',
+            [tripId, 'driver', body.trim()]
+        );
+
+        emitDashboardEvent('direct_message', {
+            trip_id: tripId,
+            sender_role: 'driver',
+            body: body.trim(),
+            created_at: result.rows[0].created_at
+        });
+
+        return res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('[driverTrips] direct-message send error:', err.message);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ── GET /:tripId/complaint — Driver complaint visibility ──────────────────────
 router.get('/:tripId/complaint', requireAuth(['driver']), async (req, res) => {
     const { tripId } = req.params;

@@ -352,6 +352,12 @@ export default function BookingLandingPage() {
     const [contactMsg, setContactMsg] = useState('');
     const [contactStatus, setContactStatus] = useState('idle'); // idle | sending | sent | error
 
+    // Flight info
+    const [flightInfo, setFlightInfo] = useState(null);
+    const [flightLoading, setFlightLoading] = useState(false);
+    const [flightError, setFlightError] = useState(null);
+    const [flightLoaded, setFlightLoaded] = useState(false);
+
     const authStarted = useRef(false);
 
     // ── Session init ───────────────────────────────────────────────────────────
@@ -411,6 +417,19 @@ export default function BookingLandingPage() {
         document.addEventListener('visibilitychange', handleVisibility);
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [fetchBooking]);
+
+    // ── Auto-load flight info once when booking with flight_number arrives ───────
+    useEffect(() => {
+        if (!booking?.flight_number || flightLoaded) return;
+        setFlightLoaded(true);
+        setFlightLoading(true);
+        api.get('/bookings/flight-info').then(r => {
+            setFlightInfo(r.data);
+            setFlightError(null);
+        }).catch(err => {
+            setFlightError(err.response?.data?.error || 'Could not load flight data.');
+        }).finally(() => setFlightLoading(false));
+    }, [booking?.flight_number, flightLoaded]);
 
     // ── Complaint window countdown ─────────────────────────────────────────────
     useEffect(() => {
@@ -558,6 +577,7 @@ export default function BookingLandingPage() {
             await api.post('/bookings/contact-manager', { message: contactMsg.trim() });
             setContactStatus('sent');
             setContactMsg('');
+            setTimeout(() => setContactStatus('idle'), 3000);
         } catch {
             setContactStatus('error');
         }
@@ -696,6 +716,78 @@ export default function BookingLandingPage() {
                             <span className="bg-bg-dark/5 px-3 py-1.5 rounded-pill text-[10px] font-bold uppercase tracking-wider">Private Transfer</span>
                         )}
                     </div>
+
+                    {/* Flight info panel — shown when booking has a flight number */}
+                    {booking.flight_number && (() => {
+                        const FLIGHT_STATUS_MAP = {
+                            scheduled: { label: 'Scheduled', color: '#6C63FF', bg: 'rgba(108,99,255,0.1)' },
+                            active:    { label: 'Airborne',  color: '#00D4FF', bg: 'rgba(0,212,255,0.1)' },
+                            landed:    { label: 'Landed',    color: '#00A86B', bg: 'rgba(0,168,107,0.1)' },
+                            cancelled: { label: 'Cancelled', color: '#E05A5A', bg: 'rgba(224,90,90,0.08)' },
+                            diverted:  { label: 'Diverted',  color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
+                        };
+                        const fmtEAT = (iso) => iso ? new Date(iso).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }) + ' EAT' : null;
+                        const fStatus = flightInfo ? FLIGHT_STATUS_MAP[flightInfo.flight_status] : null;
+                        const depTime = flightInfo?.departure?.actual || flightInfo?.departure?.estimated || flightInfo?.departure?.scheduled;
+                        const arrTime = flightInfo?.arrival?.actual || flightInfo?.arrival?.estimated || flightInfo?.arrival?.scheduled;
+                        const hasDetails = flightInfo?.found;
+                        return (
+                            <div className="mb-4" style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid rgba(13,13,13,0.08)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(13,13,13,0.04)', padding: '10px 14px' }}>
+                                    <span style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)' }}>✈ {booking.flight_number}</span>
+                                    {flightLoading ? (
+                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Checking…</span>
+                                    ) : fStatus ? (
+                                        <span style={{ background: fStatus.bg, color: fStatus.color, padding: '3px 9px', borderRadius: '50px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>{fStatus.label}</span>
+                                    ) : null}
+                                </div>
+                                {hasDetails && (
+                                    <div style={{ background: 'rgba(13,13,13,0.02)', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>From</span>
+                                            <span style={{ color: 'var(--text-dark)' }}>{flightInfo.departure.airport || flightInfo.departure.iata || '—'}</span>
+                                        </div>
+                                        {depTime && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                                <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{flightInfo.departure.actual ? 'Departed' : flightInfo.departure.estimated ? 'Est. Dep.' : 'Sched. Dep.'}</span>
+                                                <span style={{ color: 'var(--text-dark)', fontWeight: 700, fontFamily: 'monospace' }}>{fmtEAT(depTime)}</span>
+                                            </div>
+                                        )}
+                                        <div style={{ borderTop: '1px solid rgba(13,13,13,0.06)', margin: '1px 0' }} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                            <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>To</span>
+                                            <span style={{ color: 'var(--text-dark)' }}>{flightInfo.arrival.airport || flightInfo.arrival.iata || '—'}</span>
+                                        </div>
+                                        {arrTime && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                                <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{flightInfo.arrival.actual ? 'Landed' : flightInfo.arrival.estimated ? 'Est. Arr.' : 'Sched. Arr.'}</span>
+                                                <span style={{ color: flightInfo.arrival.delay > 0 ? '#F59E0B' : 'var(--text-dark)', fontWeight: 700, fontFamily: 'monospace' }}>{fmtEAT(arrTime)}</span>
+                                            </div>
+                                        )}
+                                        {flightInfo.arrival.delay > 0 && (
+                                            <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: '8px', padding: '5px 10px', display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                                                <span style={{ color: '#F59E0B', fontWeight: 700 }}>⚠ Delay</span>
+                                                <span style={{ color: '#F59E0B', fontWeight: 700 }}>+{flightInfo.arrival.delay} min</span>
+                                            </div>
+                                        )}
+                                        {(flightInfo.arrival.terminal || flightInfo.arrival.gate) && (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                                <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Terminal / Gate</span>
+                                                <span style={{ color: 'var(--text-dark)' }}>{[flightInfo.arrival.terminal && `T${flightInfo.arrival.terminal}`, flightInfo.arrival.gate && `G${flightInfo.arrival.gate}`].filter(Boolean).join(' · ')}</span>
+                                            </div>
+                                        )}
+                                        <button onClick={() => { setFlightLoaded(false); setFlightInfo(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '10px', fontWeight: 600, cursor: 'pointer', textAlign: 'right', padding: 0, alignSelf: 'flex-end' }}>↻ Refresh</button>
+                                    </div>
+                                )}
+                                {flightError && !hasDetails && (
+                                    <div style={{ background: 'rgba(224,90,90,0.05)', padding: '8px 14px', fontSize: '11px', color: '#E05A5A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>{flightError}</span>
+                                        <button onClick={() => { setFlightLoaded(false); setFlightInfo(null); }} style={{ background: 'none', border: 'none', color: '#E05A5A', fontSize: '11px', fontWeight: 700, cursor: 'pointer', padding: 0 }}>Retry</button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {booking.notes && (
                         <div className="mb-4 p-3 rounded-2xl" style={{ background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.15)' }}>
