@@ -9,11 +9,6 @@ const FLIGHT_STATUS = {
     diverted:  { label: 'Diverted',  color: '#F59E0B', bg: 'rgba(245,158,11,0.15)' },
 };
 
-function formatEAT(isoStr) {
-    if (!isoStr) return null;
-    return new Date(isoStr).toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit', hour12: false }) + ' EAT';
-}
-
 function formatEATDate(isoStr) {
     if (!isoStr) return null;
     return new Date(isoStr).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }) + ' EAT';
