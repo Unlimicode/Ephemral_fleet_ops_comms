@@ -213,7 +213,7 @@ export default function ManagerMessagesPage() {
     // WebSocket: refresh on new direct_message events
     useEffect(() => {
         if (!token) return;
-        const socket = io((import.meta.env.VITE_API_URL || 'http://localhost:3001/api') + '/dashboard', { auth: { token } });
+        const socket = io((import.meta.env.VITE_WS_URL || 'http://localhost:3001') + '/dashboard', { auth: { token } });
         socket.on('direct_message', (data) => {
             refreshThreads();
             // If the message belongs to the currently open thread, append it

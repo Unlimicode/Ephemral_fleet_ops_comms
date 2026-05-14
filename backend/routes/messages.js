@@ -81,7 +81,7 @@ router.get('/threads/clients', requireAuth(['fleet_manager']), async (req, res) 
                     client_corporate_email AS client_email,
                     client_first_name
                 FROM trips
-                ORDER BY client_corporate_email, created_at DESC
+                ORDER BY client_corporate_email, pickup_time DESC
             )
             SELECT
                 tm.client_email,
@@ -151,7 +151,7 @@ router.get('/threads/client/:email', requireAuth(['fleet_manager']), async (req,
         const nameRow = await query(
             `SELECT client_first_name FROM trips
              WHERE client_corporate_email = $1
-             ORDER BY created_at DESC LIMIT 1`,
+             ORDER BY pickup_time DESC LIMIT 1`,
             [email]
         );
         const result = await query(
@@ -205,13 +205,17 @@ router.post('/threads/driver/:driverId', requireAuth(['fleet_manager']), async (
             [driverId, body.trim()]
         );
 
-        emitDashboardEvent('direct_message', {
-            scope: 'driver',
-            driver_id: driverId,
-            sender_role: 'fleet_manager',
-            body: message.body,
-            created_at: message.created_at,
-        });
+        try {
+            emitDashboardEvent('direct_message', {
+                scope: 'driver',
+                driver_id: driverId,
+                sender_role: 'fleet_manager',
+                body: message.body,
+                created_at: message.created_at,
+            });
+        } catch (socketErr) {
+            console.error('[messages] socket emit failed (non-fatal):', socketErr.message);
+        }
 
         if (process.env.NODE_ENV !== 'test') {
             sendPushNotification(driverId, {
@@ -243,13 +247,17 @@ router.post('/threads/client/:email', requireAuth(['fleet_manager']), async (req
         );
         const message = result.rows[0];
 
-        emitDashboardEvent('direct_message', {
-            scope: 'client',
-            client_email: email,
-            sender_role: 'fleet_manager',
-            body: message.body,
-            created_at: message.created_at,
-        });
+        try {
+            emitDashboardEvent('direct_message', {
+                scope: 'client',
+                client_email: email,
+                sender_role: 'fleet_manager',
+                body: message.body,
+                created_at: message.created_at,
+            });
+        } catch (socketErr) {
+            console.error('[messages] socket emit failed (non-fatal):', socketErr.message);
+        }
 
         if (process.env.NODE_ENV !== 'test') {
             sendClientPushNotification(email, {
@@ -304,13 +312,17 @@ router.post('/driver/mine', requireAuth(['driver']), async (req, res) => {
         );
         const message = result.rows[0];
 
-        emitDashboardEvent('direct_message', {
-            scope: 'driver',
-            driver_id: driverId,
-            sender_role: 'driver',
-            body: message.body,
-            created_at: message.created_at,
-        });
+        try {
+            emitDashboardEvent('direct_message', {
+                scope: 'driver',
+                driver_id: driverId,
+                sender_role: 'driver',
+                body: message.body,
+                created_at: message.created_at,
+            });
+        } catch (socketErr) {
+            console.error('[messages] socket emit failed (non-fatal):', socketErr.message);
+        }
 
         return res.status(201).json(message);
     } catch (err) {
@@ -357,13 +369,17 @@ router.post('/client/mine', requireClientAuth, async (req, res) => {
         );
         const message = result.rows[0];
 
-        emitDashboardEvent('direct_message', {
-            scope: 'client',
-            client_email: email,
-            sender_role: 'client',
-            body: message.body,
-            created_at: message.created_at,
-        });
+        try {
+            emitDashboardEvent('direct_message', {
+                scope: 'client',
+                client_email: email,
+                sender_role: 'client',
+                body: message.body,
+                created_at: message.created_at,
+            });
+        } catch (socketErr) {
+            console.error('[messages] socket emit failed (non-fatal):', socketErr.message);
+        }
 
         return res.status(201).json(message);
     } catch (err) {
