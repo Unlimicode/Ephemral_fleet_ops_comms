@@ -289,44 +289,45 @@ export default function ManagerLayout() {
                 </>
             )}
 
-            {/* Floating Messages pill — outside the nav, hidden when already on /manager/messages */}
+            {/* Floating Messages pill — sits clearly below the nav bar, above page content */}
             {location.pathname !== '/manager/messages' && (
                 <button
+                    type="button"
                     onClick={() => navigate('/manager/messages')}
                     title="Messages"
+                    className="floating-messages-pill"
                     style={{
                         position: 'fixed',
-                        top: isMobile ? '68px' : '88px',
+                        top: isMobile ? '72px' : '112px',
                         right: isMobile ? '16px' : '40px',
-                        zIndex: 49,
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: isMobile ? '8px 14px' : '10px 18px',
+                        zIndex: 60,
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: isMobile ? '10px 18px' : '14px 24px',
                         borderRadius: '9999px',
-                        background: 'rgba(255,255,255,0.55)',
+                        background: 'rgba(255,255,255,0.7)',
                         backdropFilter: 'blur(40px) saturate(180%)',
                         WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                        border: '1px solid rgba(255,255,255,0.7)',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+                        border: '1px solid rgba(255,255,255,0.85)',
+                        boxShadow: '0 12px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95)',
                         color: '#0D0D0D',
-                        fontSize: '13px', fontWeight: 700,
+                        fontSize: isMobile ? '13px' : '14px', fontWeight: 700,
                         cursor: 'pointer',
                         fontFamily: "'Be Vietnam Pro', sans-serif",
                         letterSpacing: '-0.01em',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                        pointerEvents: 'auto',
+                        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.95)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)'; }}
                 >
-                    <span style={{ fontSize: '15px' }}>💬</span>
+                    <span style={{ fontSize: isMobile ? '16px' : '18px' }}>💬</span>
                     <span>Messages</span>
                     {enquiryCount > 0 && (
                         <span style={{
                             background: '#6C63FF', color: '#fff',
                             borderRadius: '9999px',
-                            minWidth: '20px', height: '20px',
+                            minWidth: '22px', height: '22px',
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '10px', fontWeight: 800,
-                            padding: '0 6px', marginLeft: '2px',
+                            fontSize: '11px', fontWeight: 800,
+                            padding: '0 7px', marginLeft: '2px',
                         }}>{enquiryCount}</span>
                     )}
                 </button>
