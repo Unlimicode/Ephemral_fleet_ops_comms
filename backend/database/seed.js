@@ -422,6 +422,16 @@ async function runSeed() {
                 ['driver', 'KDF 006F has a low tyre pressure warning.'],
                 ['fleet_manager', 'Top up at the next petrol stop — and log the reg + reading in the daily check sheet.'],
             ]},
+            { driver: 'Faith Wambui', exchange: [
+                ['fleet_manager', 'Faith, the Clara pickup at Serena — please confirm you have arrived.'],
+                ['driver', 'Outside the lobby now. Picking up in 2 minutes.'],
+                ['fleet_manager', 'Perfect, thank you.'],
+            ]},
+            { driver: 'Kevin Mwangi', exchange: [
+                ['driver', 'Rafael trip is running smoothly. ETA T2 in 12 minutes.'],
+                ['fleet_manager', 'Acknowledged — Rafael was notified via the app.'],
+                ['driver', 'Roger that.'],
+            ]},
         ];
 
         for (const t of driverThreads) {
@@ -538,7 +548,7 @@ async function runSeed() {
         console.log('   Trips          : 25 total — 3 pending, 4 accepted, 3 in_progress, 15 completed');
         console.log('   Complaints     : 4 — 1 open, 2 under_investigation, 1 resolved');
         console.log('   Enquiries      : 12 — 5 new, 3 read, 4 responded');
-        console.log('   DM threads     : 5 driver↔manager, 6 client↔manager');
+        console.log('   DM threads     : 7 driver↔manager, 6 client↔manager');
         console.log('   Investigation  : 2 driver notifications with manager notes\n');
 
     } catch (error) {

@@ -68,24 +68,36 @@ export function generateCompliancePDF(report) {
     addDivider();
 
     // ── HEADLINE: client identifier confinement is always 100% ──────
-    checkPage(28);
-    doc.setFontSize(14);
+    checkPage(50);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(108, 99, 255);
+    doc.text('PRIMARY METRIC', margin, y);
+    y += 6;
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(13, 13, 13);
     doc.text('Client identifier confinement', margin, y);
-    y += 8;
+    y += 16;
 
+    // Big confinement number — 36pt needs ~14mm of vertical space.
     doc.setFontSize(36);
     doc.setTextColor(108, 99, 255);
-    doc.text('100%', margin, y);
-    y += 4;
+    doc.text('100', margin, y);
+    // "%" rendered slightly smaller and lifted so it sits visually balanced
+    // against the digits rather than crowding the next paragraph.
+    const numWidth = doc.getTextWidth('100');
+    doc.setFontSize(22);
+    doc.text('%', margin + numWidth + 2, y - 4);
+    y += 14;
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(60, 60, 60);
     const headlineNote = 'No client email, phone number, or surname reached any driver during this period. ' +
         'The driver-facing schema cannot hold those fields — only the client\'s first name is exposed.';
     addText(headlineNote, margin, 10, [60, 60, 60]);
-    y += 2;
+    y += 4;
     addDivider([200, 200, 210], 0.3);
 
     // ── EXECUTIVE SUMMARY ───────────────────────────────────────────
@@ -120,18 +132,20 @@ export function generateCompliancePDF(report) {
     addMetricRow('Messages Wiped Naturally (TTL, no complaint)', c.data_expired ?? 0, true);
     addMetricRow('Messages Retained (complaint filed)', c.data_conditionally_persisted ?? 0);
     addMetricRow('Complaint Window Expirations', c.complaint_window_expirations ?? 0);
-    y += 2;
-    checkPage(14);
+    y += 4;
+    checkPage(22);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(108, 99, 255);
-    doc.text(`Ephemeral Wipe Rate: ${c.minimization_rate_percent ?? 0}%`, margin, y);
-    y += 6;
+    doc.text(`Ephemeral Wipe Rate: ${c.minimization_rate_percent ?? 0} %`, margin, y);
+    y += 9;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(107, 107, 107);
-    doc.text('(Wiped vs retained ratio for completed trips — both outcomes stay inside SwiftLink.)', margin, y);
-    y += 10;
+    const wipeNote = 'Wiped vs retained ratio for completed trips — both outcomes stay inside SwiftLink.';
+    const wipeLines = doc.splitTextToSize(wipeNote, contentWidth);
+    doc.text(wipeLines, margin, y);
+    y += wipeLines.length * 4 + 8;
     addDivider([200, 200, 210], 0.3);
 
     // ── COMMUNICATION CHANNEL ───────────────────────────────────────
@@ -151,7 +165,7 @@ export function generateCompliancePDF(report) {
     addText('Complaints and investigation', margin, 14, [13, 13, 13], true);
     y += 2;
     addMetricRow('Complaints Filed', c.complaints_filed ?? 0);
-    addMetricRow('Complaint Filing Rate', `${c.complaint_filing_rate_percent ?? 0}%`);
+    addMetricRow('Complaint Filing Rate', `${c.complaint_filing_rate_percent ?? 0} %`);
     addMetricRow('Manager Message-Access Events', c.manager_message_access_events ?? 0);
     if (s6.by_status) {
         addMetricRow('  Open', s6.by_status.open ?? 0);
