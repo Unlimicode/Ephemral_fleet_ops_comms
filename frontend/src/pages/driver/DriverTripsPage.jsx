@@ -84,9 +84,33 @@ export default function DriverTripsPage({ defaultTab }) {
 
     return (
         <div className="reveal-up" style={{ padding: '20px' }}>
-            <h1 className="kinetic-text" style={{ fontSize: '28px', marginBottom: '24px' }}>
-                My Trips
-            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '12px' }}>
+                <h1 className="kinetic-text" style={{ fontSize: '28px', margin: 0 }}>
+                    My Trips
+                </h1>
+                <button
+                    onClick={() => navigate('/driver/manager')}
+                    title="Message your fleet manager"
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '8px 14px',
+                        borderRadius: '9999px',
+                        background: 'rgba(255,255,255,0.55)',
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                        border: '1px solid rgba(255,255,255,0.7)',
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.06)',
+                        color: '#0D0D0D',
+                        fontSize: '12px', fontWeight: 700,
+                        cursor: 'pointer',
+                        fontFamily: "'Be Vietnam Pro', sans-serif",
+                        flexShrink: 0,
+                    }}
+                >
+                    <span style={{ fontSize: '14px' }}>💬</span>
+                    <span>Manager</span>
+                </button>
+            </div>
 
             {/* Tab Switcher */}
             <div className="reveal-up stagger-1" style={{

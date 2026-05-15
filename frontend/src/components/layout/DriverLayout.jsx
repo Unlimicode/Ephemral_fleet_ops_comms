@@ -19,7 +19,6 @@ function useRevealUp(pathname) {
 
 const TABS = [
     { to: '/driver/trips', label: 'Trips', icon: '🗂️' },
-    { to: '/driver/manager', label: 'Manager', icon: '💬' },
     { to: '/driver/notifications', label: 'Notifications', icon: '🔔' },
     { to: '/driver/profile', label: 'Profile', icon: '👤' },
 ];

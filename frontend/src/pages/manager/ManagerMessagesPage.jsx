@@ -186,6 +186,10 @@ export default function ManagerMessagesPage() {
     const [messages, setMessages] = useState([]);
     const [loadingThread, setLoadingThread] = useState(false);
 
+    const [enquiries, setEnquiries] = useState([]);
+    const [enquiriesLoading, setEnquiriesLoading] = useState(false);
+    const [enquiriesError, setEnquiriesError] = useState('');
+
     const activeKeyRef = useRef(null);
     activeKeyRef.current = activeKey;
     const tabRef = useRef(tab);
@@ -210,7 +214,37 @@ export default function ManagerMessagesPage() {
 
     useEffect(() => { refreshThreads(); }, [refreshThreads]);
 
-    // WebSocket: refresh on new direct_message events
+    const fetchEnquiries = useCallback(async () => {
+        setEnquiriesLoading(true);
+        setEnquiriesError('');
+        try {
+            const res = await api.get('/contact');
+            const list = Array.isArray(res.data) ? res.data : (res.data?.enquiries || []);
+            setEnquiries(list);
+        } catch (err) {
+            console.error('Enquiries fetch failed:', err);
+            const msg = err.response?.data?.error || err.message || 'Could not load enquiries.';
+            setEnquiriesError(msg);
+            addToast(msg, 'error');
+        } finally {
+            setEnquiriesLoading(false);
+        }
+    }, [addToast]);
+
+    useEffect(() => {
+        if (tab === 'enquiries') fetchEnquiries();
+    }, [tab, fetchEnquiries]);
+
+    const handleMarkStatus = async (id, status) => {
+        try {
+            await api.patch(`/contact/${id}`, { status });
+            setEnquiries(prev => prev.map(e => e.id === id ? { ...e, status } : e));
+        } catch {
+            addToast('Could not update enquiry status.', 'error');
+        }
+    };
+
+    // WebSocket: refresh on new direct_message + new_enquiry events
     useEffect(() => {
         if (!token) return;
         const socket = io((import.meta.env.VITE_WS_URL || 'http://localhost:3001') + '/dashboard', { auth: { token } });
@@ -223,8 +257,11 @@ export default function ManagerMessagesPage() {
                 setMessages(prev => [...prev, { id: `tmp-${Date.now()}`, sender_role: data.sender_role, body: data.body, created_at: data.created_at }]);
             }
         });
+        socket.on('new_enquiry', () => {
+            if (tabRef.current === 'enquiries') fetchEnquiries();
+        });
         return () => { socket.disconnect(); };
-    }, [token, refreshThreads]);
+    }, [token, refreshThreads, fetchEnquiries]);
 
     const handleSelectThread = async (thread) => {
         const key = tab === 'drivers' ? thread.driver_id : thread.client_email;
@@ -261,7 +298,8 @@ export default function ManagerMessagesPage() {
         }
     };
 
-    const threads = tab === 'drivers' ? driverThreads : clientThreads;
+    const threads = tab === 'drivers' ? driverThreads : tab === 'clients' ? clientThreads : [];
+    const newEnquiryCount = enquiries.filter(e => e.status === 'new').length;
 
     return (
         <div style={{ position: 'relative', zIndex: 1, maxWidth: '1440px', margin: '0 auto', padding: isMobile ? '16px' : '20px 32px', fontFamily: "'Be Vietnam Pro', sans-serif" }}>
@@ -274,8 +312,8 @@ export default function ManagerMessagesPage() {
                 </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                {['drivers', 'clients'].map(t => (
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                {['drivers', 'clients', 'enquiries'].map(t => (
                     <button
                         key={t}
                         onClick={() => { setTab(t); setActiveKey(null); setActiveThread(null); setMessages([]); }}
@@ -285,43 +323,101 @@ export default function ManagerMessagesPage() {
                             borderRadius: '999px', padding: '10px 24px', fontSize: '13px',
                             fontWeight: 700, border: 'none', cursor: 'pointer',
                             fontFamily: "'Be Vietnam Pro', sans-serif",
-                            textTransform: 'capitalize'
+                            textTransform: 'capitalize',
+                            display: 'inline-flex', alignItems: 'center', gap: '8px',
                         }}
                     >
-                        {t} {threads.filter(x => x.unread_count > 0).length > 0 && tab !== t ? `· ${threads.filter(x => x.unread_count > 0).length}` : ''}
+                        <span>{t}</span>
+                        {t === 'enquiries' && tab !== t && newEnquiryCount > 0 && (
+                            <span style={{ background: '#6C63FF', color: 'white', borderRadius: '9999px', padding: '1px 8px', fontSize: '10px', fontWeight: 800 }}>{newEnquiryCount}</span>
+                        )}
                     </button>
                 ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '340px 1fr', gap: '20px' }}>
-                {(!isMobile || !activeKey) && (
-                    <div style={GLASS_PANEL}>
-                        {loadingThreads ? (
-                            <p style={{ padding: '32px', textAlign: 'center', color: 'rgba(0,0,0,0.4)', fontSize: '13px' }}>Loading threads…</p>
-                        ) : (
-                            <ThreadList
-                                threads={threads}
-                                activeKey={activeKey}
-                                onSelect={handleSelectThread}
-                                isMobile={isMobile}
-                                type={tab === 'drivers' ? 'driver' : 'client'}
-                            />
-                        )}
-                    </div>
-                )}
+            {tab !== 'enquiries' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '340px 1fr', gap: '20px' }}>
+                    {(!isMobile || !activeKey) && (
+                        <div style={GLASS_PANEL}>
+                            {loadingThreads ? (
+                                <p style={{ padding: '32px', textAlign: 'center', color: 'rgba(0,0,0,0.4)', fontSize: '13px' }}>Loading threads…</p>
+                            ) : (
+                                <ThreadList
+                                    threads={threads}
+                                    activeKey={activeKey}
+                                    onSelect={handleSelectThread}
+                                    isMobile={isMobile}
+                                    type={tab === 'drivers' ? 'driver' : 'client'}
+                                />
+                            )}
+                        </div>
+                    )}
 
-                {(!isMobile || activeKey) && (
-                    <MessagePane
-                        thread={activeThread}
-                        threadType={tab === 'drivers' ? 'driver' : 'client'}
-                        messages={messages}
-                        onSend={handleSend}
-                        loading={loadingThread}
-                        isMobile={isMobile}
-                        onBack={() => { setActiveKey(null); setActiveThread(null); setMessages([]); }}
-                    />
-                )}
-            </div>
+                    {(!isMobile || activeKey) && (
+                        <MessagePane
+                            thread={activeThread}
+                            threadType={tab === 'drivers' ? 'driver' : 'client'}
+                            messages={messages}
+                            onSend={handleSend}
+                            loading={loadingThread}
+                            isMobile={isMobile}
+                            onBack={() => { setActiveKey(null); setActiveThread(null); setMessages([]); }}
+                        />
+                    )}
+                </div>
+            ) : (
+                <div style={{ ...GLASS_PANEL, padding: '24px 28px' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                        <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0D0D0D' }}>Corporate enquiries</p>
+                        <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'rgba(0,0,0,0.5)' }}>
+                            Submitted via the public landing page contact form.
+                        </p>
+                    </div>
+                    {enquiriesLoading && (
+                        <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', fontWeight: 500 }}>Loading enquiries…</p>
+                    )}
+                    {!enquiriesLoading && enquiriesError && (
+                        <div style={{ padding: '20px', borderLeft: '3px solid #E05A5A', background: 'rgba(224,90,90,0.06)', borderRadius: '12px' }}>
+                            <p style={{ fontSize: '14px', fontWeight: 600, color: '#E05A5A', margin: '0 0 8px' }}>Failed to load enquiries</p>
+                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.55)', margin: '0 0 12px' }}>{enquiriesError}</p>
+                            <button
+                                onClick={fetchEnquiries}
+                                style={{ background: '#E05A5A', color: 'white', borderRadius: '999px', padding: '8px 18px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                            >Retry</button>
+                        </div>
+                    )}
+                    {!enquiriesLoading && !enquiriesError && enquiries.length === 0 && (
+                        <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', fontWeight: 500 }}>No enquiries yet.</p>
+                    )}
+                    {!enquiriesLoading && !enquiriesError && enquiries.map(enq => (
+                        <div key={enq.id} style={{ padding: '20px 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ fontSize: '15px', fontWeight: 700, color: '#0D0D0D', margin: '0 0 4px 0' }}>
+                                        {enq.name} — <span style={{ fontWeight: 500 }}>{enq.company}</span>
+                                    </p>
+                                    <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.45)', margin: '0 0 8px 0', fontFamily: 'JetBrains Mono, monospace' }}>{enq.email}</p>
+                                    <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.65)', lineHeight: 1.6, margin: 0 }}>{enq.message}</p>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', minWidth: '140px' }}>
+                                    <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.35)', margin: 0, fontFamily: 'JetBrains Mono, monospace' }}>
+                                        {new Date(enq.created_at).toLocaleDateString()}
+                                    </p>
+                                    <select
+                                        value={enq.status}
+                                        onChange={e => handleMarkStatus(enq.id, e.target.value)}
+                                        style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', borderRadius: '999px', padding: '6px 16px', fontSize: '11px', fontWeight: 700, color: '#0D0D0D', outline: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                    >
+                                        <option value="new">New</option>
+                                        <option value="read">Read</option>
+                                        <option value="responded">Responded</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

@@ -8,7 +8,6 @@ import SwiftlinkLogo from '../SwiftlinkLogo.jsx';
 const NAV_LINKS = [
     { to: '/manager/dashboard', label: 'Dashboard', icon: '🔒' },
     { to: '/manager/dispatch', label: 'Dispatch', icon: '⚡' },
-    { to: '/manager/messages', label: 'Messages', icon: '💬' },
     { to: '/manager/drivers', label: 'Drivers', icon: '👥' },
     { to: '/manager/vehicles', label: 'Vehicles', icon: '🚗' },
     { to: '/manager/complaints', label: 'Complaints', icon: '⚠️' },
@@ -121,11 +120,6 @@ export default function ManagerLayout() {
                 {link.label === 'Complaints' && complaintCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-[10px] text-white">
                         {complaintCount}
-                    </span>
-                )}
-                {link.label === 'Audit' && enquiryCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#6C63FF] text-[10px] text-white">
-                        {enquiryCount}
                     </span>
                 )}
             </NavLink>
@@ -295,6 +289,49 @@ export default function ManagerLayout() {
                 </>
             )}
 
+            {/* Floating Messages pill — outside the nav, hidden when already on /manager/messages */}
+            {location.pathname !== '/manager/messages' && (
+                <button
+                    onClick={() => navigate('/manager/messages')}
+                    title="Messages"
+                    style={{
+                        position: 'fixed',
+                        top: isMobile ? '68px' : '88px',
+                        right: isMobile ? '16px' : '40px',
+                        zIndex: 49,
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: isMobile ? '8px 14px' : '10px 18px',
+                        borderRadius: '9999px',
+                        background: 'rgba(255,255,255,0.55)',
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                        border: '1px solid rgba(255,255,255,0.7)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+                        color: '#0D0D0D',
+                        fontSize: '13px', fontWeight: 700,
+                        cursor: 'pointer',
+                        fontFamily: "'Be Vietnam Pro', sans-serif",
+                        letterSpacing: '-0.01em',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.95)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)'; }}
+                >
+                    <span style={{ fontSize: '15px' }}>💬</span>
+                    <span>Messages</span>
+                    {enquiryCount > 0 && (
+                        <span style={{
+                            background: '#6C63FF', color: '#fff',
+                            borderRadius: '9999px',
+                            minWidth: '20px', height: '20px',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '10px', fontWeight: 800,
+                            padding: '0 6px', marginLeft: '2px',
+                        }}>{enquiryCount}</span>
+                    )}
+                </button>
+            )}
+
             {/* Content Area */}
             <main style={{
                 maxWidth: isMobile ? '100%' : '1440px',
@@ -340,9 +377,6 @@ export default function ManagerLayout() {
                                 {isActive && <div className="w-1 h-1 rounded-full bg-[#0D0D0D]" />}
                                 {tab.label === 'Complaints' && complaintCount > 0 && (
                                     <div className="absolute top-1 right-2 w-2 h-2 bg-[#EF4444] rounded-full" />
-                                )}
-                                {tab.label === 'Audit' && enquiryCount > 0 && (
-                                    <div className="absolute top-1 right-2 w-2 h-2 bg-[#6C63FF] rounded-full" />
                                 )}
                             </NavLink>
                         );

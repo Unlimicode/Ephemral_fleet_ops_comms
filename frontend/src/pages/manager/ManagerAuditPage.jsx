@@ -74,11 +74,6 @@ export default function ManagerAuditPage() {
     const [reportFrom, setReportFrom] = useState('');
     const [reportTo, setReportTo] = useState('');
 
-    const [activeTab, setActiveTab] = useState('audit');
-    const [enquiries, setEnquiries] = useState([]);
-    const [enquiriesLoading, setEnquiriesLoading] = useState(false);
-    const [enquiriesError, setEnquiriesError] = useState('');
-
     const { addToast } = useToast();
     const width = useWindowWidth();
     const isMobile = width < 768;
@@ -120,23 +115,6 @@ export default function ManagerAuditPage() {
         }
     }, [filters, offset, addToast]);
 
-    const fetchEnquiries = useCallback(async () => {
-        setEnquiriesLoading(true);
-        setEnquiriesError('');
-        try {
-            const res = await api.get('/contact');
-            const list = Array.isArray(res.data) ? res.data : (res.data?.enquiries || []);
-            setEnquiries(list);
-        } catch (err) {
-            console.error('Enquiries fetch failed:', err);
-            const msg = err.response?.data?.error || err.message || 'Could not load enquiries.';
-            setEnquiriesError(msg);
-            addToast(msg, 'error');
-        } finally {
-            setEnquiriesLoading(false);
-        }
-    }, [addToast]);
-
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchAudit();
@@ -145,10 +123,6 @@ export default function ManagerAuditPage() {
             clearTimeout(timer);
         };
     }, [filters.search, filters.action_type, filters.from, filters.to, fetchAudit]);
-
-    useEffect(() => {
-        if (activeTab === 'enquiries') fetchEnquiries();
-    }, [activeTab, fetchEnquiries]);
 
     const handleExportAuditCSV = async () => {
         try {
@@ -204,15 +178,6 @@ export default function ManagerAuditPage() {
     const handleExportCompliancePDF = () => {
         if (!report) return;
         generateCompliancePDF(report);
-    };
-
-    const handleMarkStatus = async (id, status) => {
-        try {
-            await api.patch(`/contact/${id}`, { status });
-            setEnquiries(prev => prev.map(e => e.id === id ? { ...e, status } : e));
-        } catch {
-            addToast('Could not update enquiry status.', 'error');
-        }
     };
 
     const formatTimestamp = (iso) => {
@@ -317,42 +282,28 @@ export default function ManagerAuditPage() {
                 <>
                     {/* Header */}
                     <div style={{ marginBottom: '40px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px', marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px' }}>
                             <div>
                                 <h1 style={{ fontSize: isMobile ? '36px' : '56px', fontWeight: 900, letterSpacing: '-0.03em', textTransform: 'uppercase', color: '#0D0D0D', lineHeight: 1, margin: 0 }}>
-                                    {activeTab === 'audit' ? 'Audit Trail' : 'Enquiries'}
+                                    Audit Trail
                                 </h1>
                                 <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.5)', fontWeight: 500, margin: '12px 0 0 0', maxWidth: '480px' }}>
-                                    {activeTab === 'audit'
-                                        ? 'Comprehensive system event monitoring and regulatory compliance logs.'
-                                        : 'Corporate contact enquiries submitted via the public landing page.'}
+                                    Comprehensive system event monitoring and regulatory compliance logs.
                                 </p>
                             </div>
-                            {activeTab === 'audit' && (
-                                <button
-                                    className="export-btn"
-                                    onClick={handleExportAuditCSV}
-                                    style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 28px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 20px rgba(108,99,255,0.3)', transition: 'transform 0.2s ease', fontFamily: "'Be Vietnam Pro', sans-serif" }}
-                                >
-                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
-                                    Export CSV
-                                </button>
-                            )}
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            {['audit', 'enquiries'].map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    style={{ background: activeTab === tab ? '#6C63FF' : 'rgba(255,255,255,0.5)', color: activeTab === tab ? 'white' : 'rgba(0,0,0,0.5)', borderRadius: '999px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif", transition: 'all 0.2s ease', textTransform: 'capitalize' }}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
+                            <button
+                                className="export-btn"
+                                onClick={handleExportAuditCSV}
+                                style={{ background: '#6C63FF', color: 'white', borderRadius: '999px', padding: '12px 28px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 20px rgba(108,99,255,0.3)', transition: 'transform 0.2s ease', fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>download</span>
+                                Export CSV
+                            </button>
                         </div>
                     </div>
 
-                    {activeTab === 'audit' && (<>
+                    {/* Audit content */}
+                    <>
                     {/* Compliance Report Panel — collapsible, above stat tiles */}
                     <div className="audit-panel" style={{ padding: '28px 32px', marginBottom: '32px' }}>
                         {/* Toggle header */}
@@ -632,55 +583,7 @@ export default function ManagerAuditPage() {
                             )}
                         </div>
                     </div>
-                    </>)}
-
-                    {activeTab === 'enquiries' && (
-                        <div className="audit-panel" style={{ padding: '32px' }}>
-                            {enquiriesLoading && (
-                                <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.4)', fontWeight: 500 }}>Loading enquiries…</p>
-                            )}
-                            {!enquiriesLoading && enquiriesError && (
-                                <div style={{ padding: '20px', borderLeft: '3px solid #E05A5A', background: 'rgba(224,90,90,0.06)', borderRadius: '12px' }}>
-                                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#E05A5A', margin: '0 0 8px' }}>Failed to load enquiries</p>
-                                    <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.55)', margin: '0 0 12px' }}>{enquiriesError}</p>
-                                    <button
-                                        onClick={fetchEnquiries}
-                                        style={{ background: '#E05A5A', color: 'white', borderRadius: '999px', padding: '8px 18px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
-                                    >Retry</button>
-                                </div>
-                            )}
-                            {!enquiriesLoading && !enquiriesError && enquiries.length === 0 && (
-                                <p style={{ fontSize: '14px', color: 'rgba(0,0,0,0.4)', fontWeight: 500 }}>No enquiries yet.</p>
-                            )}
-                            {!enquiriesLoading && !enquiriesError && enquiries.map(enq => (
-                                <div key={enq.id} style={{ padding: '20px 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                                        <div>
-                                            <p style={{ fontSize: '15px', fontWeight: 700, color: '#0D0D0D', margin: '0 0 4px 0' }}>
-                                                {enq.name} — <span style={{ fontWeight: 500 }}>{enq.company}</span>
-                                            </p>
-                                            <p style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', margin: '0 0 8px 0', fontFamily: 'JetBrains Mono, monospace' }}>{enq.email}</p>
-                                            <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.65)', lineHeight: 1.6, margin: 0 }}>{enq.message}</p>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', minWidth: '140px' }}>
-                                            <p style={{ fontSize: '10px', color: 'rgba(0,0,0,0.35)', margin: 0, fontFamily: 'JetBrains Mono, monospace' }}>
-                                                {new Date(enq.created_at).toLocaleDateString()}
-                                            </p>
-                                            <select
-                                                value={enq.status}
-                                                onChange={e => handleMarkStatus(enq.id, e.target.value)}
-                                                style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', borderRadius: '999px', padding: '6px 16px', fontSize: '11px', fontWeight: 700, color: '#0D0D0D', outline: 'none', cursor: 'pointer', fontFamily: "'Be Vietnam Pro', sans-serif" }}
-                                            >
-                                                <option value="new">New</option>
-                                                <option value="read">Read</option>
-                                                <option value="responded">Responded</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    </>
                 </>
             )}
         </div>
